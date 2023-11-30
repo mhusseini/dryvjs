@@ -1,19 +1,17 @@
 import type {
-    DryvObject,
     DryvProxy,
     DryvProxyOptions,
-    DryvInternalObject, DryvValidationRuleSet
 } from "@/dryv";
 import {
     dryvProxy,
     isDryvProxy,
-    isDryvFieldValue,
-    DryvValidatableObject,
-    DryvValidatableValue
 } from "@/dryv";
+import {DryvValidatableObject} from "@/dryv/DryvValidatableObject";
+import {DryvValidatableValue} from "@/dryv/DryvValidatableValue";
+import {isDryvValidatableValue} from "@/dryv/IsDryvValidatableValue";
 
-export function dryvProxyHandler<TModel extends object>(options: DryvProxyOptions, field?: string, ruleSet: DryvValidationRuleSet<TModel>): ProxyHandler<TModel> {
-    let _dryv: DryvObject<TModel> = null;
+export function dryvProxyHandler<TModel extends object>(options: DryvProxyOptions, field?: string): ProxyHandler<TModel> {
+    let _dryv: DryvValidatableObject<TModel> = null;
     const fieldName = field?.toString();
 
     return {
@@ -68,7 +66,7 @@ export function dryvProxyHandler<TModel extends object>(options: DryvProxyOption
             if (typeof value === "object") {
                 targetValue = ensureObjectProxy(value, field);
             } else {
-                const proxy = ensureValueProxy(field);
+                ensureValueProxy(field);
                 targetValue = value;
             }
 
@@ -77,41 +75,37 @@ export function dryvProxyHandler<TModel extends object>(options: DryvProxyOption
     }
 
     function ensureObjectProxy(value: any, field: string) {
-        const dryvProxyInstance: DryvProxy<any> = !isDryvProxy(value)
-            ? dryvProxy(value, options, field, ruleSet)
+        const proxy: DryvProxy<any> = !isDryvProxy(value)
+            ? dryvProxy(value, options, field)
             : value;
 
         const dryv_ = dryv();
-        dryv_.value[field] = dryvProxyInstance.$dryv.value;
-        dryvProxyInstance.$dryv.parent = dryv_;
+        dryv_.value[field] = proxy.$dryv.value;
+        proxy.$dryv.parent = dryv_;
 
-        return dryvProxyInstance;
+        return proxy;
     }
 
     function ensureValueProxy(field: string) {
         const dryv_ = dryv();
         const dryvObject = dryv_.value;
 
-        if (isDryvFieldValue(dryvObject[field])) {
-            return dryvObject[field];
-        }
-
-        return dryvObject[field] = options.objectWrapper(new DryvValidatableValue(
-            options,
-            field,
-            ruleSet,
-            dryv_,
-            () => dryv_.value.$model?.[field],
-            value => {
-                if (dryv_.value.$model) {
-                    dryv_.value.$model[field] = value;
-                }
-            }));
+        return isDryvValidatableValue(dryvObject[field])
+            ? dryvObject[field]
+            : (dryvObject[field] = options.objectWrapper(new DryvValidatableValue(
+                field,
+                dryv_,
+                () => dryv_.value.$model?.[field],
+                value => {
+                    if (dryv_.value.$model) {
+                        dryv_.value.$model[field] = value;
+                    }
+                })));
     }
 
     function dryv() {
         if (!_dryv) {
-            _dryv = options.objectWrapper(new DryvValidatableObject(options, fieldName, ruleSet));
+            _dryv = options.objectWrapper(new DryvValidatableObject(fieldName));
         }
 
         return _dryv;

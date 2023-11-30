@@ -52,11 +52,11 @@ const demoRuleSet: DryvValidationRuleSet<PersonalData> = {
             }
         }, {
             async: true,
-            validate: function ($m, $ctx) {
-                return $ctx.dryv.callServer('/_v/cuacbsqfo', 'POST', {
+            validate: function ($m, session) {
+                return session.dryv.callServer('/_v/cuacbsqfo', 'POST', {
                     "vorname": $m.vorname
                 }).then(function ($r) {
-                    return $ctx.dryv.handleResult($ctx, $m, "vorname", null, $r);
+                    return session.dryv.handleResult(session, $m, "vorname", null, $r);
                 }).then(function ($p21) {
                     return ($p21 || {}).errorMessage;
                 })
@@ -87,11 +87,11 @@ const demoRuleSet: DryvValidationRuleSet<PersonalData> = {
             }
         }, {
             async: true,
-            validate: function ($m, $ctx) {
-                return $ctx.dryv.callServer('/_v/cflhzdnn4', 'POST', {
+            validate: function ($m, session) {
+                return session.dryv.callServer('/_v/cflhzdnn4', 'POST', {
                     "nachname": $m.nachname
                 }).then(function ($r) {
-                    return $ctx.dryv.handleResult($ctx, $m, "nachname", null, $r);
+                    return session.dryv.handleResult(session, $m, "nachname", null, $r);
                 }).then(function ($p23) {
                     return ($p23 || {}).errorMessage;
                 })
@@ -125,16 +125,16 @@ const demoRuleSet: DryvValidationRuleSet<PersonalData> = {
                 }
             }
         }, {
-            validate: function ($m, $ctx) {
-                return (($m.geburtsdatum) && ($ctx.dryv.valueOfDate($m.geburtsdatum, "de-DE", "DD.MM.YYYY HH:mm:ss") > $ctx.dryv.valueOfDate("28.11.2005 00:00:00", "de-DE", "DD.MM.YYYY HH:mm:ss"))) ? {
+            validate: function ($m, session) {
+                return (($m.geburtsdatum) && (session.dryv.valueOfDate($m.geburtsdatum, "de-DE", "DD.MM.YYYY HH:mm:ss") > session.dryv.valueOfDate("28.11.2005 00:00:00", "de-DE", "DD.MM.YYYY HH:mm:ss"))) ? {
                     status: "error",
                     text: "Achso, du bist noch nicht volljährig? Dann darfst du hier im Internet leider keinen Vertrag mit uns abschließen. Aber ruf uns doch unter 0221–27 11 7777 an. Dann können wir besprechen, welche Möglichkeiten es gibt.",
                     group: null
                 } : null
             }
         }, {
-            validate: function ($m, $ctx) {
-                return (($m.geburtsdatum) && ($ctx.dryv.valueOfDate($m.geburtsdatum, "de-DE", "DD.MM.YYYY HH:mm:ss") < $ctx.dryv.valueOfDate("28.11.1903 00:00:00", "de-DE", "DD.MM.YYYY HH:mm:ss"))) ? {
+            validate: function ($m, session) {
+                return (($m.geburtsdatum) && (session.dryv.valueOfDate($m.geburtsdatum, "de-DE", "DD.MM.YYYY HH:mm:ss") < session.dryv.valueOfDate("28.11.1903 00:00:00", "de-DE", "DD.MM.YYYY HH:mm:ss"))) ? {
                     status: "error",
                     text: "Check bitte nochmal dein Geburtsdatum.",
                     group: null
@@ -173,20 +173,20 @@ const demoRuleSet: DryvValidationRuleSet<PersonalData> = {
                 } : null
             }
         }, {
-            validate: function ($m, $ctx) {
-                return /\S/.test($m.emailAdresse || "") ? $ctx.dryv.callServer('/_v/cmrtdlmkp', 'POST', {
+            validate: function ($m, session) {
+                return /\S/.test($m.emailAdresse || "") ? session.dryv.callServer('/_v/cmrtdlmkp', 'POST', {
                     "emailAdresse": $m.emailAdresse
                 }).then(function ($r) {
-                    return $ctx.dryv.handleResult($ctx, $m, "emailAdresse", null, $r);
+                    return session.dryv.handleResult(session, $m, "emailAdresse", null, $r);
                 }) : null
             }
         }, {
             async: true,
-            validate: function ($m, $ctx) {
-                return /\S/.test($m.emailAdresse || "") ? $ctx.dryv.callServer('/_v/cynrfjria', 'POST', {
+            validate: function ($m, session) {
+                return /\S/.test($m.emailAdresse || "") ? session.dryv.callServer('/_v/cynrfjria', 'POST', {
                     "emailAdresse": $m.emailAdresse
                 }).then(function ($r) {
-                    return $ctx.dryv.handleResult($ctx, $m, "emailAdresse", null, $r);
+                    return session.dryv.handleResult(session, $m, "emailAdresse", null, $r);
                 }).then(function ($p28) {
                     return ($p28 || {}).errorMessage;
                 }) : null
@@ -194,21 +194,21 @@ const demoRuleSet: DryvValidationRuleSet<PersonalData> = {
         }],
         "telefonNummer": [{
             async: true,
-            validate: function ($m, $ctx) {
-                return $ctx.dryv.callServer('/_v/cgxah0tvz', 'POST', {
+            validate: function ($m, session) {
+                return session.dryv.callServer('/_v/cgxah0tvz', 'POST', {
                     "telefonNummer": $m.telefonNummer
                 }).then(function ($r) {
-                    return $ctx.dryv.handleResult($ctx, $m, "telefonNummer", null, $r);
+                    return session.dryv.handleResult(session, $m, "telefonNummer", null, $r);
                 })
             }
         }],
         "werberVertragsnummer": [{
             async: true,
-            validate: function ($m, $ctx) {
-                return !/\S/.test($m.werberVertragsnummer || "") ? null : $ctx.dryv.callServer('/_v/cy4959vs8', 'POST', {
+            validate: function ($m, session) {
+                return !/\S/.test($m.werberVertragsnummer || "") ? null : session.dryv.callServer('/_v/cy4959vs8', 'POST', {
                     "werberVertragsnummer": $m.werberVertragsnummer
                 }).then(function ($r) {
-                    return $ctx.dryv.handleResult($ctx, $m, "werberVertragsnummer", null, $r);
+                    return session.dryv.handleResult(session, $m, "werberVertragsnummer", null, $r);
                 }).then(function ($p35) {
                     return $p35 ? null : {
                         type: "error",
