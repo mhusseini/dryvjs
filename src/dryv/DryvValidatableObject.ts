@@ -7,7 +7,7 @@ import type {
 import type {DryvValidationSession} from "@/dryv/DryvValidationSession";
 
 export class DryvValidatableObject<TModel extends object> implements DryvValidatable<TModel, DryvObject<TModel>> {
-    isDryvValidatable = true;
+    _isDryvValidatable = true;
     private _value: DryvObject<TModel> = {
         $model: undefined
     };

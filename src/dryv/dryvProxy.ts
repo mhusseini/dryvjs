@@ -1,8 +1,8 @@
 import {dryvProxyHandler} from "@/dryv/DryvProxyHandler";
-import type {DryvProxy, DryvProxyOptions} from "@/dryv/typings";
+import type {DryvProxy, DryvOptions} from "@/dryv/typings";
 import {defaultProxyOptions} from "@/dryv/DefaultProxyOptions";
 
-export function dryvProxy<TModel>(model: TModel | DryvProxy<TModel>, options: DryvProxyOptions, field?: string): DryvProxy<TModel> {
+export function dryvProxy<TModel>(model: TModel | DryvProxy<TModel>, options: DryvOptions, field?: string): DryvProxy<TModel> {
     if (isDryvProxy(model)) {
         return model;
     }
@@ -22,7 +22,7 @@ export function dryvProxy<TModel>(model: TModel | DryvProxy<TModel>, options: Dr
     return proxy;
 }
 
-export function isDryvProxy<TModel>(model: TModel | DryvProxy<TModel>): model is DryvProxy<TModel> {
-    return (model as DryvProxy<TModel>)?.$dryv;
+export function isDryvProxy<TModel extends object>(model: any | DryvProxy<TModel>): model is DryvProxy<TModel> {
+    return !!(model as DryvProxy<TModel>)?.$dryv;
 }
 

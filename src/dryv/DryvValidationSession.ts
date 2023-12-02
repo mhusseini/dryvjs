@@ -1,11 +1,10 @@
 import type {
     DryvFieldValidationResult,
-    DryvProxyOptions,
+    DryvOptions,
     DryvValidatable,
     DryvValidationResult,
     DryvValidationRule,
     DryvValidationRuleSet,
-    DryvValidationSession,
     DryvProxy
 } from "@/dryv/typings";
 import {DryvValidatableObject} from "@/dryv/DryvValidatableObject";
@@ -21,7 +20,7 @@ export class DryvValidationSession<TModel extends object> {
         valueOfDate?(date: string, locale: string, format: string): number;
     };
 
-    constructor(private options: DryvProxyOptions, private ruleSet?: DryvValidationRuleSet<TModel>) {
+    constructor(private options: DryvOptions, private ruleSet?: DryvValidationRuleSet<TModel>) {
         this.dryv = {
             callServer: options.callServer,
             handleResult: options.handleResult,
@@ -29,11 +28,11 @@ export class DryvValidationSession<TModel extends object> {
         };
     }
 
-    async validateObject(objOrProxy: DryvValidatableObject<TModel> | DryvProxy<TModel>): Promise<DryvValidationResult | null> {
+    async validateObject(objOrProxy: DryvValidatableObject<TModel> | DryvProxy<TModel>): Promise<DryvValidationResult<TModel> | null> {
         const obj = isDryvProxy(objOrProxy) ? objOrProxy.$dryv : objOrProxy;
-        const results: DryvValidationResult[] = await Promise.all(Object.entries(obj.value)
-            .filter(([key, value]) => (value as DryvValidatable)?.isDryvValidatable && !this.options.excludedFields.find(regexp => regexp.test(key)))
-            .map(([_, value]) => (value as DryvValidatable).validate(this)));
+        const results: DryvValidationResult<TModel>[] = await Promise.all(Object.entries(obj.value)
+            .filter(([key, value]) => (value as any as DryvValidatable)?._isDryvValidatable && !this.options.excludedFields?.find(regexp => regexp.test(key)))
+            .map(([_, value]) => (value as any as DryvValidatable).validate(this)));
         const fieldResults = results.filter(r => r).flatMap(r => r.results);
         const warnings = fieldResults.filter(r => r.status === "warning");
         const hasErrors = fieldResults.some(r => r.status === "error");
@@ -52,7 +51,7 @@ export class DryvValidationSession<TModel extends object> {
         }
     }
 
-    async validateField(field: DryvValidatableValue<TModel>, model?: TModel): Promise<DryvValidationResult | null> {
+    async validateField<TValue>(field: DryvValidatableValue<TModel, TValue>, model?: TModel): Promise<DryvValidationResult<TModel> | null> {
         if (!model) {
             model = this.getModel(field);
         }
@@ -97,7 +96,7 @@ export class DryvValidationSession<TModel extends object> {
             }
         }
 
-        let result: DryvFieldValidationResult;
+        let result: DryvFieldValidationResult | null = null;
 
         try {
             for (const rule of validators) {

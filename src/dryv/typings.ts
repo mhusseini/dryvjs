@@ -1,6 +1,5 @@
 import {DryvValidatableValue} from "@/dryv/dryvValidatableValue";
 import type {DryvValidationSession} from "@/dryv/DryvValidationSession";
-import {DryvValidatableObject} from "@/dryv/DryvValidatableObject";
 
 export interface DryvValidationRule<TModel> {
     async?: boolean;
@@ -21,19 +20,11 @@ export interface DryvValidationRuleSet<TModel, TParameters = object> {
     parameters: TParameters
 }
 
-declare function dryvServerValidationCallback<TModel>(context: DryvValidationSession<TModel>, model: TModel, path: string, rule: DryvValidationRule<TModel>, result: DryvFieldValidationResult): void;
-
-export type DryvServerValidationCallback = typeof dryvServerValidationCallback;
-
-declare function dryvValidateObjectFunc<TModel extends object, TResultData = unknown>(model: TModel, callback?: DryvServerValidationCallback): Promise<DryvValidationResult<TModel, TResultData>>;
-
-export type DryvValidateObjectFunc = typeof dryvValidateObjectFunc;
-
 export interface DryvValidationResult<TModel extends object> {
     results: DryvFieldValidationResult[];
     hasErrors: boolean;
     hasWarnings: boolean;
-    warningHash: string;
+    warningHash: string | undefined | null;
 }
 
 export interface DryvFieldValidationResult {
@@ -50,8 +41,9 @@ export type DryvProxy<TModel extends object> = TModel & {
 };
 
 export interface DryvValidatable<TModel extends object = any, TValue = unknown> {
-    isDryvValidatable: true;
+    _isDryvValidatable: true;
     text?: string | null;
+    path?: string | null;
     group?: string | null;
     status?: DryvValidationResultStatus;
     value: TValue;
@@ -77,8 +69,8 @@ export type DryvObject<TModel extends object> = {
     $model: DryvProxy<TModel>;
 };
 
-export interface DryvProxyOptions {
-    exceptionHandling: "failValidation" | "succeedValidation";
+export interface DryvOptions {
+    exceptionHandling?: "failValidation" | "succeedValidation";
     objectWrapper?: <TObject>(object: TObject) => TObject;
     excludedFields?: RegExp[];
 

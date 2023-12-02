@@ -1,33 +1,35 @@
 <template>
-  <pre>
-  </pre>
+  <pre>{{value}}</pre>
+  <pre>{{model}}</pre>
   <form>
-    <form-input :value="bindingModel.anrede" label="Anrede"/>
-    <form-input :value="bindingModel.vorname" label="Vorname"/>
-    <form-input :value="bindingModel.nachname" label="Nachname"/>
-    <form-input :value="bindingModel.geburtsdatum" label="Geburtsdatum"/>
-    <form-input :value="bindingModel.emailAdresse" label="E-Mail-Adresse"/>
-    <form-input :value="bindingModel.telefonNummer" label="Telefonnummer"/>
-    <form-input :value="bindingModel.werberVertragsnummer" label="Werber-Vertragsnummer"/>
+    <form-input v-model="value" label="Value"/>
+    <form-input v-model="bindingModel.anrede" label="Anrede"/>
+    <form-input v-model="bindingModel.vorname" label="Vorname"/>
+    <form-input v-model="bindingModel.nachname" label="Nachname"/>
+    <form-input v-model="bindingModel.geburtsdatum" label="Geburtsdatum"/>
+    <form-input v-model="bindingModel.emailAdresse" label="E-Mail-Adresse"/>
+    <form-input v-model="bindingModel.telefonNummer" label="Telefonnummer"/>
+    <form-input v-model="bindingModel.werberVertragsnummer" label="Werber-Vertragsnummer"/>
     <div v-if="bindingModel.child">
-      <form-input :value="bindingModel.child.anrede" label="Kind Anrede"/>
-      <form-input :value="bindingModel.child.vorname" label="Kind Vorname"/>
-      <form-input :value="bindingModel.child.nachname" label="Kind Nachname"/>
-      <form-input :value="bindingModel.child.geburtsdatum" label="Kind Geburtsdatum"/>
-      <form-input :value="bindingModel.child.emailAdresse" label="Kind E-Mail-Adresse"/>
-      <form-input :value="bindingModel.child.telefonNummer" label="Kind Telefonnummer"/>
-      <form-input :value="bindingModel.child.werberVertragsnummer" label="Kind Werber-Vertragsnummer"/>
+      <form-input v-model="bindingModel.child.anrede" label="Kind Anrede"/>
+      <form-input v-model="bindingModel.child.vorname" label="Kind Vorname"/>
+      <form-input v-model="bindingModel.child.nachname" label="Kind Nachname"/>
+      <form-input v-model="bindingModel.child.geburtsdatum" label="Kind Geburtsdatum"/>
+      <form-input v-model="bindingModel.child.emailAdresse" label="Kind E-Mail-Adresse"/>
+      <form-input v-model="bindingModel.child.telefonNummer" label="Kind Telefonnummer"/>
+      <form-input v-model="bindingModel.child.werberVertragsnummer" label="Kind Werber-Vertragsnummer"/>
     </div>
     <button @click.prevent="validate">Validate</button>
   </form>
 </template>
 
 <script setup lang="ts">
-import {reactive} from "vue";
 import FormInput from "@/components/FormInput.vue";
 import type {PersonalData} from "@/models";
-import {useDryvFor} from "@/dryv";
+import {useDryv} from "@/dryv";
+import {ref} from "vue";
 
+const value = ref<string>("test");
 const data: PersonalData = {
   anrede: "text",
   vorname: "text",
@@ -47,5 +49,6 @@ const data: PersonalData = {
   }
 };
 
-const {bindingModel, validate} = useDryvFor(data, "PersonalData", {objectWrapper: o => reactive(o),});
+const {model,bindingModel, validate} = useDryv(data, "PersonalData");
+
 </script>

@@ -1,6 +1,9 @@
 import './assets/main.css'
 
-import { createApp } from 'vue'
+import {createApp} from 'vue'
 import App from './App.vue'
+import {DryvPlugin} from "@/dryv";
 
-createApp(App).mount('#app')
+createApp(App)
+    .use(DryvPlugin)
+    .mount('#app')

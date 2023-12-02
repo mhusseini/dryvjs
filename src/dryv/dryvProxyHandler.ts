@@ -1,14 +1,14 @@
 import type {
     DryvProxy,
-    DryvProxyOptions,
+    DryvOptions,
 } from "@/dryv";
 import {
-    dryvProxy,
+    dryvProxy, dryvValidatableValue,
     isDryvProxy,
 } from "@/dryv";
 import {DryvValidatableObject} from "@/dryv/DryvValidatableObject";
 import {DryvValidatableValue} from "@/dryv/DryvValidatableValue";
-import {isDryvValidatableValue} from "@/dryv/IsDryvValidatableValue";
+import {isDryvValidatableValue} from "@/dryv/isDryvValidatableValue";
 
 export function dryvProxyHandler<TModel extends object>(options: DryvProxyOptions, field?: string): ProxyHandler<TModel> {
     let _dryv: DryvValidatableObject<TModel> = null;
@@ -27,14 +27,12 @@ export function dryvProxyHandler<TModel extends object>(options: DryvProxyOption
             const originalValue = Reflect.get(target, field, receiver);
             let resultValue = originalValue;
 
-            if (typeof originalValue === "function") {
-                // nop
-            } else if (typeof originalValue === "object") {
+            if (typeof originalValue === "object") {
                 resultValue = ensureObjectProxy(originalValue, field);
                 if (resultValue !== originalValue) {
                     Reflect.set(target, field, resultValue, receiver);
                 }
-            } else {
+            } else if (typeof originalValue !== "function") {
                 ensureValueProxy(field);
             }
 
@@ -46,6 +44,10 @@ export function dryvProxyHandler<TModel extends object>(options: DryvProxyOption
                 throw new Error("The $dryv property is read-only.");
             }
 
+            if (typeof value === "function") {
+                return Reflect.set(target, field, value, receiver);
+            }
+
             const fieldName = `${field}`;
 
             if (options.excludedFields?.find(regexp => regexp?.test(fieldName))) {
@@ -54,10 +56,6 @@ export function dryvProxyHandler<TModel extends object>(options: DryvProxyOption
 
             const originalValue = Reflect.get(target, field, receiver);
             let targetValue = value;
-
-            if (typeof value === "function") {
-                return Reflect.set(target, field, value, receiver);
-            }
 
             if (!value && isDryvProxy(originalValue)) {
                 originalValue.$dryv.parent = undefined;
@@ -92,7 +90,7 @@ export function dryvProxyHandler<TModel extends object>(options: DryvProxyOption
 
         return isDryvValidatableValue(dryvObject[field])
             ? dryvObject[field]
-            : (dryvObject[field] = options.objectWrapper(new DryvValidatableValue(
+            : (dryvObject[field] = options.objectWrapper(dryvValidatableValue(
                 field,
                 dryv_,
                 () => dryv_.value.$model?.[field],

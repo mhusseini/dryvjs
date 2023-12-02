@@ -1,7 +1,7 @@
-import type {DryvProxyOptions} from "@/dryv/typings";
+import type {DryvOptions} from "@/dryv/typings";
 
-class DryvProxyOptionsSingleton {
-    public static Instance = {
+class DryvOptionsSingleton {
+    public static readonly Instance = {
         objectWrapper: o => o,
         excludedFields: [/^_/, /^$/],
         callServer: async (url: string, method: string, data: any) => {
@@ -22,4 +22,4 @@ class DryvProxyOptionsSingleton {
     };
 }
 
-export const defaultProxyOptions: DryvProxyOptions = DryvProxyOptionsSingleton.Instance;
+export const defaultProxyOptions: DryvOptions = DryvOptionsSingleton.Instance;

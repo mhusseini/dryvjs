@@ -1,4 +1,6 @@
 export * from "./DryvProxy";
-export * from "./useDryvFor";
+export * from "./useDryv";
 export * from "./useDryvOptions";
 export * from "./DryvValidationSession";
+export * from "./plugin";
+export * from "./DryvValidatableValue";

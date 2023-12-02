@@ -1,6 +1,6 @@
 import type {
     DryvObject,
-    DryvProxyOptions,
+    DryvOptions,
     DryvValidatable,
     DryvValidationResult,
 } from "@/dryv/typings";
@@ -9,7 +9,7 @@ import {dryvProxy} from "@/dryv/DryvProxy";
 import {useDryvOptions} from "@/dryv/useDryvOptions";
 import {findDryvRuleSet} from "@/dryv/findDryvRuleSet";
 
-export function useDryvFor<TModel extends object>(model: TModel, ruleSetName: string, options?: DryvProxyOptions): {
+export function useDryv<TModel extends object>(model: TModel, ruleSetName: string, options?: DryvOptions): {
     session: DryvValidationSession,
     model: TModel,
     result: DryvValidatable<TModel, DryvObject<TModel>>,
