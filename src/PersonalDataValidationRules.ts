@@ -1,11 +1,7 @@
 import type {PersonalData} from "@/models";
-import type {DryvValidationRuleSet} from "@/dryv";
+import type {DryvValidationRuleSet} from "@/dryv/types";
 
-export function useDemoRuleSet(): DryvValidationRuleSet<PersonalData> {
-    return demoRuleSet;
-}
-
-const demoRuleSet: DryvValidationRuleSet<PersonalData> = {
+export const personalDataValidationRules: DryvValidationRuleSet<PersonalData> = {
     validators: {
         "anrede": [{
             annotations: {

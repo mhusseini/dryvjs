@@ -2,8 +2,12 @@ import './assets/main.css'
 
 import {createApp} from 'vue'
 import App from './App.vue'
-import {DryvPlugin} from "@/dryv";
+import {Dryv, DryvStaticRuleSets} from "@/dryv";
+import {personalDataValidationRules} from "@/PersonalDataValidationRules";
 
 createApp(App)
-    .use(DryvPlugin)
+    .use(Dryv)
+    .use(DryvStaticRuleSets, {
+        PersonalData: personalDataValidationRules
+    })
     .mount('#app')

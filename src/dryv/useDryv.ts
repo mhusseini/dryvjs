@@ -3,23 +3,23 @@ import type {
     DryvOptions,
     DryvValidatable,
     DryvValidationResult,
-} from "@/dryv/typings";
-import {DryvValidationSession} from "@/dryv/DryvValidationSession";
-import {dryvProxy} from "@/dryv/DryvProxy";
-import {useDryvOptions} from "@/dryv/useDryvOptions";
-import {findDryvRuleSet} from "@/dryv/findDryvRuleSet";
+    DryvValidationSession,
+} from "./types";
+import {dryvProxy, dryvValidationSession, dryvRuleSet, dryvOptions} from "./core";
 
-export function useDryv<TModel extends object>(model: TModel, ruleSetName: string, options?: DryvOptions): {
+export interface UseDryvResult<TModel extends object> {
     session: DryvValidationSession,
     model: TModel,
     result: DryvValidatable<TModel, DryvObject<TModel>>,
     bindingModel: DryvObject<TModel>,
-    validate: () => Promise<DryvValidationResult>
-} {
-    options = useDryvOptions(options);
+    validate: () => Promise<DryvValidationResult<TModel>>
+}
 
-    const ruleSet = findDryvRuleSet(ruleSetName);
-    const session = new DryvValidationSession(options, ruleSet);
+export function useDryv<TModel extends object>(model: TModel, ruleSetName: string, options?: DryvOptions): UseDryvResult<TModel> {
+    options = dryvOptions(options);
+
+    const ruleSet = dryvRuleSet(ruleSetName);
+    const session = dryvValidationSession(options, ruleSet);
     const proxy = dryvProxy<TModel>(model, options);
 
     return {

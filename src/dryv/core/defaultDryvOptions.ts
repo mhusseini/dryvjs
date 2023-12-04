@@ -1,9 +1,9 @@
-import type {DryvOptions} from "@/dryv/typings";
+import type {DryvOptions, DryvValidationRuleSetResolver} from "./typings";
 
 class DryvOptionsSingleton {
     public static readonly Instance = {
         objectWrapper: o => o,
-        excludedFields: [/^_/, /^$/],
+        excludedFields: [/^_/, /^$/, /^Symbol\(/],
         callServer: async (url: string, method: string, data: any) => {
             if (data && /get/i.test(method)) {
                 const query = Object.entries(data)
@@ -20,6 +20,9 @@ class DryvOptionsSingleton {
             return new Date(date).valueOf();
         }
     };
+
+    public static readonly RuleSetResolvers: DryvValidationRuleSetResolver[] = []
 }
 
-export const defaultProxyOptions: DryvOptions = DryvOptionsSingleton.Instance;
+export const defaultDryvOptions: DryvOptions = DryvOptionsSingleton.Instance;
+export const defaultDryvRuleSetResolvers: DryvValidationRuleSetResolver[] = DryvOptionsSingleton.RuleSetResolvers;
