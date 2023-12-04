@@ -1914,6 +1914,11 @@ vue-eslint-parser@^9.3.1:
     lodash "^4.17.21"
     semver "^7.3.6"
 
+vue-facing-decorator@^3.0.4:
+  version "3.0.4"
+  resolved "https://registry.yarnpkg.com/vue-facing-decorator/-/vue-facing-decorator-3.0.4.tgz#e005a8371aa4e3b4241fc20e7d8e8706dda209f6"
+  integrity sha512-Lk90PevJllB6qRRdLvLFjATZrv00nof1Ob6afavKL7Pc7V3eEin3vhdvEDRORdWKVvNoXhJbHejngWVuT0Pt0g==
+
 vue-template-compiler@^2.7.14:
   version "2.7.15"
   resolved "https://registry.yarnpkg.com/vue-template-compiler/-/vue-template-compiler-2.7.15.tgz#ec88ba8ceafe0f17a528b89c57e01e02da92b0de"

@@ -13,17 +13,19 @@
 </template>
 
 
-<script setup lang="ts">
-import type {DryvValidatable} from "@/dryv/types";
-import {useDryvValueProp} from "@/dryv";
+<script lang="ts">
+import {toNative, Component, Vue, Prop} from 'vue-facing-decorator'
+import {dryvValuePropMixin} from "@/dryv/mixins";
 
-const props = defineProps<{
-  modelValue: string | DryvValidatable<any, string>;
-  label: string,
-}>();
+@Component({
+  mixins: [dryvValuePropMixin<string>()]
+})
+class OptionsApiFormInput extends Vue {
+  @Prop()
+  label: string;
+}
 
-const emit = defineEmits(['update:modelValue'])
-const value: DryvValidatable = useDryvValueProp(emit, () => props.modelValue);
+export default toNative(OptionsApiFormInput)
 </script>
 
 <style lang="scss">

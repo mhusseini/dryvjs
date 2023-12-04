@@ -15,7 +15,8 @@
 </template>
 
 <script setup lang="ts">
-import FormInput from "@/components/FormInput.vue";
+//import FormInput from "@/components/FormInput.vue";
+import FormInput from "@/components/OptionsApiFormInput.vue";
 import type {PersonalData} from "@/models";
 import {useDryv} from "@/dryv";
 import {reactive} from "vue";
