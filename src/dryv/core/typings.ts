@@ -45,12 +45,14 @@ export type DryvProxy<TModel extends object> = TModel & {
 
 export interface DryvValidatable<TModel extends object = any, TValue = any> {
     _isDryvValidatable: true;
+    required?: boolean | null;
     text?: string | null;
     path?: string | null;
     group?: string | null;
     status?: DryvValidationResultStatus | null;
     value: TValue | undefined;
-    parent: DryvValidatable | undefined
+    parent: DryvValidatable | undefined;
+    field: keyof TModel | undefined,
 
     validate(session: DryvValidationSession<TModel>): Promise<DryvValidationResult<TModel> | null>;
 }

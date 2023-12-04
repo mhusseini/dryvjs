@@ -18,6 +18,7 @@ export function dryvValidatableObject<TModel extends object = any, TValue = any>
         text: null,
         group: null,
         status: null,
+        required: null,
         get value(): TValue {
             return _value;
         },
@@ -31,7 +32,7 @@ export function dryvValidatableObject<TModel extends object = any, TValue = any>
             return await session.validateObject(this);
         },
         get path(): string {
-            return (parent?.path ? parent.path + "." : "") + (field ? String(field) : "") ?? null;
+            return (parent?.path ? parent.path + "." : "") + (field ? String(field) : "");
         }
     } as any as DryvValidatable<TModel, TValue>;
 }

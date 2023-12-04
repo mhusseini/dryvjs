@@ -1,13 +1,13 @@
 <template>
   <div class="row">
     <label>
-      {{ label }}
+      {{ label }}<span v-if="value.required">*</span>:
     </label>
 
     <input ref="input" v-model="value.value">
 
-    <div class="error" v-show="value?.status === 'error'">
-      {{ value?.text }}
+    <div class="error" v-show="value.status === 'error'">
+      {{ value.text }}
     </div>
   </div>
 </template>

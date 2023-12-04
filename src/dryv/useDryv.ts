@@ -5,7 +5,7 @@ import type {
     DryvValidationResult,
     DryvValidationSession,
 } from "./types";
-import {dryvProxy, dryvValidationSession, dryvRuleSet, dryvOptions} from "./core";
+import {dryvProxy, dryvValidationSession, dryvRuleSet, dryvOptions, annotate} from "./core";
 
 export interface UseDryvResult<TModel extends object> {
     session: DryvValidationSession,
@@ -22,6 +22,8 @@ export function useDryv<TModel extends object>(model: TModel, ruleSetName: strin
     const session = dryvValidationSession(options, ruleSet);
     const proxy = dryvProxy<TModel>(model, options);
 
+    annotate(proxy, ruleSet, options);
+    
     return {
         session,
         model: proxy,
