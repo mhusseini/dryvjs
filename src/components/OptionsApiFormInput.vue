@@ -15,10 +15,10 @@
 
 <script lang="ts">
 import {toNative, Component, Vue, Prop} from 'vue-facing-decorator'
-import {dryvValuePropMixin} from "@/dryv/mixins";
+import {dryvBindValueMixin} from "@/dryv/mixins";
 
 @Component({
-  mixins: [dryvValuePropMixin<string>()]
+  mixins: [dryvBindValueMixin<string>()],
 })
 class OptionsApiFormInput extends Vue {
   @Prop()

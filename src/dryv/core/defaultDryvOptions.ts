@@ -3,7 +3,7 @@ import type {DryvOptions, DryvValidationRuleSetResolver} from "./typings";
 class DryvOptionsSingleton {
     public static readonly Instance = {
         objectWrapper: o => o,
-        excludedFields: [/^_/, /^$/, /^Symbol\(/],
+        excludedFields: [/^_/, /^\$/, /^Symbol\(/, /^toJSON$/, /^toString/],
         callServer: async (url: string, method: string, data: any) => {
             if (data && /get/i.test(method)) {
                 const query = Object.entries(data)

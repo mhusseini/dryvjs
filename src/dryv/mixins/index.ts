@@ -1,1 +1,1 @@
-export * from "./dryvValuePropMixin";
+export * from "./dryvBindValueMixin";
