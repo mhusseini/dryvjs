@@ -12,36 +12,40 @@ export function dryvProxyHandler<TModel extends object>(
   let _dryv: DryvValidatable<TModel> | null = null
 
   return {
-    get(target: TModel, field: string, receiver: any): any {
-      const fieldName = String(field)
+    get(target: TModel, fieldSymbol: string | symbol, receiver: any): any {
+      const fieldName = String(fieldSymbol)
       if (fieldName === '$dryv') {
         return getDryv(receiver)
       }
 
       if (isExcludedField(fieldName)) {
-        return Reflect.get(target, field, receiver)
+        return Reflect.get(target, fieldName, receiver)
       }
 
-      const originalValue = Reflect.get(target, field, receiver)
-      let resultValue = originalValue
+      const originalValue = Reflect.get(target, fieldName, receiver)
+      const field = fieldName as keyof TModel
+      let resultValue
 
       if (typeof originalValue === 'object') {
         resultValue = ensureObjectProxy(originalValue, field as keyof TModel, receiver)
         if (resultValue !== originalValue) {
-          Reflect.set(target, field, resultValue)
+          Reflect.set(target, fieldName, resultValue)
         }
       } else if (typeof originalValue !== 'function') {
         ensureValueProxy(field as keyof TModel, target, receiver)
+        resultValue = originalValue
       }
 
       return resultValue
     },
 
-    set(target: TModel, field: string, value: any, receiver: any): boolean {
-      const fieldName = field?.toString()
+    set(target: TModel, fieldSymbol: string, value: any, receiver: any): boolean {
+      const fieldName = String(fieldSymbol)
       if (fieldName === '$dryv') {
         throw new Error('The $dryv property is read-only.')
       }
+
+      const field = fieldName as keyof TModel
 
       if (typeof value === 'function') {
         return Reflect.set(target, field, value)
@@ -86,33 +90,29 @@ export function dryvProxyHandler<TModel extends object>(
 
     if (isDryvValidatable(dryvObject[field])) {
       return dryvObject[field]
-    } else {
-      const proxy = options.objectWrapper!(factory())
-      dryvObject[field] = proxy
-      return proxy
     }
 
-    function factory() {
-      return dryvValidatableValue(
-        field,
-        dryv,
-        options,
-        () => receiver[field],
-        (value) => (receiver[field] = value)
-      )
-    }
+    const validatable = dryvValidatableValue(
+      field,
+      dryv,
+      options,
+      () => receiver[field],
+      (value) => (receiver[field] = value)
+    )
+
+    const proxy = options.objectWrapper!(validatable)
+
+    dryvObject[field] = proxy
+
+    return proxy
   }
 
   function getDryv(model: TModel) {
     if (!_dryv) {
-      _dryv = factory()
+      _dryv = dryvValidatableObject<TModel>(field, undefined, model, options)
     }
 
     return _dryv
-
-    function factory() {
-      return dryvValidatableObject<TModel>(field, undefined, model, options)
-    }
   }
 
   function isExcludedField(field: string) {

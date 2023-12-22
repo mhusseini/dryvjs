@@ -7,7 +7,7 @@
       <form-input v-model="model.geburtsdatum" label="Geburtsdatum" />
       <form-input v-model="model.emailAdresse" label="E-Mail-Adresse" />
       <form-input v-model="model.telefonNummer" label="Telefonnummer" />
-      <form-input v-model="model.werberVertragsnummer" label="Werber-Vertragsnummer" />
+      <form-input v-model="model.child.werberVertragsnummer" label="Werber-Vertragsnummer" />
     </div>
     <div class="button-bar">
       <button @click.prevent="revert" :disabled="!dirty && valid">Revert</button>
@@ -34,7 +34,8 @@ let data: PersonalData = reactive({
   geburtsdatum: 'text',
   emailAdresse: 'text',
   telefonNummer: 'text',
-  werberVertragsnummer: 'text'
+  werberVertragsnummer: 'text',
+  child: {}
   // child: {
   //   anrede: 'hallo',
   //   vorname: 'hallo',

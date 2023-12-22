@@ -27,6 +27,10 @@ export function useDryv<TModel extends object>(
   options = dryvOptions(options)
 
   const ruleSet = dryvRuleSet<TModel>(ruleSetName)
+  if (!ruleSet) {
+    throw new Error(`Could not find a validation rule set with the name '${ruleSetName}'`)
+  }
+
   const session = dryvValidationSession<TModel>(options, ruleSet)
   const proxy = dryvProxy<TModel>(model, options)
 
@@ -37,7 +41,7 @@ export function useDryv<TModel extends object>(
     model: proxy,
     result: proxy.$dryv,
     bindingModel: proxy.$dryv.value!,
-    validate: async () => await session.validateObject(proxy),
+    validate: async () => await proxy.$dryv.validate(session),
     valid: computed(() => !proxy.$dryv.status || proxy.$dryv.status === 'success'),
     clear: () => proxy.$dryv.clear()
   }
