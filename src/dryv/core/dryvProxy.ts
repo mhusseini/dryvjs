@@ -1,5 +1,5 @@
 import { dryvProxyHandler } from './dryvProxyHandler'
-import type { DryvOptions, DryvProxy, DryvValidatableInternal } from './typings'
+import type { DryvOptions, DryvProxy, DryvValidationSessionInternal } from './typings'
 import { defaultDryvOptions } from './defaultDryvOptions'
 import { isDryvProxy } from '@/dryv'
 import type { DryvValidationSession } from './typings'
@@ -18,15 +18,21 @@ export function dryvProxy<TModel extends object>(
     return model as DryvProxy<TModel>
   }
 
-  options = Object.assign(defaultDryvOptions, options)
-  model = options.objectWrapper!(model)
+  const sessionInternal = session as DryvValidationSessionInternal<TModel>
+  sessionInternal.$initializing = true
+  try {
+    options = Object.assign(defaultDryvOptions, options)
+    model = options.objectWrapper!(model)
 
-  const handler = dryvProxyHandler(field, session, options)
-  const proxy: DryvProxy<TModel> = new Proxy<TModel>(model, handler) as DryvProxy<TModel>
+    const handler = dryvProxyHandler(field, session, options)
+    const proxy: DryvProxy<TModel> = new Proxy<TModel>(model, handler) as DryvProxy<TModel>
 
-  Object.keys(model)
-    .filter((prop) => !options!.excludedFields?.find((regexp) => regexp.test(prop)))
-    .forEach((prop) => (proxy[prop as keyof TModel] = proxy[prop as keyof TModel]))
+    Object.keys(model)
+      .filter((prop) => !options!.excludedFields?.find((regexp) => regexp.test(prop)))
+      .forEach((prop) => (proxy[prop as keyof TModel] = proxy[prop as keyof TModel]))
 
-  return proxy
+    return proxy
+  } finally {
+    sessionInternal.$initializing = false
+  }
 }

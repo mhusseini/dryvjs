@@ -6,7 +6,8 @@ import type {
   DryvValidationResult,
   DryvValidationRule,
   DryvValidationRuleSet,
-  DryvValidationSession
+  DryvValidationSession,
+  DryvValidationSessionInternal
 } from './typings'
 
 import { isDryvProxy, isDryvValidatable } from '@/dryv'
@@ -24,7 +25,7 @@ export function dryvValidationSession<TModel extends object>(
     return _depth > 0
   }
 
-  const session: DryvValidationSession<TModel> = {
+  const session: DryvValidationSessionInternal<TModel> = {
     dryv: {
       callServer: options.callServer,
       handleResult: options.handleResult,
@@ -74,6 +75,11 @@ export function dryvValidationSession<TModel extends object>(
       model?: TModel
     ): Promise<DryvValidationResult<TModel> | null> {
       switch (options.validationTrigger) {
+        case 'auto':
+          if (session.$initializing) {
+            return null
+          }
+          break
         case 'manual':
           if (!isValidating()) {
             return null

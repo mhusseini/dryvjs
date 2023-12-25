@@ -87,6 +87,11 @@ export type DryvObject<TModel extends object> = {
   toJSON(): any
 }
 
+export interface DryvValidationSessionInternal<TModel extends object>
+  extends DryvValidationSession<TModel> {
+  $initializing?: boolean
+}
+
 export interface DryvValidationSession<TModel extends object> {
   dryv: {
     callServer?(url: string, method: string, data: any): Promise<any>
@@ -131,5 +136,5 @@ export interface DryvOptions {
 
   valueOfDate?(date: string, locale: string, format: string): number
 
-  validationTrigger?: 'auto' | 'manual' | 'autoAfterManual'
+  validationTrigger?: 'immediate' | 'auto' | 'manual' | 'autoAfterManual'
 }
