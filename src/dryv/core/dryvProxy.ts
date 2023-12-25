@@ -1,12 +1,14 @@
 import { dryvProxyHandler } from './dryvProxyHandler'
-import type { DryvOptions, DryvProxy } from './typings'
+import type { DryvOptions, DryvProxy, DryvValidatableInternal } from './typings'
 import { defaultDryvOptions } from './defaultDryvOptions'
 import { isDryvProxy } from '@/dryv'
+import type { DryvValidationSession } from './typings'
 
 export function dryvProxy<TModel extends object>(
   model: TModel | DryvProxy<TModel>,
-  options?: DryvOptions,
-  field?: keyof TModel
+  field: keyof TModel | undefined,
+  session: DryvValidationSession<TModel> | undefined,
+  options?: DryvOptions
 ): DryvProxy<TModel> {
   if (!model) {
     throw new Error('The model cannot be null or undefined.')
@@ -19,7 +21,7 @@ export function dryvProxy<TModel extends object>(
   options = Object.assign(defaultDryvOptions, options)
   model = options.objectWrapper!(model)
 
-  const handler = dryvProxyHandler(options, field)
+  const handler = dryvProxyHandler(field, session, options)
   const proxy: DryvProxy<TModel> = new Proxy<TModel>(model, handler) as DryvProxy<TModel>
 
   Object.keys(model)

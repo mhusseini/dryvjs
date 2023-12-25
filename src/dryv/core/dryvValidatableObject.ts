@@ -2,19 +2,27 @@ import type {
   DryvObject,
   DryvOptions,
   DryvValidatable,
+  DryvValidatableInternal,
   DryvValidationResult,
   DryvValidationSession
 } from './typings'
 import { isDryvValidatable } from '@/dryv'
 import { dryvValidatableValue } from '@/dryv/core/dryvValidatableValue'
 
-export function dryvValidatableObject<TModel extends object = any, TValue = any>(
+export function dryvValidatableObject<TModel extends object = any, TValue extends object = any>(
   field: keyof TModel | undefined,
-  parent: DryvValidatable | undefined,
+  parentOrSession: DryvValidatableInternal | DryvValidationSession<TModel> | undefined,
   model: TModel,
   options: DryvOptions
-): DryvValidatable<any, DryvObject<TModel>> {
-  const _value: DryvObject<TModel> = new Proxy(
+): DryvValidatableInternal<TModel, DryvObject<TValue>> {
+  let _parent: DryvValidatableInternal | undefined = isDryvValidatable(parentOrSession)
+    ? (parentOrSession as DryvValidatableInternal)
+    : undefined
+  const _session: DryvValidationSession<TModel> | undefined = _parent
+    ? undefined
+    : (parentOrSession as DryvValidationSession<TModel>)
+  ;(model as any).__test = true
+  const _value: DryvObject<TValue> = new Proxy(
     {
       $model: model,
       toJSON(): any {
@@ -40,29 +48,34 @@ export function dryvValidatableObject<TModel extends object = any, TValue = any>
     }
   )
 
-  const validatable: DryvValidatable<any, DryvObject<TModel>> = options.objectWrapper!({
+  const validatable: DryvValidatableInternal<TModel, DryvObject<TValue>> = options.objectWrapper!({
     _isDryvValidatable: true,
     field,
     text: null,
     group: null,
     status: null,
     required: null,
-    get value(): DryvObject<TModel> {
+    get value(): DryvObject<TValue> {
       return _value
     },
     get parent(): DryvValidatable | undefined {
-      return parent
+      return _parent
     },
-    set parent(value: DryvValidatable | undefined) {
-      parent = value
+    set parent(value: DryvValidatableInternal | undefined) {
+      _parent = value
     },
-    async validate(
-      session: DryvValidationSession<TModel>
-    ): Promise<DryvValidationResult<TModel> | null> {
-      return await session.validateObject(this)
+    get session(): DryvValidationSession<TModel> | undefined {
+      return _parent?.session ?? _session
+    },
+    async validate(): Promise<DryvValidationResult<TModel> | null> {
+      const session = _parent?.session ?? _session
+      if (!session) {
+        throw new Error('No validation session found')
+      }
+      return session.validateObject(this)
     },
     get path(): string {
-      return (parent?.path ? parent.path + '.' : '') + (field ? String(field) : '')
+      return (_parent?.path ? _parent.path + '.' : '') + (field ? String(field) : '')
     },
     clear(): void {
       validatable.status = null

@@ -1,15 +1,17 @@
-import type { DryvProxy, DryvOptions, DryvValidatable } from './typings'
+import type { DryvProxy, DryvOptions, DryvValidatableInternal, DryvValidatable } from './typings'
 import { dryvProxy, isDryvProxy } from '.'
 import { isDryvValidatable } from '@/dryv'
 import { dryvValidatableObject } from './dryvValidatableObject'
 import { dryvValidatableValue } from './dryvValidatableValue'
+import type { DryvValidationSession } from './typings'
 
 export function dryvProxyHandler<TModel extends object>(
-  options: DryvOptions,
-  field?: keyof TModel
+  field: keyof TModel | undefined,
+  session: DryvValidationSession<TModel> | undefined,
+  options: DryvOptions
 ): ProxyHandler<TModel> {
   const _excludedFields: { [field: string]: boolean } = {}
-  let _dryv: DryvValidatable<TModel> | null = null
+  let _dryv: DryvValidatableInternal<TModel> | null = null
 
   return {
     get(target: TModel, fieldSymbol: string | symbol, receiver: any): any {
@@ -32,7 +34,7 @@ export function dryvProxyHandler<TModel extends object>(
           Reflect.set(target, fieldName, resultValue)
         }
       } else if (typeof originalValue !== 'function') {
-        ensureValueProxy(field as keyof TModel, target, receiver)
+        ensureValueProxy(field as keyof TModel, receiver)
         resultValue = originalValue
       }
 
@@ -62,29 +64,36 @@ export function dryvProxyHandler<TModel extends object>(
       }
 
       let targetValue
+      let proxy: DryvValidatable | undefined = undefined
 
       if (typeof value === 'object') {
         targetValue = ensureObjectProxy(value, field as keyof TModel, receiver)
       } else {
-        ensureValueProxy(field as keyof TModel, target, receiver)
+        proxy = ensureValueProxy(field as keyof TModel, receiver)
         targetValue = value
       }
 
-      return Reflect.set(target, field, targetValue)
+      const result = Reflect.set(target, field, targetValue)
+
+      proxy?.validate().catch(console.error)
+
+      return result
     }
   }
 
-  function ensureObjectProxy(value: any, field: keyof TModel, target: TModel) {
-    const proxy: DryvProxy<any> = !isDryvProxy(value) ? dryvProxy(value, options, field) : value
+  function ensureObjectProxy(value: any, field: keyof TModel, receiver: TModel) {
+    const proxy: DryvProxy<any> = !isDryvProxy(value)
+      ? dryvProxy(value, field, undefined, options)
+      : value
 
-    const dryv = getDryv(target)
+    const dryv = getDryv(receiver)
     dryv.value[field] = proxy.$dryv.value
     proxy.$dryv.parent = dryv
 
     return proxy
   }
 
-  function ensureValueProxy(field: keyof TModel, target: TModel, receiver: TModel) {
+  function ensureValueProxy(field: keyof TModel, receiver: TModel): DryvValidatable {
     const dryv = getDryv(receiver)
     const dryvObject = dryv.value
 
@@ -109,7 +118,7 @@ export function dryvProxyHandler<TModel extends object>(
 
   function getDryv(model: TModel) {
     if (!_dryv) {
-      _dryv = dryvValidatableObject<TModel>(field, undefined, model, options)
+      _dryv = dryvValidatableObject<TModel>(field, session, model, options)
     }
 
     return _dryv

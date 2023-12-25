@@ -7,7 +7,6 @@
       <form-input v-model="model.geburtsdatum" label="Geburtsdatum" />
       <form-input v-model="model.emailAdresse" label="E-Mail-Adresse" />
       <form-input v-model="model.telefonNummer" label="Telefonnummer" />
-      <form-input v-model="model.child.werberVertragsnummer" label="Werber-Vertragsnummer" />
     </div>
     <div class="button-bar">
       <button @click.prevent="revert" :disabled="!dirty && valid">Revert</button>
@@ -16,7 +15,7 @@
     </div>
   </form>
   <!--  <pre class="debug"> {{ model.$model }} </pre>-->
-  <pre class="debug"> {{ model }} </pre>
+  <pre class="debug"> {{ model.$model }} </pre>
 </template>
 
 <script setup lang="ts">
@@ -28,14 +27,13 @@ import { useDryv } from '@/dryv'
 import { useTransaction } from '@/dryv/useTransaction'
 
 let data: PersonalData = reactive({
-  //anrede: "text",
+  anrede: 'text',
   vorname: 'text',
   nachname: 'text',
   geburtsdatum: 'text',
   emailAdresse: 'text',
   telefonNummer: 'text',
-  werberVertragsnummer: 'text',
-  child: {}
+  werberVertragsnummer: 'text'
   // child: {
   //   anrede: 'hallo',
   //   vorname: 'hallo',

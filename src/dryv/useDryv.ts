@@ -32,7 +32,7 @@ export function useDryv<TModel extends object>(
   }
 
   const session = dryvValidationSession<TModel>(options, ruleSet)
-  const proxy = dryvProxy<TModel>(model, options)
+  const proxy = dryvProxy<TModel>(model, undefined, session, options)
 
   annotate<TModel>(proxy, ruleSet, options)
 
@@ -41,7 +41,7 @@ export function useDryv<TModel extends object>(
     model: proxy,
     result: proxy.$dryv,
     bindingModel: proxy.$dryv.value!,
-    validate: async () => await proxy.$dryv.validate(session),
+    validate: async () => await proxy.$dryv.validate(),
     valid: computed(() => !proxy.$dryv.status || proxy.$dryv.status === 'success'),
     clear: () => proxy.$dryv.clear()
   }

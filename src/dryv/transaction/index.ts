@@ -21,7 +21,7 @@ export function dryvTransaction<TModel extends object>(
     },
     {} as { [key: string]: boolean }
   )
-
+  ;(model as any).__test = 'transaction'
   const values: TModel = options.objectWrapper!({ ...model })
   const dirty = options.objectWrapper!({ value: false })
   let dirtyFields: { [field: string]: boolean } = {}

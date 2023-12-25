@@ -59,8 +59,13 @@ export interface DryvValidatable<TModel extends object = any, TValue = any> {
   parent: DryvValidatable | undefined
   field: keyof TModel | undefined
 
-  validate(session: DryvValidationSession<TModel>): Promise<DryvValidationResult<TModel> | null>
+  validate(): Promise<DryvValidationResult<TModel> | null>
   clear(): void
+}
+
+export interface DryvValidatableInternal<TModel extends object = any, TValue = any>
+  extends DryvValidatable<TModel, TValue> {
+  get session(): DryvValidationSession<TModel> | undefined
 }
 
 export type DryvObject<TModel extends object> = {
@@ -74,7 +79,7 @@ export type DryvObject<TModel extends object> = {
           ? DryvValidatable<TModel, TModel[Property]>
           : TModel[Property] extends object
             ? DryvObject<TModel[Property]>
-            : TModel[Property] extends object | undefined
+            : TModel[Property] extends object
               ? DryvObject<TModel[Property]>
               : DryvValidatable<TModel, TModel[Property]>
 } & {
@@ -125,4 +130,6 @@ export interface DryvOptions {
   ): Promise<any>
 
   valueOfDate?(date: string, locale: string, format: string): number
+
+  validationTrigger?: 'auto' | 'manual' | 'autoAfterManual'
 }

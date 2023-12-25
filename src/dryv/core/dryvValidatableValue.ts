@@ -2,17 +2,18 @@ import type {
   DryvValidatable,
   DryvValidationResult,
   DryvValidationSession,
-  DryvOptions
+  DryvOptions,
+  DryvValidatableInternal
 } from './typings'
 
 export function dryvValidatableValue<TModel extends object = any, TValue = any>(
   field: keyof TModel | undefined,
-  parent: DryvValidatable | undefined,
+  parent: DryvValidatableInternal | undefined,
   options: DryvOptions,
   getter: () => TValue,
   setter: (value: TValue) => void
-): DryvValidatable<TModel, TValue> {
-  const validatable: DryvValidatable<TModel, TValue> = options.objectWrapper!({
+): DryvValidatableInternal<TModel, TValue> {
+  const validatable: DryvValidatableInternal<TModel, TValue> = options.objectWrapper!({
     _isDryvValidatable: true,
     field,
     text: null,
@@ -27,13 +28,18 @@ export function dryvValidatableValue<TModel extends object = any, TValue = any>(
     get parent(): DryvValidatable | undefined {
       return parent
     },
-    set parent(value: DryvValidatable | undefined) {
+    set parent(value: DryvValidatableInternal | undefined) {
       parent = value
     },
-    async validate(
-      session: DryvValidationSession<TModel>
-    ): Promise<DryvValidationResult<TModel> | null> {
-      return await session.validateField(this)
+    get session(): DryvValidationSession<TModel> | undefined {
+      return parent?.session
+    },
+    async validate(): Promise<DryvValidationResult<TModel> | null> {
+      const session = parent?.session
+      if (!session) {
+        throw new Error('No validation session found')
+      }
+      return session.validateField(this)
     },
     get path(): string {
       return (parent?.path ? parent.path + '.' : '') + (field ? String(field) : '')
