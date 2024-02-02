@@ -3,6 +3,7 @@ import type {
   DryvOptions,
   DryvProxy,
   DryvValidatable,
+  DryvValidateFunctionResult,
   DryvValidationResult,
   DryvValidationRule,
   DryvValidationRuleSet,
@@ -16,11 +17,22 @@ export function dryvValidationSession<TModel extends object>(
   options: DryvOptions,
   ruleSet: DryvValidationRuleSet<TModel>
 ): DryvValidationSession<TModel> {
+  if (!options.callServer) {
+    throw new Error('The callServer option is required.')
+  }
+  if (!options.handleResult) {
+    throw new Error('The handleResult option is required.')
+  }
+  if (!options.valueOfDate) {
+    throw new Error('The valueOfDate option is required.')
+  }
+
   const _excludedFields: {
     [field: string]: boolean
   } = {}
   let _isTriggered = false
   let _depth = 0
+
   function isValidating() {
     return _depth > 0
   }
@@ -190,13 +202,24 @@ async function runValidators<TModel extends object>(
   model: TModel,
   validatable: DryvValidatable<TModel>,
   options: DryvOptions
-) {
-  let result: DryvFieldValidationResult | null = null
+): Promise<DryvFieldValidationResult | null> {
+  let result: DryvValidateFunctionResult = null
 
   try {
     for (const rule of validators) {
-      result = await rule.validate(model, session)
-      if (result && result.status !== 'success') {
+      const r = await rule.validate(model, session)
+      if (!r) {
+        // continue
+      } else if (typeof r === 'string') {
+        result = {
+          path: validatable.path!,
+          status: 'error',
+          text: r,
+          group: null
+        }
+        break
+      } else if (r.status !== 'success') {
+        result = r
         break
       }
     }

@@ -1,17 +1,21 @@
+export type DryvValidateFunctionResult =
+  | DryvFieldValidationResult
+  | string
+  | null
+  | undefined
+  | Promise<DryvFieldValidationResult | string | null | undefined>
+
 export interface DryvValidationRule<TModel extends object> {
   async?: boolean
   annotations?: {
     required?: boolean
     [key: string | symbol]: unknown
   }
-  validate: (
-    $m: TModel,
-    session: DryvValidationSession<TModel>
-  ) => DryvFieldValidationResult | null | Promise<DryvFieldValidationResult | null>
+  validate: ($m: TModel, session: DryvValidationSession<TModel>) => DryvValidateFunctionResult
 }
 
 export type DrvvRuleInvocations<TModel extends object> = {
-  [Property in keyof TModel]: DryvValidationRule<TModel>[]
+  [Property in keyof TModel]?: DryvValidationRule<TModel>[]
 }
 
 export interface DryvValidationRuleSet<TModel extends object, TParameters = object> {
@@ -36,7 +40,7 @@ export interface DryvValidationResult<TModel extends object> {
 }
 
 export interface DryvFieldValidationResult {
-  path: string
+  path?: string
   status?: DryvValidationResultStatus
   text?: string | null
   group?: string | null
@@ -60,6 +64,7 @@ export interface DryvValidatable<TModel extends object = any, TValue = any> {
   field: keyof TModel | undefined
 
   validate(): Promise<DryvValidationResult<TModel> | null>
+
   clear(): void
 }
 
@@ -94,17 +99,17 @@ export interface DryvValidationSessionInternal<TModel extends object>
 
 export interface DryvValidationSession<TModel extends object> {
   dryv: {
-    callServer?(url: string, method: string, data: any): Promise<any>
+    callServer(url: string, method: string, data: any): Promise<any>
 
-    handleResult?(
+    handleResult(
       session: DryvValidationSession<TModel>,
       $m: TModel,
       field: keyof TModel,
-      rule: DryvValidationRule<TModel>,
+      rule: DryvValidationRule<TModel> | undefined | null,
       result: any
     ): Promise<any>
 
-    valueOfDate?(date: string, locale: string, format: string): number
+    valueOfDate(date: string, locale: string, format: string): number
   }
 
   validateObject(

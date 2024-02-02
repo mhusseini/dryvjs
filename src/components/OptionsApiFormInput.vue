@@ -1,10 +1,8 @@
 <template>
   <div class="row">
-    <label>
-      {{ label }}<span v-if="value.required">*</span>:
-    </label>
+    <label> {{ label }}<span v-if="value.required">*</span>: </label>
 
-    <input ref="input" v-model="value.value">
+    <input ref="input" v-model="value.value" />
 
     <div class="error" v-show="value.status === 'error'">
       {{ value.text }}
@@ -12,17 +10,17 @@
   </div>
 </template>
 
-
 <script lang="ts">
-import {toNative, Component, Vue, Prop} from 'vue-facing-decorator'
-import {dryvBindValueMixin} from "@/dryv/mixins";
+// @ts-nocheck
+import { toNative, Component, Vue, Prop } from 'vue-facing-decorator'
+import { dryvBindValueMixin } from '@/dryv/mixins'
 
 @Component({
-  mixins: [dryvBindValueMixin<string>()],
+  mixins: [dryvBindValueMixin<string>()]
 })
 class OptionsApiFormInput extends Vue {
   @Prop()
-  label: string;
+  label: string
 }
 
 export default toNative(OptionsApiFormInput)

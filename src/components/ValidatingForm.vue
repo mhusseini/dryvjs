@@ -25,6 +25,7 @@ import type { PersonalData } from '@/models'
 import { reactive } from 'vue'
 import { useDryv } from '@/dryv'
 import { useTransaction } from '@/dryv/useTransaction'
+import type { DryvValidationRule, DryvValidationSession } from '@/dryv/core/typings'
 
 let data: PersonalData = reactive({
   anrede: 'text',
@@ -50,7 +51,23 @@ let data: PersonalData = reactive({
 // const valid = true;
 
 const { model: transaction, rollback, dirty } = useTransaction(data)
-const { bindingModel: model, validate, valid, clear } = useDryv(transaction, 'PersonalData')
+const {
+  bindingModel: model,
+  validate,
+  valid,
+  clear
+} = useDryv(transaction, 'PersonalData', {
+  handleResult<TModel extends object>(
+    session: DryvValidationSession<TModel>,
+    $m: TModel,
+    field: keyof TModel,
+    rule: DryvValidationRule<TModel>,
+    result: any
+  ): Promise<any> {
+    console.log('handleResult', session, $m, field, rule, result)
+    return Promise.resolve(result)
+  }
+})
 
 function revert() {
   rollback()
