@@ -18,19 +18,6 @@ export const personalDataValidationRules: DryvValidationRuleSet<PersonalData> = 
             : null
         }
       }
-      // , {
-      //     async: true,
-      //     validate: function ($m, session) {
-      //         return session.dryv.handleResult!(session, $m, "vorname", null, {
-      //             status: "warning",
-      //             text: "Meinten Sie vielleicht \"Herr\" oder \"Frau\"?",
-      //             group: null,
-      //         })
-      //             .then(function ($p21) {
-      //             return ($p21 || {}).errorMessage;
-      //         })
-      //     }
-      // }
     ],
     vorname: [
       {

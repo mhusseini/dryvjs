@@ -4,7 +4,9 @@ import type {
   DryvValidatable,
   DryvValidatableInternal,
   DryvValidationResult,
-  DryvValidationSession
+  DryvValidationSession,
+  DryvServerErrors,
+  DryvServerValidationResponse
 } from './typings'
 import { isDryvValidatable } from '@/core'
 import { dryvValidatableValue } from '@/core/dryvValidatableValue'
@@ -85,6 +87,11 @@ export function dryvValidatableObject<TModel extends object = any, TValue extend
       Object.values(_value)
         .filter((v: any) => isDryvValidatable(v))
         .forEach((v: any) => (v as DryvValidatable).clear())
+    },
+    set(response: DryvServerValidationResponse | DryvServerErrors): void {
+      Object.values(_value)
+        .filter((v: any) => isDryvValidatable(v))
+        .forEach((v: any) => (v as DryvValidatable).set(response))
     },
     toJSON(): any {
       return { ...this, parent: undefined, _isDryvValidatable: undefined }

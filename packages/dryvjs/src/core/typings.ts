@@ -66,6 +66,8 @@ export interface DryvValidatable<TModel extends object = any, TValue = any> {
   validate(): Promise<DryvValidationResult<TModel> | null>
 
   clear(): void
+
+  set(response: DryvServerValidationResponse | DryvServerErrors): void
 }
 
 export interface DryvValidatableInternal<TModel extends object = any, TValue = any>
@@ -129,7 +131,7 @@ export interface DryvOptions {
 
   objectWrapper?<TObject>(object: TObject): TObject
 
-  callServer?(url: string, method: string, data: any): Promise<any>
+  callServer?(url: string, method: string, data: any): Promise<DryvServerValidationResponse>
 
   handleResult?<TModel extends object>(
     session: DryvValidationSession<TModel>,
@@ -142,4 +144,15 @@ export interface DryvOptions {
   valueOfDate?(date: string, locale: string, format: string): number
 
   validationTrigger?: 'immediate' | 'auto' | 'manual' | 'autoAfterManual'
+}
+
+export type DryvServerValidationResponse =
+  | any
+  | {
+      success: boolean
+      messages: DryvServerErrors
+    }
+
+export interface DryvServerErrors {
+  [field: string]: DryvFieldValidationResult
 }

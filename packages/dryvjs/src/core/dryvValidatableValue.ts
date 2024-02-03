@@ -3,7 +3,10 @@ import type {
   DryvValidationResult,
   DryvValidationSession,
   DryvOptions,
-  DryvValidatableInternal
+  DryvValidatableInternal,
+  DryvFieldValidationResult,
+  DryvServerErrors,
+  DryvServerValidationResponse
 } from './typings'
 
 export function dryvValidatableValue<TModel extends object = any, TValue = any>(
@@ -49,10 +52,23 @@ export function dryvValidatableValue<TModel extends object = any, TValue = any>(
       validatable.text = null
       validatable.group = null
     },
+    set(response: DryvServerValidationResponse | DryvServerErrors | undefined | null): void {
+      const messages: DryvServerErrors =
+        typeof response?.success === 'boolean' ? response.messages : response
+      const message: DryvFieldValidationResult = messages?.[this.path]
+      if (message && message.status !== 'success') {
+        validatable.text = message.text
+        validatable.group = message.group
+        validatable.status = message.status
+      } else {
+        validatable.text = undefined
+        validatable.group = undefined
+        validatable.status = undefined
+      }
+    },
     toJSON(): any {
       return { ...this, parent: undefined, _isDryvValidatable: undefined }
     }
   })
-
   return validatable
 }

@@ -11,7 +11,7 @@
     <div class="button-bar">
       <button @click.prevent="revert" :disabled="!dirty && valid">Revert</button>
       <button @click.prevent="validate">Validate</button>
-      <button @click.prevent="test">Test</button>
+      <button @click.prevent="send">Send</button>
     </div>
   </form>
   <pre class="debug"> {{ model.$model }} </pre>
@@ -26,7 +26,8 @@ import {
   useDryv,
   useTransaction,
   type DryvValidationRule,
-  type DryvValidationSession
+  type DryvValidationSession,
+  DryvServerValidationResponse
 } from 'dryvue'
 
 let data: PersonalData = reactive({
@@ -53,32 +54,28 @@ let data: PersonalData = reactive({
 // const valid = true;
 
 const { model: transaction, rollback, dirty } = useTransaction(data)
-const {
-  bindingModel: model,
-  validate,
-  valid,
-  clear
-} = useDryv(transaction, 'PersonalData', {
-  handleResult<TModel extends object>(
-    session: DryvValidationSession<TModel>,
-    $m: TModel,
-    field: keyof TModel,
-    rule: DryvValidationRule<TModel>,
-    result: any
-  ): Promise<any> {
-    console.log('handleResult', session, $m, field, rule, result)
-    return Promise.resolve(result)
-  }
-})
+const { bindingModel: model, validate, valid, clear } = useDryv(transaction, 'PersonalData')
 
 function revert() {
   rollback()
   clear()
 }
 
-function test() {
-  debugger
-  console.log(model)
+function send() {
+  const response: DryvServerValidationResponse =
+    model.$model?.vorname === 'text'
+      ? {
+          success: false,
+          messages: {
+            vorname: {
+              text: 'Der Name ist kacke',
+              status: 'error'
+            }
+          }
+        }
+      : 'testtet'
+
+  model.$model?.$dryv.set(response)
 }
 </script>
 
