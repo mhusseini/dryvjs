@@ -14,7 +14,6 @@
       <button @click.prevent="test">Test</button>
     </div>
   </form>
-  <!--  <pre class="debug"> {{ model.$model }} </pre>-->
   <pre class="debug"> {{ model.$model }} </pre>
 </template>
 
@@ -23,8 +22,12 @@
 import FormInput from '@/components/OptionsApiFormInput.vue'
 import type { PersonalData } from '@/models'
 import { reactive } from 'vue'
-import { type DryvValidationRule, type DryvValidationSession } from 'dryvjs'
-import { useDryv, useTransaction } from 'dryvue'
+import {
+  useDryv,
+  useTransaction,
+  type DryvValidationRule,
+  type DryvValidationSession
+} from 'dryvue'
 
 let data: PersonalData = reactive({
   anrede: 'text',

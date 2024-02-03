@@ -1,14 +1,26 @@
 {
-  "files": [],
-  "module": "esnext",
-  "target": "ESNext",
-  "moduleResolution": "Node",
-  "references": [
-    {
-      "path": "./tsconfig.node.json"
+  "include": ["env.d.ts", "src/**/*"],
+  "exclude": ["src/**/__tests__/*"],
+  
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM"],
+    "declaration": true,
+    "outDir": "dist",
+    "target": "ES2015",
+    "module": "ES2020",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
     },
-    {
-      "path": "./tsconfig.app.json"
-    }
-  ]
+    "strict": true,
+    "skipLibCheck": false,
+    "forceConsistentCasingInFileNames": true,
+    "sourceMap": true,
+    "stripInternal": true,
+    "removeComments": true,
+    "preserveConstEnums": true,
+    "isolatedModules": true
+  }
 }
