@@ -6,10 +6,10 @@ import type {
   DryvValidationResult,
   DryvValidationSession,
   DryvServerErrors,
-  DryvServerValidationResponse
-} from './typings'
-import { isDryvValidatable } from '@/core'
-import { dryvValidatableValue } from '@/core/dryvValidatableValue'
+  DryvServerValidationResponse, DryvValidationGroup
+} from "./typings";
+import { isDryvValidatable } from "@/core";
+import { dryvValidatableValue } from "@/core/dryvValidatableValue";
 
 export function dryvValidatableObject<TModel extends object = any, TValue extends object = any>(
   field: keyof TModel | undefined,
@@ -18,17 +18,16 @@ export function dryvValidatableObject<TModel extends object = any, TValue extend
   options: DryvOptions
 ): DryvValidatableInternal<TModel, DryvObject<TValue>> {
   let _parent: DryvValidatableInternal | undefined = isDryvValidatable(parentOrSession)
-    ? (parentOrSession as DryvValidatableInternal)
-    : undefined
+    ? parentOrSession
+    : undefined;
   const _session: DryvValidationSession<TModel> | undefined = _parent
     ? undefined
-    : (parentOrSession as DryvValidationSession<TModel>)
-  ;(model as any).__test = true
+    : (parentOrSession as DryvValidationSession<TModel>);
   const _value: DryvObject<TValue> = new Proxy(
     {
       $model: model,
       toJSON(): any {
-        return { ...this, $model: undefined }
+        return { ...this, $model: undefined };
       }
     } as any,
     {
@@ -36,19 +35,19 @@ export function dryvValidatableObject<TModel extends object = any, TValue extend
         return target.hasOwnProperty(field) || isDryvValidatable(value)
           ? Reflect.set(target, field, value)
           : Reflect.set(
-              target,
-              field,
-              dryvValidatableValue(
-                field as keyof TModel,
-                receiver,
-                options,
-                () => (model as any)[field],
-                (value) => ((model as any)[field] = value)
-              )
+            target,
+            field,
+            dryvValidatableValue(
+              field as keyof TModel,
+              receiver,
+              options,
+              () => (model as any)[field],
+              (value) => ((model as any)[field] = value)
             )
+          );
       }
     }
-  )
+  );
 
   const validatable: DryvValidatableInternal<TModel, DryvObject<TValue>> = options.objectWrapper!({
     _isDryvValidatable: true,
@@ -58,45 +57,51 @@ export function dryvValidatableObject<TModel extends object = any, TValue extend
     status: null,
     required: null,
     get value(): DryvObject<TValue> {
-      return _value
+      return _value;
     },
     get parent(): DryvValidatable | undefined {
-      return _parent
+      return _parent;
     },
     set parent(value: DryvValidatableInternal | undefined) {
-      _parent = value
+      _parent = value;
     },
     get session(): DryvValidationSession<TModel> | undefined {
-      return _parent?.session ?? _session
+      return _parent?.session ?? _session;
     },
-    async validate(): Promise<DryvValidationResult<TModel> | null> {
-      const session = _parent?.session ?? _session
-      if (!session) {
-        throw new Error('No validation session found')
-      }
-      return session.validateObject(this)
+    get hasError(): boolean {
+      return this.status === "error";
+    },
+    get hasWarning(): boolean {
+      return this.status === "warning";
     },
     get path(): string {
-      return (_parent?.path ? _parent.path + '.' : '') + (field ? String(field) : '')
+      return (_parent?.path ? _parent.path + "." : "") + (field ? String(field) : "");
+    },
+    async validate(): Promise<DryvValidationResult<TModel> | null> {
+      const session = _parent?.session ?? _session;
+      if (!session) {
+        throw new Error("No validation session found");
+      }
+      return session.validateObject(this);
     },
     clear(): void {
-      validatable.status = null
-      validatable.text = null
-      validatable.group = null
+      validatable.status = null;
+      validatable.text = null;
+      validatable.group = null;
 
       Object.values(_value)
         .filter((v: any) => isDryvValidatable(v))
-        .forEach((v: any) => (v as DryvValidatable).clear())
+        .forEach((v: any) => (v as DryvValidatable).clear());
     },
     set(response: DryvServerValidationResponse | DryvServerErrors): void {
       Object.values(_value)
         .filter((v: any) => isDryvValidatable(v))
-        .forEach((v: any) => (v as DryvValidatable).set(response))
+        .forEach((v: any) => (v as DryvValidatable).set(response));
     },
     toJSON(): any {
-      return { ...this, parent: undefined, _isDryvValidatable: undefined }
+      return { ...this, parent: undefined, _isDryvValidatable: undefined };
     }
-  })
+  });
 
-  return validatable
+  return validatable;
 }

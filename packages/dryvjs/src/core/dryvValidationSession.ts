@@ -110,7 +110,6 @@ export function dryvValidationSession<TModel extends object>(
         return null;
       }
 
-      console.log("*** ", field.field)
       const newValidationChain = !_processedFields;
       if (newValidationChain) {
         _processedFields = {};

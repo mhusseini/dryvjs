@@ -5,8 +5,10 @@
       <form-input v-model="model.vorname" label="Vorname" />
       <form-input v-model="model.nachname" label="Nachname" />
       <form-input v-model="model.geburtsdatum" label="Geburtsdatum" />
-      <form-input v-model="model.emailAdresse" label="E-Mail-Adresse" />
-      <form-input v-model="model.telefonNummer" label="Telefonnummer" />
+      <validation-group>
+        <form-input v-model="model.emailAdresse" label="E-Mail-Adresse" />
+        <form-input v-model="model.telefonNummer" label="Telefonnummer" />
+      </validation-group>
     </div>
     <div class="button-bar">
       <button @click.prevent="revert" :disabled="!dirty && valid">Revert</button>
@@ -18,26 +20,24 @@
 </template>
 
 <script setup lang="ts">
-//import FormInput from "@/components/FormInput.vue";
-import FormInput from '@/components/OptionsApiFormInput.vue'
-import type { PersonalData } from '@/models'
-import { reactive } from 'vue'
+import FormInput from "@/components/FormInput.vue";
+import ValidationGroup from "@/components/ValidationGroup.vue";
+import type { PersonalData } from "@/models";
+import { reactive } from "vue";
 import {
   useDryv,
   useTransaction,
-  type DryvValidationRule,
-  type DryvValidationSession,
   DryvServerValidationResponse
-} from 'dryvue'
+} from "dryvue";
 
 let data: PersonalData = reactive({
-  anrede: 'text',
-  vorname: 'text',
-  nachname: 'text',
-  geburtsdatum: 'text',
-  emailAdresse: 'text',
-  telefonNummer: 'text',
-  werberVertragsnummer: 'text'
+  anrede: "text",
+  vorname: "text",
+  nachname: "text",
+  geburtsdatum: "text",
+  emailAdresse: "text",
+  telefonNummer: "text",
+  werberVertragsnummer: "text"
   // child: {
   //   anrede: 'hallo',
   //   vorname: 'hallo',
@@ -47,35 +47,35 @@ let data: PersonalData = reactive({
   //   telefonNummer: 'hallo',
   //   werberVertragsnummer: 'hallo'
   // }
-})
+});
 
 // const model = data;
 // const dirty = false;
 // const valid = true;
 
-const { model: transaction, rollback, dirty } = useTransaction(data)
-const { bindingModel: model, validate, valid, clear } = useDryv(transaction, 'PersonalData')
+const { model: transaction, rollback, dirty } = useTransaction(data);
+const { bindingModel: model, validate, valid, clear } = useDryv(transaction, "PersonalData");
 
 function revert() {
-  rollback()
-  clear()
+  rollback();
+  clear();
 }
 
 function send() {
   const response: DryvServerValidationResponse =
-    model.$model?.vorname === 'text'
+    model.$model?.vorname === "text"
       ? {
-          success: false,
-          messages: {
-            vorname: {
-              text: 'Der Name ist kacke',
-              status: 'error'
-            }
+        success: false,
+        messages: {
+          vorname: {
+            text: "Der Name ist kacke",
+            status: "error"
           }
         }
-      : 'testtet'
+      }
+      : "testtet";
 
-  model.$model?.$dryv.set(response)
+  model.$model?.$dryv.set(response);
 }
 </script>
 

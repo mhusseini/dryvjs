@@ -4,7 +4,7 @@
 
     <input ref="input" v-model="value.value" />
 
-    <div class="error" v-show="value.status === 'error'">
+    <div class="error" v-show="value.hasError && !value.groupShown">
       {{ value.text }}
     </div>
   </div>
@@ -15,7 +15,7 @@ import { type DryvValidatable, useDryvValueProp } from 'dryvue'
 
 const props = defineProps<{
   modelValue: string | DryvValidatable<any, string>
-  label: string
+  label: string,
 }>()
 
 const emit = defineEmits(['update:modelValue'])
@@ -33,7 +33,6 @@ const value = useDryvValueProp(emit, () => props.modelValue)
   }
 
   .error {
-    color: red;
     grid-column: 1 / -1;
   }
 }
