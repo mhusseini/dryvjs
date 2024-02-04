@@ -37,11 +37,11 @@ export function dryvValidatableValue<TModel extends object = any, TValue = any>(
     get session(): DryvValidationSession<TModel> | undefined {
       return parent?.session
     },
-    get hasError() : boolean {
-      return this.status === "error";
+    get hasError(): boolean {
+      return this.status === 'error'
     },
-    get hasWarning() : boolean {
-      return this.status === "warning";
+    get hasWarning(): boolean {
+      return this.status === 'warning'
     },
     async validate(): Promise<DryvValidationResult<TModel>> {
       const session = parent?.session

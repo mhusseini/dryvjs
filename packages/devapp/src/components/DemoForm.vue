@@ -20,25 +20,21 @@
 </template>
 
 <script setup lang="ts">
-import ValidatingInput from "@/components/ValidatingInput.vue";
-import ValidationGroup from "@/components/ValidationGroup.vue";
-import type { PersonalData } from "@/models";
-import { reactive } from "vue";
-import {
-  useDryv,
-  useTransaction,
-  DryvServerValidationResponse
-} from "dryvue";
-import { personalDataValidationRules } from "@/PersonalDataValidationRules";
+import ValidatingInput from '@/components/ValidatingInput.vue'
+import ValidationGroup from '@/components/ValidationGroup.vue'
+import type { PersonalData } from '@/models'
+import { reactive } from 'vue'
+import { useDryv, useTransaction, DryvServerValidationResponse } from 'dryvue'
+import { personalDataValidationRules } from '@/PersonalDataValidationRules'
 
 let data: PersonalData = reactive({
-  anrede: "text",
-  vorname: "text",
-  nachname: "text",
-  geburtsdatum: "text",
-  emailAdresse: "text",
-  telefonNummer: "text",
-  werberVertragsnummer: "text"
+  anrede: 'text',
+  vorname: 'text',
+  nachname: 'text',
+  geburtsdatum: 'text',
+  emailAdresse: 'text',
+  telefonNummer: 'text',
+  werberVertragsnummer: 'text'
   // child: {
   //   anrede: 'hallo',
   //   vorname: 'hallo',
@@ -48,38 +44,43 @@ let data: PersonalData = reactive({
   //   telefonNummer: 'hallo',
   //   werberVertragsnummer: 'hallo'
   // }
-});
+})
 
 // const model = data;
 // const dirty = false;
 // const valid = true;
 
-const { model: transaction, rollback, dirty } = useTransaction(data);
-const { bindingModel: model, validate, valid, clear } = useDryv(transaction, personalDataValidationRules);
+const { model: transaction, rollback, dirty } = useTransaction(data)
+const {
+  bindingModel: model,
+  validate,
+  valid,
+  clear
+} = useDryv(transaction, personalDataValidationRules)
 
 function revert() {
-  rollback();
-  clear();
+  rollback()
+  clear()
 }
 
 async function send() {
   if (!(await validate()).success) {
-    return;
+    return
   }
   const response: DryvServerValidationResponse =
-    model.$model?.vorname === "text"
+    model.$model?.vorname === 'text'
       ? {
-        success: false,
-        messages: {
-          vorname: {
-            text: "Der Name ist kacke",
-            status: "error"
+          success: false,
+          messages: {
+            vorname: {
+              text: 'Der Name ist kacke',
+              status: 'error'
+            }
           }
         }
-      }
-      : "testtet";
+      : 'testtet'
 
-  model.$model?.$dryv.set(response);
+  model.$model?.$dryv.set(response)
 }
 </script>
 

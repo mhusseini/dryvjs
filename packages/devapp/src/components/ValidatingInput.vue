@@ -7,15 +7,15 @@
 </template>
 
 <script setup lang="ts">
-import { type DryvValidatable, useDryvValueProp } from "dryvue";
+import { type DryvValidatable, useDryvValueProp } from 'dryvue'
 
 const props = defineProps<{
   modelValue: string | DryvValidatable<any, string>
-  label: string,
-}>();
+  label: string
+}>()
 
-const emit = defineEmits(["update:modelValue"]);
-const value = useDryvValueProp(emit, () => props.modelValue);
+const emit = defineEmits(['update:modelValue'])
+const value = useDryvValueProp(emit, () => props.modelValue)
 </script>
 
 <style lang="scss" scoped>
