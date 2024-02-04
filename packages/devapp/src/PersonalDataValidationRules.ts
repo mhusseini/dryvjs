@@ -197,6 +197,18 @@ export const personalDataValidationRules: DryvValidationRuleSet<PersonalData> = 
     ],
     emailAdresse: [
       {
+        related: ['telefonNummer'],
+        validate: function ($m) {
+          return !/\S/.test($m.telefonNummer || '') && !/\S/.test($m.emailAdresse || '')
+            ? {
+                status: 'error',
+                text: 'Bitte Entweder Email oder Telefon angeben.',
+                group: null
+              }
+            : null
+        }
+      },
+      {
         annotations: {
           required: true
         },
@@ -271,6 +283,18 @@ export const personalDataValidationRules: DryvValidationRuleSet<PersonalData> = 
       }
     ],
     telefonNummer: [
+      {
+        related: ['emailAdresse'],
+        validate: function ($m) {
+          return !/\S/.test($m.telefonNummer || '') && !/\S/.test($m.emailAdresse || '')
+            ? {
+                status: 'error',
+                text: 'Bitte Entweder Email oder Telefon angeben.',
+                group: null
+              }
+            : null
+        }
+      },
       {
         async: true,
         validate: function ($m, session) {

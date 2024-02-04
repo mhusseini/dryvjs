@@ -9,8 +9,9 @@ export interface DryvValidationRule<TModel extends object> {
   async?: boolean
   annotations?: {
     required?: boolean
-    [key: string | symbol]: unknown
+    [path: string | symbol]: unknown
   }
+  related?: (string | symbol)[]
   validate: ($m: TModel, session: DryvValidationSession<TModel>) => DryvValidateFunctionResult
 }
 
@@ -120,7 +121,7 @@ export interface DryvValidationSession<TModel extends object> {
 
   validateField<TValue>(
     field: DryvValidatable<TModel, TValue>,
-    model?: TModel
+    model?: DryvProxy<TModel>
   ): Promise<DryvValidationResult<TModel> | null>
 }
 

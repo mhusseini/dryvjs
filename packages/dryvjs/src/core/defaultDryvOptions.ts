@@ -21,7 +21,7 @@ class DryvOptionsSingleton {
         const sep = url.indexOf('?') >= 0 ? '&' : '?'
         url = `${url}${sep}${query}`
         data = undefined
-      }
+      } 
       const response = await fetch(url, { method, body: data && JSON.stringify(data) })
       return await response.json()
     },
