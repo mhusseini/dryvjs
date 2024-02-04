@@ -6,13 +6,17 @@ export function useDryvGroupSlot(): Ref<DryvGroupValidationResult>
 export function useDryvGroupSlot(groupNames: string[]): Ref<DryvGroupValidationResult>
 export function useDryvGroupSlot(slotName: string, groupNames?: string[] | undefined): Ref<DryvGroupValidationResult>
 export function useDryvGroupSlot(slot: VNode[], groupNames?: string[] | undefined): Ref<DryvGroupValidationResult>
-export function useDryvGroupSlot(slotOrGroupNames?: string | VNode[] | undefined | string[], ...groupNames?: string[] | undefined): Ref<DryvGroupValidationResult> {
+export function useDryvGroupSlot(slotOrGroupNames?: string | VNode[] | undefined | string[], groupNames?: string[] | undefined): Ref<DryvGroupValidationResult> {
   let slot: string | VNode[] | undefined;
   if (!groupNames && Array.isArray(slotOrGroupNames)) {
     groupNames = slotOrGroupNames;
     slot = undefined;
   } else {
     slot = slotOrGroupNames;
+  }
+  
+  if(groupNames?.length === 0){
+    groupNames = undefined;
   }
 
   const nodes = getSlot(slot);
