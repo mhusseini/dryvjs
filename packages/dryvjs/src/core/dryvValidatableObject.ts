@@ -77,7 +77,7 @@ export function dryvValidatableObject<TModel extends object = any, TValue extend
     get path(): string {
       return (_parent?.path ? _parent.path + "." : "") + (field ? String(field) : "");
     },
-    async validate(): Promise<DryvValidationResult<TModel> | null> {
+    async validate(): Promise<DryvValidationResult<TModel>> {
       const session = _parent?.session ?? _session;
       if (!session) {
         throw new Error("No validation session found");

@@ -35,6 +35,7 @@ export interface DryvValidationRuleSetResolver {
 
 export interface DryvValidationResult<TModel extends object> {
   results: DryvFieldValidationResult[];
+  success: boolean;
   hasErrors: boolean;
   hasWarnings: boolean;
   warningHash: string | undefined | null;
@@ -77,7 +78,7 @@ export interface DryvValidatable<TModel extends object = any, TValue = any> {
 
   get hasWarning(): boolean;
 
-  validate(): Promise<DryvValidationResult<TModel> | null>;
+  validate(): Promise<DryvValidationResult<TModel>>;
 
   clear(): void;
 
@@ -140,12 +141,12 @@ export interface DryvValidationSession<TModel extends object> {
 
   validateObject(
     objOrProxy: DryvValidatable<TModel> | DryvProxy<TModel>
-  ): Promise<DryvValidationResult<TModel> | null>;
+  ): Promise<DryvValidationResult<TModel>>;
 
   validateField<TValue>(
     field: DryvValidatable<TModel, TValue>,
     model?: DryvProxy<TModel>
-  ): Promise<DryvValidationResult<TModel> | null>;
+  ): Promise<DryvValidationResult<TModel>>;
 }
 
 export interface DryvOptions {

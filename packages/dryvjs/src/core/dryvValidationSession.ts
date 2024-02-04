@@ -48,7 +48,7 @@ export function dryvValidationSession<TModel extends object>(
 
     async validateObject(
       objOrProxy: DryvValidatable<TModel> | DryvProxy<TModel>
-    ): Promise<DryvValidationResult<TModel> | null> {
+    ): Promise<DryvValidationResult<TModel>> {
       const obj: DryvValidatable<TModel> = isDryvProxy(objOrProxy)
         ? (objOrProxy.$dryv as DryvValidatable<TModel>)
         : (objOrProxy as DryvValidatable<TModel>);
@@ -77,7 +77,8 @@ export function dryvValidationSession<TModel extends object>(
           results: fieldResults,
           hasErrors: hasErrors,
           hasWarnings: warnings.length > 0,
-          warningHash: fieldResults.map((r) => r.text).join("|")
+          warningHash: fieldResults.map((r) => r.text).join("|"),
+          success: !hasErrors && warnings.length === 0
         };
       } finally {
         _depth--;
@@ -87,27 +88,31 @@ export function dryvValidationSession<TModel extends object>(
     async validateField<TValue>(
       field: DryvValidatable<TModel, TValue>,
       model?: DryvProxy<TModel>
-    ): Promise<DryvValidationResult<TModel> | null> {
+    ): Promise<DryvValidationResult<TModel>> {
       switch (options.validationTrigger) {
         case "auto":
           if (session.$initializing) {
-            return null;
+            return success();
           }
           break;
         case "manual":
           if (!isValidating()) {
-            return null;
+            return success();
           }
           break;
         case "autoAfterManual":
           if (!_isTriggered && !isValidating()) {
-            return null;
+            return success();
           }
           break;
       }
 
       if (_processedFields?.[field.field!]) {
-        return null;
+        return success();
+      }
+
+      if (!model) {
+        model = getModel(field);
       }
 
       const newValidationChain = !_processedFields;
@@ -115,16 +120,10 @@ export function dryvValidationSession<TModel extends object>(
         _processedFields = {};
       }
 
-      if (!model) {
-        model = getModel(field);
-      }
-
       const result = await validateFieldInternal(session, ruleSet, model, field, options);
-    finally
-      {
-        if (newValidationChain) {
-          _processedFields = undefined;
-        }
+
+      if (newValidationChain) {
+        _processedFields = undefined;
       }
 
       if (result) {
@@ -135,19 +134,20 @@ export function dryvValidationSession<TModel extends object>(
         const status = result.status?.toLowerCase();
 
         return status === "success"
-          ? null
+          ? success()
           : {
             results: [result],
             hasErrors: status === "error",
             hasWarnings: status === "warning",
-            warningHash: status === "warning" ? result.text : null
+            warningHash: status === "warning" ? result.text : null,
+            success: status === "success" || !status
           };
       } else {
         field.status = "success";
         field.text = null;
         field.group = null;
 
-        return null;
+        return success();
       }
     }
   };
@@ -269,4 +269,14 @@ function getModel<TModel extends object>(parent: DryvValidatable<TModel>): DryvP
   }
 
   return parent.value.$model;
+}
+
+function success<TModel extends object>(): DryvValidationResult<TModel> {
+  return {
+    results: [],
+    success: true,
+    hasErrors: false,
+    hasWarnings: false,
+    warningHash: null
+  };
 }

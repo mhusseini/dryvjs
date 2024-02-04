@@ -1,13 +1,13 @@
 <template>
   <form>
     <div :class="{ invalid: !valid }">
-      <form-input v-model="model.anrede" label="Anrede" />
-      <form-input v-model="model.vorname" label="Vorname" />
-      <form-input v-model="model.nachname" label="Nachname" />
-      <form-input v-model="model.geburtsdatum" label="Geburtsdatum" />
+      <validating-input v-model="model.anrede" label="Anrede" />
+      <validating-input v-model="model.vorname" label="Vorname" />
+      <validating-input v-model="model.nachname" label="Nachname" />
+      <validating-input v-model="model.geburtsdatum" label="Geburtsdatum" />
       <validation-group>
-        <form-input v-model="model.emailAdresse" label="E-Mail-Adresse" />
-        <form-input v-model="model.telefonNummer" label="Telefonnummer" />
+        <validating-input v-model="model.emailAdresse" label="E-Mail-Adresse" />
+        <validating-input v-model="model.telefonNummer" label="Telefonnummer" />
       </validation-group>
     </div>
     <div class="button-bar">
@@ -20,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import FormInput from "@/components/FormInput.vue";
+import ValidatingInput from "@/components/ValidatingInput.vue";
 import ValidationGroup from "@/components/ValidationGroup.vue";
 import type { PersonalData } from "@/models";
 import { reactive } from "vue";
@@ -29,6 +29,7 @@ import {
   useTransaction,
   DryvServerValidationResponse
 } from "dryvue";
+import { personalDataValidationRules } from "@/PersonalDataValidationRules";
 
 let data: PersonalData = reactive({
   anrede: "text",
@@ -54,14 +55,17 @@ let data: PersonalData = reactive({
 // const valid = true;
 
 const { model: transaction, rollback, dirty } = useTransaction(data);
-const { bindingModel: model, validate, valid, clear } = useDryv(transaction, "PersonalData");
+const { bindingModel: model, validate, valid, clear } = useDryv(transaction, personalDataValidationRules);
 
 function revert() {
   rollback();
   clear();
 }
 
-function send() {
+async function send() {
+  if (!(await validate()).success) {
+    return;
+  }
   const response: DryvServerValidationResponse =
     model.$model?.vorname === "text"
       ? {

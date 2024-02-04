@@ -1,9 +1,9 @@
-<script setup lang="ts">
-import ValidatingForm from "@/components/ValidatingForm.vue";
-</script>
-
 <template>
   <main>
-    <validating-form/>
+    <demo-form/>
   </main>
 </template>
+
+<script setup lang="ts">
+import DemoForm from "@/components/DemoForm.vue";
+</script>

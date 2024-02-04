@@ -43,7 +43,7 @@ export function dryvValidatableValue<TModel extends object = any, TValue = any>(
     get hasWarning() : boolean {
       return this.status === "warning";
     },
-    async validate(): Promise<DryvValidationResult<TModel> | null> {
+    async validate(): Promise<DryvValidationResult<TModel>> {
       const session = parent?.session
       if (!session) {
         throw new Error('No validation session found')
