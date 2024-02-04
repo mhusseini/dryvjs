@@ -18,7 +18,7 @@ const emit = defineEmits(["update:modelValue"]);
 const value = useDryvValueProp(emit, () => props.modelValue);
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .row {
   display: grid;
   gap: 0.5em;
