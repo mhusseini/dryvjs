@@ -21,8 +21,8 @@ export type DrvvRuleInvocations<TModel extends object> = {
 
 export interface DryvValidationRuleSet<TModel extends object, TParameters = object> {
   validators: DrvvRuleInvocations<TModel>
-  disablers: DrvvRuleInvocations<TModel>
-  parameters: TParameters
+  disablers?: DrvvRuleInvocations<TModel>
+  parameters?: TParameters
 }
 
 export interface DryvValidationRuleSetResolver {

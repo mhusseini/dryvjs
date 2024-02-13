@@ -20,11 +20,11 @@
 </template>
 
 <script setup lang="ts">
-import ValidatingInput from '@/components/ValidatingInput.vue'
+import ValidatingInput from '@/components/ValidatingInputOptionsApi.vue'
 import ValidationGroup from '@/components/ValidationGroup.vue'
 import type { PersonalData } from '@/models'
 import { reactive } from 'vue'
-import { useDryv, useTransaction, DryvServerValidationResponse } from 'dryvue'
+import { useDryv, useTransaction } from 'dryvue'
 import { personalDataValidationRules } from '@/PersonalDataValidationRules'
 
 let data: PersonalData = reactive({
@@ -35,20 +35,7 @@ let data: PersonalData = reactive({
   emailAdresse: 'text',
   telefonNummer: 'text',
   werberVertragsnummer: 'text'
-  // child: {
-  //   anrede: 'hallo',
-  //   vorname: 'hallo',
-  //   nachname: 'hallo',
-  //   geburtsdatum: 'hallo',
-  //   emailAdresse: 'hallo',
-  //   telefonNummer: 'hallo',
-  //   werberVertragsnummer: 'hallo'
-  // }
 })
-
-// const model = data;
-// const dirty = false;
-// const valid = true;
 
 const { model: transaction, rollback, dirty } = useTransaction(data)
 const {
@@ -67,20 +54,21 @@ async function send() {
   if (!(await validate()).success) {
     return
   }
-  const response: DryvServerValidationResponse =
-    model.$model?.vorname === 'text'
-      ? {
-          success: false,
-          messages: {
-            vorname: {
-              text: 'Der Name ist kacke',
-              status: 'error'
-            }
-          }
-        }
-      : 'testtet'
-
-  model.$model?.$dryv.set(response)
+  // const response: DryvServerValidationResponse =
+  //   model.$model?.vorname === 'text'
+  //     ? {
+  //         success: false,
+  //         messages: {
+  //           vorname: {
+  //             text: 'Der Name ist kacke',
+  //             status: 'error'
+  //           }
+  //         }
+  //       }
+  //     : 'testtet'
+  //
+  // model.$model?.$dryv.set(response)
+  alert('yay')
 }
 </script>
 

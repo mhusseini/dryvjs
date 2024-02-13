@@ -7,7 +7,7 @@ import type { DryvValidationSession } from './typings'
 
 export function dryvProxyHandler<TModel extends object>(
   field: keyof TModel | undefined,
-  session: DryvValidationSession<TModel> | undefined,
+  session: DryvValidationSession<TModel>,
   options: DryvOptions
 ): ProxyHandler<TModel> {
   const _excludedFields: { [field: string]: boolean } = {}
@@ -29,7 +29,7 @@ export function dryvProxyHandler<TModel extends object>(
       let resultValue
 
       if (typeof originalValue === 'object') {
-        resultValue = ensureObjectProxy(originalValue, field as keyof TModel, receiver)
+        resultValue = ensureObjectProxy(originalValue, field as keyof TModel, receiver, session)
         if (resultValue !== originalValue) {
           Reflect.set(target, fieldName, resultValue)
         }
@@ -67,7 +67,7 @@ export function dryvProxyHandler<TModel extends object>(
       let proxy: DryvValidatable | undefined = undefined
 
       if (typeof value === 'object') {
-        targetValue = ensureObjectProxy(value, field as keyof TModel, receiver)
+        targetValue = ensureObjectProxy(value, field as keyof TModel, receiver, session)
       } else {
         proxy = ensureValueProxy(field as keyof TModel, receiver)
         targetValue = value
@@ -81,9 +81,14 @@ export function dryvProxyHandler<TModel extends object>(
     }
   }
 
-  function ensureObjectProxy(value: any, field: keyof TModel, receiver: TModel) {
+  function ensureObjectProxy(
+    value: any,
+    field: keyof TModel,
+    receiver: TModel,
+    session: DryvValidationSession<TModel>
+  ) {
     const proxy: DryvProxy<any> = !isDryvProxy(value)
-      ? dryvProxy(value, field, undefined, options)
+      ? dryvProxy(value, field, session, options)
       : value
 
     const dryv = getDryv(receiver)

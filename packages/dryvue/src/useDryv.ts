@@ -15,7 +15,7 @@ export interface UseDryvResult<TModel extends object> {
   model: TModel
   result: DryvValidatable<TModel, DryvObject<TModel>>
   bindingModel: DryvObject<TModel>
-  validate: () => Promise<DryvValidationResult<TModel> | null>
+  validate: () => Promise<DryvValidationResult<TModel>>
   valid: Ref<boolean>
   clear: () => void
 }

@@ -7,7 +7,7 @@ import type { DryvValidationSession } from './typings'
 export function dryvProxy<TModel extends object>(
   model: TModel | DryvProxy<TModel>,
   field: keyof TModel | undefined,
-  session: DryvValidationSession<TModel> | undefined,
+  session: DryvValidationSession<TModel>,
   options?: DryvOptions
 ): DryvProxy<TModel> {
   if (!model) {

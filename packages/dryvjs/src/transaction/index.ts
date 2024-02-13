@@ -1,5 +1,4 @@
-import type { DryvOptions } from '@/core/typings'
-import { defaultDryvOptions } from '@/core/defaultDryvOptions'
+import { defaultDryvOptions, DryvOptions } from '../core'
 
 export interface DryTransaction<TModel extends object = any> {
   rollback: () => void
@@ -40,7 +39,6 @@ export function dryvTransaction<TModel extends object>(
     }
   })
 
-  // noinspection JSUnusedGlobalSymbols
   return {
     commit() {
       Object.assign(model, values)
