@@ -66,11 +66,15 @@ export function dryvValidationSession<TModel extends object>(
 
       try {
         const newValidationChain = startValidationChain()
-        const fieldResults = await Promise.all(
+        const fieldResults = (await Promise.all(
           Object.entries<DryvValidatable>(obj.value)
             .filter(([field, value]) => isDryvValidatable(value) && !isExcludedField(field))
-            .map(([field, value]) => value.validate().then((result) => ({ ...result, field })))
-        )
+            .map(([_, value]) =>
+              value.validate().then((result) => {
+                return { ...result, path: value.path }
+              })
+            )
+        )) as DryvValidationResult[]
         const result = createObjectResults(fieldResults.filter((r) => !!r))
 
         obj.type = result.hasErrors ? 'error' : result.hasWarnings ? 'warning' : 'success'
@@ -90,7 +94,7 @@ export function dryvValidationSession<TModel extends object>(
       model?: DryvProxy<TModel>
     ): Promise<DryvValidationResult> {
       if (!canValidateFields() || _processedFields?.[field.field!]) {
-        return success(field.field)
+        return success(field.path!)
       }
 
       if (!model) {
@@ -278,19 +282,27 @@ function getModel<TModel extends object>(parent: DryvValidatable<TModel>): DryvP
   return (parent as any).$model ?? parent.value.$model
 }
 
-function success<TModel extends object>(field: keyof TModel | undefined): DryvValidationResult {
+function success(path: string): DryvValidationResult {
   return {
     results: [],
     success: true,
     hasErrors: false,
     hasWarnings: false,
     warningHash: null,
-    field: String(field)
+    path
   }
 }
 
-function createObjectResults<TModel extends object>(results: DryvValidationResult[]) {
-  const fieldResults = results.filter((r) => r).flatMap((r) => r.results)
+function createObjectResults(results: DryvValidationResult[]): {
+  results: DryvFieldValidationResult[]
+  hasErrors: boolean
+  hasWarnings: boolean
+  warningHash: string
+  success: boolean
+} {
+  const fieldResults = results
+    .filter((r) => r)
+    .flatMap((r) => r.results.map((r2) => ({ ...r2, path: r.path })))
   const hasWarnings = fieldResults.some((r) => r.type === 'warning')
   const hasErrors = fieldResults.some((r) => r.type === 'error')
 
@@ -320,21 +332,21 @@ function createFieldValidationResult<TModel extends object, TValue>(
     const type = result.type?.toLowerCase()
 
     return type === 'success'
-      ? success(field.field)
+      ? success(field.path!)
       : {
           results: [result],
           hasErrors: type === 'error',
           hasWarnings: type === 'warning',
           warningHash: type === 'warning' ? result.text : null,
           success: type === 'success' || !type,
-          field: String(field.field)
+          path: String(field.path)
         }
   } else {
     field.type = 'success'
     field.text = null
     field.group = null
 
-    return success(field.field!)
+    return success(field.path!)
   }
 }
 

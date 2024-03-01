@@ -40,7 +40,7 @@ export interface DryvValidationResult {
   hasErrors: boolean
   hasWarnings: boolean
   warningHash: string | undefined | null
-  field?: string
+  path?: string
 }
 
 export interface DryvFieldValidationResult {

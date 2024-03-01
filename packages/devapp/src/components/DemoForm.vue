@@ -30,7 +30,7 @@
 import ValidatingInput from '@/components/ValidatingInputOptionsApi.vue'
 import type { PersonalData } from '@/models'
 import { reactive, ref } from 'vue'
-import { useDryv, useTransaction } from 'dryvue'
+import { type DryvValidationResult, useDryv, useTransaction } from 'dryvue'
 import { personalDataValidationRules } from '@/PersonalDataValidationRules'
 
 let data: PersonalData = reactive({
@@ -41,6 +41,7 @@ let data: PersonalData = reactive({
 
 defineEmits()
 
+const result = ref<DryvValidationResult>()
 const { model, rollback, dirty } = useTransaction(data)
 const {
   validatable,
@@ -63,7 +64,8 @@ function revert() {
 }
 
 async function send() {
-  if (!(await validate()).success) {
+  result.value = await validate()
+  if (!result.value.success) {
     return
   }
   // const response: DryvServerValidationResponse =
