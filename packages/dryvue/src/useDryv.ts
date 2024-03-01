@@ -1,23 +1,36 @@
 import type {
   DryvObject,
   DryvOptions,
-  DryvValidatable,
   DryvValidationResult,
   DryvValidationRuleSet,
   DryvValidationSession
 } from 'dryvjs'
-import { annotate, dryvOptions, dryvProxy, dryvRuleSet, dryvValidationSession } from 'dryvjs'
+import {
+  annotate,
+  dryvOptions,
+  dryvProxy,
+  dryvRuleSet,
+  DryvServerErrors,
+  DryvServerValidationResponse,
+  DryvValidatable,
+  dryvValidationSession
+} from 'dryvjs'
 import { computed } from 'vue'
 import type { Ref } from '@vue/reactivity'
+import { useMappedField } from '@/useMappedField'
+import { useMappedGroup } from '@/useMappedGroup'
 
 export interface UseDryvResult<TModel extends object> {
   session: DryvValidationSession<TModel>
   model: TModel
-  result: DryvValidatable<TModel, DryvObject<TModel>>
-  bindingModel: DryvObject<TModel>
-  validate: () => Promise<DryvValidationResult<TModel>>
+  validatable: DryvObject<TModel>
+  validate: () => Promise<DryvValidationResult>
   valid: Ref<boolean>
   clear: () => void
+  setValidationResult: (result: DryvServerValidationResponse | DryvServerErrors) => boolean
+  updateModel: (newValues: TModel) => void
+  useMappedField<TTo>(field: keyof TModel, mappedValue: Ref<TTo>): DryvValidatable<any, TTo>
+  useMappedGroup<TTo>(groupName: string, field: Ref<TTo>): DryvValidatable<any, TTo>
 }
 
 export function useDryv<TModel extends object>(
@@ -26,7 +39,31 @@ export function useDryv<TModel extends object>(
   options?: DryvOptions
 ): UseDryvResult<TModel> {
   options = dryvOptions(options)
+  ruleSet = findRuleSet(ruleSet)
 
+  const session = dryvValidationSession<TModel>(options, ruleSet)
+  const proxy = dryvProxy<TModel>(model, undefined, session, options)
+
+  annotate<TModel>(proxy, ruleSet, options)
+
+  return {
+    session,
+    model: proxy,
+    validatable: proxy.$validatable.value!,
+    validate: async () => await proxy.$validatable.validate(),
+    valid: computed(() => !proxy.$validatable.type || proxy.$validatable.type === 'success'),
+    clear: () => proxy.$validatable.clear(),
+    updateModel: (newValues: TModel | DryvObject<TModel>) =>
+      proxy.$validatable.updateValue(newValues),
+    useMappedField: (field, mappedValue) =>
+      useMappedField(proxy.$validatable.value!, field, mappedValue),
+    useMappedGroup: (groupName, field) => useMappedGroup(session, groupName, field),
+    setValidationResult: (result: DryvServerValidationResponse | DryvServerErrors) =>
+      proxy.$validatable.set(result)
+  }
+}
+
+function findRuleSet<TModel extends object>(ruleSet: string | DryvValidationRuleSet<TModel>) {
   switch (typeof ruleSet) {
     case 'undefined':
       throw new Error(
@@ -44,19 +81,5 @@ export function useDryv<TModel extends object>(
       break
     }
   }
-
-  const session = dryvValidationSession<TModel>(options, ruleSet)
-  const proxy = dryvProxy<TModel>(model, undefined, session, options)
-
-  annotate<TModel>(proxy, ruleSet, options)
-
-  return {
-    session,
-    model: proxy,
-    result: proxy.$dryv,
-    bindingModel: proxy.$dryv.value!,
-    validate: async () => await proxy.$dryv.validate(),
-    valid: computed(() => !proxy.$dryv.status || proxy.$dryv.status === 'success'),
-    clear: () => proxy.$dryv.clear()
-  }
+  return ruleSet
 }

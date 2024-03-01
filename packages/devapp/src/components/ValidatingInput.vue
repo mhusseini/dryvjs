@@ -1,8 +1,10 @@
 <template>
   <div class="row">
-    <label>{{ label }}<span v-if="value.required">*</span>: </label>
-    <input ref="input" v-model="value.value" />
-    <div class="error" v-show="value.hasError && !value.groupShown">{{ value.text }}</div>
+    <label>{{ label }}<span v-if="validatable.required">*</span>: </label>
+    <input ref="input" v-model="validatable.value" />
+    <div class="error" v-show="validatable.hasError && !validatable.groupShown">
+      {{ validatable.text }}
+    </div>
   </div>
 </template>
 
@@ -15,7 +17,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits(['update:modelValue'])
-const value = useDryvValueProp(emit, () => props.modelValue)
+const validatable = useDryvValueProp(emit, () => props.modelValue)
 </script>
 
 <style lang="scss" scoped>

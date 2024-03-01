@@ -11,8 +11,8 @@ import type {
   DryvValidationSessionInternal
 } from './typings'
 
-import { isDryvProxy, isDryvValidatable } from '@/core'
-import { getMemberByPath } from '@/core/getMemberByPath'
+import { isDryvProxy, isDryvValidatable } from '.'
+import { getMemberByPath } from './getMemberByPath'
 
 export function dryvValidationSession<TModel extends object>(
   options: DryvOptions,
@@ -27,7 +27,6 @@ export function dryvValidationSession<TModel extends object>(
   if (!options.valueOfDate) {
     throw new Error('The valueOfDate option is required.')
   }
-
   const _excludedFields: {
     [field: string]: boolean
   } = {}
@@ -46,40 +45,41 @@ export function dryvValidationSession<TModel extends object>(
       valueOfDate: options.valueOfDate
     },
 
+    results: options.objectWrapper!({
+      fields: {},
+      groups: {}
+    }),
+
     async validateObject(
       objOrProxy: DryvValidatable<TModel> | DryvProxy<TModel>
-    ): Promise<DryvValidationResult<TModel>> {
+    ): Promise<DryvValidationResult> {
       const obj: DryvValidatable<TModel> = isDryvProxy(objOrProxy)
-        ? (objOrProxy.$dryv as DryvValidatable<TModel>)
+        ? (objOrProxy.$validatable as DryvValidatable<TModel>)
         : (objOrProxy as DryvValidatable<TModel>)
+
       if (!obj) {
         throw new Error('The value null of undefined is not validatable.')
       }
 
       _depth++
       _isTriggered = true
+
       try {
-        const results: DryvValidationResult<TModel>[] = (
-          await Promise.all(
-            Object.entries(obj.value)
-              .filter(([key, value]) => isDryvValidatable(value) && !isExcludedField(key))
-              .map(([_, value]) => (value as any as DryvValidatable).validate())
-          )
-        ).filter((result) => !!result) as DryvValidationResult<TModel>[]
+        const newValidationChain = startValidationChain()
+        const fieldResults = await Promise.all(
+          Object.entries<DryvValidatable>(obj.value)
+            .filter(([field, value]) => isDryvValidatable(value) && !isExcludedField(field))
+            .map(([field, value]) => value.validate().then((result) => ({ ...result, field })))
+        )
+        const result = createObjectResults(fieldResults.filter((r) => !!r))
 
-        const fieldResults = results.filter((r) => r).flatMap((r) => r.results)
-        const warnings = fieldResults.filter((r) => r.status === 'warning')
-        const hasErrors = fieldResults.some((r) => r.status === 'error')
+        obj.type = result.hasErrors ? 'error' : result.hasWarnings ? 'warning' : 'success'
 
-        obj.status = hasErrors ? 'error' : warnings.length > 0 ? 'warning' : 'success'
-
-        return {
-          results: fieldResults,
-          hasErrors: hasErrors,
-          hasWarnings: warnings.length > 0,
-          warningHash: fieldResults.map((r) => r.text).join('|'),
-          success: !hasErrors && warnings.length === 0
+        if (newValidationChain) {
+          endValidationChain()
         }
+
+        return result
       } finally {
         _depth--
       }
@@ -88,71 +88,69 @@ export function dryvValidationSession<TModel extends object>(
     async validateField<TValue>(
       field: DryvValidatable<TModel, TValue>,
       model?: DryvProxy<TModel>
-    ): Promise<DryvValidationResult<TModel>> {
-      switch (options.validationTrigger) {
-        case 'auto':
-          if (session.$initializing) {
-            return success()
-          }
-          break
-        case 'manual':
-          if (!isValidating()) {
-            return success()
-          }
-          break
-        case 'autoAfterManual':
-          if (!_isTriggered && !isValidating()) {
-            return success()
-          }
-          break
-      }
-
-      if (_processedFields?.[field.field!]) {
-        return success()
+    ): Promise<DryvValidationResult> {
+      if (!canValidateFields() || _processedFields?.[field.field!]) {
+        return success(field.field)
       }
 
       if (!model) {
         model = getModel(field)
       }
 
-      const newValidationChain = !_processedFields
+      const newValidationChain = startValidationChain()
+      const fieldResult = await validateFieldInternal(session, ruleSet, model, field, options)
+      const result = createFieldValidationResult(fieldResult, field)
+
+      session.results.fields[field.path!] = result.success ? undefined : fieldResult ?? undefined
+      if (fieldResult?.group) {
+        session.results.groups[fieldResult?.group] = result.success ? undefined : fieldResult
+      }
+
       if (newValidationChain) {
-        _processedFields = {}
+        endValidationChain()
       }
 
-      const result = await validateFieldInternal(session, ruleSet, model, field, options)
-
-      if (newValidationChain) {
-        _processedFields = undefined
-      }
-
-      if (result) {
-        field.status = result.status
-        field.text = result.text
-        field.group = result.group
-
-        const status = result.status?.toLowerCase()
-
-        return status === 'success'
-          ? success()
-          : {
-              results: [result],
-              hasErrors: status === 'error',
-              hasWarnings: status === 'warning',
-              warningHash: status === 'warning' ? result.text : null,
-              success: status === 'success' || !status
-            }
-      } else {
-        field.status = 'success'
-        field.text = null
-        field.group = null
-
-        return success()
-      }
+      return result
     }
   }
 
   return session
+
+  function canValidateFields(): boolean {
+    switch (options.validationTrigger) {
+      case 'auto':
+        if (session.$initializing) {
+          return false
+        }
+        break
+      case 'manual':
+        if (!isValidating()) {
+          return false
+        }
+        break
+      case 'autoAfterManual':
+        if (!_isTriggered && !isValidating()) {
+          return false
+        }
+        break
+    }
+
+    return true
+  }
+
+  function startValidationChain(): boolean {
+    const newValidationChain = !_processedFields
+
+    if (newValidationChain) {
+      _processedFields = {}
+    }
+
+    return newValidationChain
+  }
+
+  function endValidationChain(): void {
+    _processedFields = undefined
+  }
 
   function isExcludedField(fieldName: string, path?: string): boolean {
     if (!options.excludedFields) {
@@ -228,7 +226,13 @@ export function dryvValidationSession<TModel extends object>(
     try {
       for (const rule of rules) {
         rule.related?.forEach((relatedField) => {
-          const field = getMemberByPath(model.$dryv.value, relatedField)
+          if (!relatedField) {
+            return
+          }
+          const field = getMemberByPath(model.$validatable.value!, relatedField as string)
+          if (!field) {
+            model[relatedField] = null!
+          }
           session.validateField(field, model)
         })
         const r = await rule.validate(model, session)
@@ -237,13 +241,16 @@ export function dryvValidationSession<TModel extends object>(
         } else if (typeof r === 'string') {
           result = {
             path: validatable.path!,
-            status: 'error',
+            type: 'error',
             text: r,
-            group: null
+            group: rule.group
           }
           break
-        } else if (r.status !== 'success') {
+        } else if (r.type !== 'success') {
           result = r
+          if (!result.group) {
+            result.group = rule.group
+          }
           break
         }
       }
@@ -252,14 +259,14 @@ export function dryvValidationSession<TModel extends object>(
       if (options.exceptionHandling === 'failValidation') {
         result = {
           path: validatable.path!,
-          status: 'error',
+          type: 'error',
           text: 'Validation failed.',
           group: null
         }
       }
     }
 
-    return result && result.status !== 'success' ? result : null
+    return result && result.type !== 'success' ? result : null
   }
 }
 
@@ -268,15 +275,81 @@ function getModel<TModel extends object>(parent: DryvValidatable<TModel>): DryvP
     parent = parent.parent
   }
 
-  return parent.value.$model
+  return (parent as any).$model ?? parent.value.$model
 }
 
-function success<TModel extends object>(): DryvValidationResult<TModel> {
+function success<TModel extends object>(field: keyof TModel | undefined): DryvValidationResult {
   return {
     results: [],
     success: true,
     hasErrors: false,
     hasWarnings: false,
-    warningHash: null
+    warningHash: null,
+    field: String(field)
   }
+}
+
+function createObjectResults<TModel extends object>(results: DryvValidationResult[]) {
+  const fieldResults = results.filter((r) => r).flatMap((r) => r.results)
+  const hasWarnings = fieldResults.some((r) => r.type === 'warning')
+  const hasErrors = fieldResults.some((r) => r.type === 'error')
+
+  return {
+    results: fieldResults,
+    hasErrors: hasErrors,
+    hasWarnings: hasWarnings,
+    warningHash: hashCode(
+      fieldResults
+        .filter((r) => r.type === 'warning')
+        .map((r) => r.text)
+        .join()
+    ),
+    success: !hasErrors && !hasWarnings
+  }
+}
+
+function createFieldValidationResult<TModel extends object, TValue>(
+  result: DryvFieldValidationResult | null,
+  field: DryvValidatable<TModel, TValue>
+): DryvValidationResult {
+  if (result) {
+    field.type = result.type
+    field.text = result.text
+    field.group = result.group
+
+    const type = result.type?.toLowerCase()
+
+    return type === 'success'
+      ? success(field.field)
+      : {
+          results: [result],
+          hasErrors: type === 'error',
+          hasWarnings: type === 'warning',
+          warningHash: type === 'warning' ? result.text : null,
+          success: type === 'success' || !type,
+          field: String(field.field)
+        }
+  } else {
+    field.type = 'success'
+    field.text = null
+    field.group = null
+
+    return success(field.field!)
+  }
+}
+
+function hashCode(text?: string) {
+  if (!text || text.length === 0) {
+    return ''
+  }
+
+  let hash = 0
+
+  for (let i = 0; i < text.length; i++) {
+    const chr = text.charCodeAt(i)
+    hash = (hash << 5) - hash + chr
+    hash |= 0 // Convert to 32bit integer
+  }
+
+  return Math.abs(hash).toString(16)
 }

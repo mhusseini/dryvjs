@@ -2,7 +2,7 @@
   <div class="row">
     <slot />
     <div v-for="group in groups">
-      <div v-for="{ status, texts } in group.results" :class="status">
+      <div v-for="{ type, texts } in group.results" :class="type">
         <div v-for="text in texts">{{ text }}</div>
       </div>
     </div>
@@ -13,7 +13,7 @@
 import { useDryvGroupSlot } from 'dryvue'
 
 const props = defineProps<{ groups?: string[] }>()
-const groups = useDryvGroupSlot(props.groups)
+const groups = useDryvGroupSlot(props.groups!)
 </script>
 
 <style lang="scss" scoped>

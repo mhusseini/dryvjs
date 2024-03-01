@@ -2,7 +2,7 @@ import { VNode, computed, useSlots } from 'vue'
 import {
   DryvGroupValidationResult,
   DryvValidatable,
-  DryvValidationResultStatus,
+  DryvValidationResultType,
   isDryvValidatable
 } from 'dryvjs'
 import { Ref } from '@vue/reactivity'
@@ -49,7 +49,7 @@ export function useDryvGroupSlot(
 
       if (
         !validatable.group ||
-        !validatable.status ||
+        !validatable.type ||
         (groupNames && groupNames.indexOf(validatable.group) < 0)
       ) {
         return
@@ -61,10 +61,10 @@ export function useDryvGroupSlot(
         groups[validatable.group] = group
       }
 
-      let texts = group[validatable.status]
+      let texts = group[validatable.type]
       if (!texts) {
         texts = []
-        group[validatable.status] = texts
+        group[validatable.type] = texts
       }
 
       if (texts.indexOf(validatable.text) < 0) {
@@ -77,8 +77,8 @@ export function useDryvGroupSlot(
     return Object.entries(groups).map(([name, group]) => {
       return {
         name: name,
-        results: Object.entries(group).map(([status, texts]) => ({
-          status: status as DryvValidationResultStatus,
+        results: Object.entries(group).map(([type, texts]) => ({
+          type: type as DryvValidationResultType,
           texts: texts as string[]
         }))
       }

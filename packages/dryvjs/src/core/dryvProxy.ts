@@ -1,7 +1,7 @@
 import { dryvProxyHandler } from './dryvProxyHandler'
 import type { DryvOptions, DryvProxy, DryvValidationSessionInternal } from './typings'
 import { defaultDryvOptions } from './defaultDryvOptions'
-import { isDryvProxy } from '@/core'
+import { isDryvProxy } from './isDryvProxy'
 import type { DryvValidationSession } from './typings'
 
 export function dryvProxy<TModel extends object>(

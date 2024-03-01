@@ -4,8 +4,9 @@ import { reactive } from 'vue'
 import type { DryvOptions, DryvValidationRuleSet } from 'dryvjs'
 import { defaultDryvOptions, defaultDryvRuleSetResolvers } from 'dryvjs'
 
-export const Dryv: Plugin<DryvOptions[]> = {
-  install(_: App, ...options: DryvOptions[]) {
+export { DryvOptions, DryvValidationRuleSet }
+export const Dryv: Plugin<[]> = {
+  install(_: App, ...options: []): any {
     Object.assign(
       defaultDryvOptions,
       {

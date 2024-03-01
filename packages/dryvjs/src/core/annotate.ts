@@ -12,7 +12,7 @@ export function annotate<TModel extends object>(
   ruleSet: DryvValidationRuleSet<TModel>,
   options: DryvOptions
 ) {
-  annotateObject<TModel>(model.$dryv, ruleSet, options)
+  annotateObject<TModel>(model.$validatable, ruleSet, options)
 }
 
 function annotateObject<TModel extends object>(
@@ -41,8 +41,7 @@ function annotateValidatable<TModel extends object>(
   validatable: DryvValidatable<TModel>,
   ruleSet: DryvValidationRuleSet<TModel>
 ) {
-  validatable.required =
-    (ruleSet.validators as any)?.[validatable.field]?.find(
-      (rule: DryvValidationRule<TModel>) => rule.annotations?.required
-    ) ?? false
+  validatable.required = !!(ruleSet.validators as any)?.[validatable.field]?.find(
+    (rule: DryvValidationRule<TModel>) => rule.annotations?.required
+  )
 }

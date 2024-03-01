@@ -1,49 +1,61 @@
 <template>
   <form>
     <div :class="{ invalid: !valid }">
-      <validating-input v-model="model.anrede" label="Anrede" />
-      <validating-input v-model="model.vorname" label="Vorname" />
-      <validating-input v-model="model.nachname" label="Nachname" />
-      <validating-input v-model="model.geburtsdatum" label="Geburtsdatum" />
-      <validation-group>
-        <validating-input v-model="model.emailAdresse" label="E-Mail-Adresse" />
-        <validating-input v-model="model.telefonNummer" label="Telefonnummer" />
-      </validation-group>
+      <validating-input v-model="validatable.anrede" label="Anrede" />
+      <validating-input v-model="validatable.vorname" label="Vorname" />
+      <validating-input v-model="validatable.nachname" label="Nachname" />
+      <validating-input v-model="validatable2" label="Telefonnummer" />
+      <validating-input v-model="validatable3" label="Kommunikation" />
     </div>
     <div class="button-bar">
+      <button @click.prevent="randomize">Randomize</button>
       <button @click.prevent="revert" :disabled="!dirty && valid">Revert</button>
       <button @click.prevent="validate">Validate</button>
       <button @click.prevent="send">Send</button>
     </div>
   </form>
-  <pre class="debug"> {{ model.$model }} </pre>
+  <table>
+    <tr>
+      <td>
+        <pre class="debug"> {{ session }} </pre>
+      </td>
+      <td>
+        <pre class="debug"> {{ model }} </pre>
+      </td>
+    </tr>
+  </table>
 </template>
 
 <script setup lang="ts">
 import ValidatingInput from '@/components/ValidatingInputOptionsApi.vue'
-import ValidationGroup from '@/components/ValidationGroup.vue'
 import type { PersonalData } from '@/models'
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { useDryv, useTransaction } from 'dryvue'
 import { personalDataValidationRules } from '@/PersonalDataValidationRules'
 
 let data: PersonalData = reactive({
   anrede: 'text',
   vorname: 'text',
-  nachname: 'text',
-  geburtsdatum: 'text',
-  emailAdresse: 'text',
-  telefonNummer: 'text',
-  werberVertragsnummer: 'text'
+  nachname: 'text'
 })
 
-const { model: transaction, rollback, dirty } = useTransaction(data)
+defineEmits()
+
+const { model, rollback, dirty } = useTransaction(data)
 const {
-  bindingModel: model,
+  validatable,
   validate,
   valid,
-  clear
-} = useDryv(transaction, personalDataValidationRules)
+  clear,
+  updateModel,
+  useMappedField,
+  useMappedGroup,
+  session
+} = useDryv(model, personalDataValidationRules)
+
+const other = ref(123)
+const validatable2 = useMappedField('telefonNummer', other)
+const validatable3 = useMappedGroup('kommunikation', other)
 
 function revert() {
   rollback()
@@ -55,20 +67,33 @@ async function send() {
     return
   }
   // const response: DryvServerValidationResponse =
-  //   model.$model?.vorname === 'text'
+  //   validatable.vorname?.value === 'text'
   //     ? {
   //         success: false,
   //         messages: {
   //           vorname: {
   //             text: 'Der Name ist kacke',
-  //             status: 'error'
+  //             type: 'error'
   //           }
   //         }
   //       }
   //     : 'testtet'
   //
-  // model.$model?.$dryv.set(response)
+  // setValidationResult(response)
   alert('yay')
+}
+
+function randomize() {
+  updateModel({
+    anrede: 'Herr',
+    vorname: 'Max',
+    nachname: 'Mustermann',
+    child: {
+      anrede: 'Frau',
+      vorname: 'Erika',
+      nachname: 'Musterfrau'
+    }
+  })
 }
 </script>
 

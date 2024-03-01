@@ -11,7 +11,7 @@ export const personalDataValidationRules: DryvValidationRuleSet<PersonalData> = 
         validate: function ($m) {
           return !/\S/.test($m.anrede || '')
             ? {
-                status: 'error',
+                type: 'error',
                 text: 'Du entscheidest, was du angibst. Und ob überhaupt!',
                 group: null
               }
@@ -27,7 +27,7 @@ export const personalDataValidationRules: DryvValidationRuleSet<PersonalData> = 
         validate: function ($m) {
           return !/\S/.test($m.vorname || '')
             ? {
-                status: 'error',
+                type: 'error',
                 text: 'Wie dürfen wir dich ansprechen?',
                 group: null
               }
@@ -45,7 +45,7 @@ export const personalDataValidationRules: DryvValidationRuleSet<PersonalData> = 
         validate: function ($m) {
           return $m.vorname.toLowerCase().indexOf('familie') >= 0
             ? {
-                status: 'error',
+                type: 'error',
                 text: 'Bitte trage deinen tatsächlichen Vornamen ein',
                 group: null
               }
@@ -56,7 +56,7 @@ export const personalDataValidationRules: DryvValidationRuleSet<PersonalData> = 
         validate: function ($m) {
           return /^(\s*[0-9 \-'./]+\s*)+$/i.test($m.vorname)
             ? {
-                status: 'error',
+                type: 'error',
                 text: 'Bitte check nochmal den Vornamen. Er darf nicht nur aus Zahlen oder Sonderzeichen bestehen.',
                 group: null
               }
@@ -87,7 +87,7 @@ export const personalDataValidationRules: DryvValidationRuleSet<PersonalData> = 
         validate: function ($m) {
           return !/\S/.test($m.nachname || '')
             ? {
-                status: 'error',
+                type: 'error',
                 text: 'Wie heißt du mit Nachnamen?',
                 group: null
               }
@@ -105,7 +105,7 @@ export const personalDataValidationRules: DryvValidationRuleSet<PersonalData> = 
         validate: function ($m) {
           return /^(\s*[0-9 \-'./]+\s*)+$/i.test($m.nachname)
             ? {
-                status: 'error',
+                type: 'error',
                 text: 'Bitte check nochmal den Nachnamen. Er darf nicht nur aus Zahlen oder Sonderzeichen bestehen.',
                 group: null
               }
@@ -136,7 +136,7 @@ export const personalDataValidationRules: DryvValidationRuleSet<PersonalData> = 
         validate: function ($m) {
           return !$m.geburtsdatum
             ? {
-                status: 'error',
+                type: 'error',
                 text: 'Wann wurdest du geboren?',
                 group: null
               }
@@ -151,7 +151,7 @@ export const personalDataValidationRules: DryvValidationRuleSet<PersonalData> = 
             )
             ? null
             : {
-                status: 'error',
+                type: 'error',
                 text: 'Deine Angabe ist ungültig. Check bitte nochmal dein Geburtstdatum.',
                 group: null
               }
@@ -162,7 +162,7 @@ export const personalDataValidationRules: DryvValidationRuleSet<PersonalData> = 
           return !$m.geburtsdatum || /\d{4}-\d{2}-\d{2}/.test($m.geburtsdatum.toString())
             ? null
             : {
-                status: 'error',
+                type: 'error',
                 text: 'Gib dein Geburtsdatum bitte im Format TT.MM.JJJJ an.',
                 group: null
               }
@@ -174,7 +174,7 @@ export const personalDataValidationRules: DryvValidationRuleSet<PersonalData> = 
             session.dryv.valueOfDate($m.geburtsdatum, 'de-DE', 'DD.MM.YYYY HH:mm:ss') >
               session.dryv.valueOfDate('28.11.2005 00:00:00', 'de-DE', 'DD.MM.YYYY HH:mm:ss')
             ? {
-                status: 'error',
+                type: 'error',
                 text: 'Achso, du bist noch nicht volljährig? Dann darfst du hier im Internet leider keinen Vertrag mit uns abschließen. Aber ruf uns doch unter 0221–27 11 7777 an. Dann können wir besprechen, welche Möglichkeiten es gibt.',
                 group: null
               }
@@ -187,7 +187,7 @@ export const personalDataValidationRules: DryvValidationRuleSet<PersonalData> = 
             session.dryv.valueOfDate($m.geburtsdatum, 'de-DE', 'DD.MM.YYYY HH:mm:ss') <
               session.dryv.valueOfDate('28.11.1903 00:00:00', 'de-DE', 'DD.MM.YYYY HH:mm:ss')
             ? {
-                status: 'error',
+                type: 'error',
                 text: 'Check bitte nochmal dein Geburtsdatum.',
                 group: null
               }
@@ -201,7 +201,7 @@ export const personalDataValidationRules: DryvValidationRuleSet<PersonalData> = 
         validate: function ($m) {
           return !/\S/.test($m.telefonNummer || '') && !/\S/.test($m.emailAdresse || '')
             ? {
-                status: 'error',
+                type: 'error',
                 text: 'Bitte Entweder Email oder Telefon angeben.',
                 group: 'kommunikation'
               }
@@ -215,7 +215,7 @@ export const personalDataValidationRules: DryvValidationRuleSet<PersonalData> = 
         validate: function ($m) {
           return !/\S/.test($m.emailAdresse || '')
             ? {
-                status: 'error',
+                type: 'error',
                 text: 'Bitte gib hier deine E-Mail-Adresse an.',
                 group: null
               }
@@ -224,16 +224,16 @@ export const personalDataValidationRules: DryvValidationRuleSet<PersonalData> = 
       },
       {
         validate: function ($m) {
-          return /[^\u0020-\u00ff]/.test($m.emailAdresse)
+          return /[^\u0020-\u00ff]/.test($m.emailAdresse ?? '')
             ? 'Bitte nutzen Sie nur die Zeichen aus dem westeurop\u0026#228;ischen Zeichensatz.'
             : null
         }
       },
       {
         validate: function ($m) {
-          return $m.emailAdresse.length < 6
+          return ($m.emailAdresse ?? '').length < 6
             ? {
-                status: 'error',
+                type: 'error',
                 text: 'Check bitte nochmal deine E-Mail-Adresse. Sie muss mindestens 6 Zeichen lang sein.'
               }
             : null
@@ -241,9 +241,9 @@ export const personalDataValidationRules: DryvValidationRuleSet<PersonalData> = 
       },
       {
         validate: function ($m) {
-          return $m.emailAdresse.length > 100
+          return ($m.emailAdresse ?? '').length > 100
             ? {
-                status: 'error',
+                type: 'error',
                 text: 'Check bitte nochmal deine E-Mail-Adresse. Sie darf maximal 100 Zeichen lang sein.'
               }
             : null
@@ -286,7 +286,7 @@ export const personalDataValidationRules: DryvValidationRuleSet<PersonalData> = 
         validate: function ($m) {
           return !/\S/.test($m.telefonNummer || '') && !/\S/.test($m.emailAdresse || '')
             ? {
-                status: 'error',
+                type: 'error',
                 text: 'Bitte Entweder Email oder Telefon angeben.',
                 group: 'kommunikation'
               }

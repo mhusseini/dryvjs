@@ -11,7 +11,8 @@ export interface DryvValidationRule<TModel extends object> {
     required?: boolean
     [path: string | symbol]: unknown
   }
-  related?: (string | symbol)[]
+  related?: (keyof TModel)[]
+  group?: string
   validate: ($m: TModel, session: DryvValidationSession<TModel>) => DryvValidateFunctionResult
 }
 
@@ -33,31 +34,32 @@ export interface DryvValidationRuleSetResolver {
   ): DryvValidationRuleSet<TModel, TParameters>
 }
 
-export interface DryvValidationResult<TModel extends object> {
+export interface DryvValidationResult {
   results: DryvFieldValidationResult[]
   success: boolean
   hasErrors: boolean
   hasWarnings: boolean
   warningHash: string | undefined | null
+  field?: string
 }
 
 export interface DryvFieldValidationResult {
   path?: string
-  status?: DryvValidationResultStatus
+  type?: DryvValidationResultType
   text?: string | null
   group?: string | null
 }
 
-export type DryvValidationResultStatus = 'error' | 'warning' | 'success' | string
+export type DryvValidationResultType = 'error' | 'warning' | 'success' | string
 
 export type DryvProxy<TModel extends object> = TModel & {
-  $dryv: DryvValidatable<TModel, DryvObject<TModel>>
+  $validatable: DryvValidatable<TModel, DryvObject<TModel>>
 }
 
 export interface DryvGroupValidationResult {
   name: string
   results: {
-    status: DryvValidationResultStatus
+    type: DryvValidationResultType
     texts: string[]
   }[]
 }
@@ -69,25 +71,26 @@ export interface DryvValidatable<TModel extends object = any, TValue = any> {
   path?: string | null
   group?: string | null
   groupShown?: boolean | null
-  status?: DryvValidationResultStatus | null
-  value: TValue | undefined
-  parent: DryvValidatable | undefined
-  field: keyof TModel | undefined
+  type?: DryvValidationResultType | null
+  value?: TValue | undefined
+  parent?: DryvValidatable | undefined
+  field?: keyof TModel | undefined
 
   get hasError(): boolean
 
   get hasWarning(): boolean
 
-  validate(): Promise<DryvValidationResult<TModel>>
+  get isSuccess(): boolean
+
+  validate(): Promise<DryvValidationResult>
 
   clear(): void
 
-  set(response: DryvServerValidationResponse | DryvServerErrors): void
+  set(response: DryvServerValidationResponse | DryvServerErrors): boolean
+
+  updateValue(value: any): void
 }
 
-/*
- @internal
- */
 export interface DryvValidatableInternal<TModel extends object = any, TValue = any>
   extends DryvValidatable<TModel, TValue> {
   get session(): DryvValidationSession<TModel> | undefined
@@ -97,7 +100,7 @@ export interface DryvValidationGroup<TModel extends object> {
   name: string
   fields: DryvValidatable<TModel>
   text?: string | null
-  status?: DryvValidationResultStatus | null
+  type?: DryvValidationResultType | null
 }
 
 export type DryvObject<TModel extends object> = {
@@ -125,6 +128,19 @@ export interface DryvValidationSessionInternal<TModel extends object>
 }
 
 export interface DryvValidationSession<TModel extends object> {
+  results: {
+    fields: Record<string, DryvFieldValidationResult | undefined>
+    groups: Record<string, DryvFieldValidationResult | undefined>
+  }
+  validateObject(
+    objOrProxy: DryvValidatable<TModel> | DryvProxy<TModel>
+  ): Promise<DryvValidationResult>
+
+  validateField<TValue>(
+    field: DryvValidatable<TModel, TValue>,
+    model?: DryvProxy<TModel>
+  ): Promise<DryvValidationResult>
+
   dryv: {
     callServer(url: string, method: string, data: any): Promise<any>
 
@@ -138,15 +154,6 @@ export interface DryvValidationSession<TModel extends object> {
 
     valueOfDate(date: string, locale: string, format: string): number
   }
-
-  validateObject(
-    objOrProxy: DryvValidatable<TModel> | DryvProxy<TModel>
-  ): Promise<DryvValidationResult<TModel>>
-
-  validateField<TValue>(
-    field: DryvValidatable<TModel, TValue>,
-    model?: DryvProxy<TModel>
-  ): Promise<DryvValidationResult<TModel>>
 }
 
 export interface DryvOptions {

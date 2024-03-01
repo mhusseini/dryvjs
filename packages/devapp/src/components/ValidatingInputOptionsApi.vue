@@ -4,24 +4,30 @@
       {{ label }}
     </label>
 
-    <input ref="input" v-model="value.value" />
+    <input ref="input" v-model="validatable.value" />
 
-    <div class="error" v-show="value?.status === 'error'">
-      {{ value?.text }}
+    <div class="error" v-show="validatable.type === 'error'">
+      {{ validatable.text }}
     </div>
   </div>
 </template>
 
 <script lang="ts">
 import { toNative, Component, Vue, Prop } from 'vue-facing-decorator'
-import { dryvValuePropMixin } from 'dryvue'
+import { dryvValidatableMixin, type DryvValidatableMixin } from 'dryvue'
+import type { DryvValidatable } from 'dryvjs'
 
 @Component({
-  mixins: [dryvValuePropMixin<string>()]
+  mixins: [dryvValidatableMixin<string>()]
 })
-class OptionsApiFormInput extends Vue {
+class OptionsApiFormInput extends Vue implements DryvValidatableMixin<string> {
+  modelValue!: string | DryvValidatable<any, string>
+  validatable!: DryvValidatable<any, string>
+
   @Prop()
-  label: string
+  label: string = ''
+
+  setup() {}
 }
 
 export default toNative(OptionsApiFormInput)

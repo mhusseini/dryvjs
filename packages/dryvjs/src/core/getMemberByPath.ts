@@ -1,8 +1,11 @@
-export function getMemberByPath<TResult = any>(obj: any, path: string | symbol): TResult {
+export function getMemberByPath<TModel extends object, TResult = any>(
+  obj: TModel,
+  path: string | symbol
+): TResult | TModel {
   if (!path) {
     return obj
   }
-  let result = obj
+  let result: any = obj
   for (const part of String(path).split('.')) {
     if (result == null) {
       return result

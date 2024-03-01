@@ -5,7 +5,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "yarn workspaces foreach run build",
+    "build": "yarn workspaces foreach -A run build",
     "publish": "yarn workspaces foreach --no-private -A npm publish"
   },
   "packageManager": "yarn@4.1.0"
