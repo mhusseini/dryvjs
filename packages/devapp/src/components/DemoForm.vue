@@ -43,16 +43,8 @@ defineEmits()
 
 const result = ref<DryvValidationResult>()
 const { model, rollback, dirty } = useTransaction(data)
-const {
-  validatable,
-  validate,
-  valid,
-  clear,
-  updateModel,
-  useMappedField,
-  useMappedGroup,
-  session
-} = useDryv(model, personalDataValidationRules)
+const { validatable, validate, valid, clear, updateModel, useMappedField, useMappedGroup } =
+  useDryv(model, personalDataValidationRules)
 
 const other = ref(123)
 const validatable2 = useMappedField('telefonNummer', other)

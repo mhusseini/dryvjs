@@ -15,8 +15,7 @@ import {
   DryvValidatable,
   dryvValidationSession
 } from 'dryvjs'
-import { computed } from 'vue'
-import type { Ref } from '@vue/reactivity'
+import { computed, isRef, watch, type Ref } from 'vue'
 import { useMappedField } from '@/useMappedField'
 import { useMappedGroup } from '@/useMappedGroup'
 
@@ -29,17 +28,31 @@ export interface UseDryvResult<TModel extends object> {
   clear: () => void
   setValidationResult: (result: DryvServerValidationResponse | DryvServerErrors) => boolean
   updateModel: (newValues: TModel) => void
-  useMappedField<TTo>(field: keyof TModel, mappedValue: Ref<TTo>): DryvValidatable<any, TTo>
-  useMappedGroup<TTo>(groupName: string, field: Ref<TTo>): DryvValidatable<any, TTo>
+
+  useMappedField<TTo>(
+    field: keyof TModel,
+    mappedValue: Ref<TTo | undefined>
+  ): DryvValidatable<any, TTo>
+
+  useMappedGroup<TTo>(groupName: string, field: Ref<TTo | undefined>): DryvValidatable<any, TTo>
 }
 
 export function useDryv<TModel extends object>(
-  model: TModel,
+  model: TModel | Ref<TModel | undefined>,
   ruleSet: string | DryvValidationRuleSet<TModel>,
   options?: DryvOptions
 ): UseDryvResult<TModel> {
   options = dryvOptions(options)
   ruleSet = findRuleSet(ruleSet)
+
+  if (isRef(model)) {
+    const ref = model
+    watch(ref, (newModel) => proxy.$validatable.updateValue(newModel))
+    if (!model.value) {
+      throw new Error('The initial value of the model cannot be null or undefined.')
+    }
+    model = model.value
+  }
 
   const session = dryvValidationSession<TModel>(options, ruleSet)
   const proxy = dryvProxy<TModel>(model, undefined, session, options)

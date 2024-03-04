@@ -52,7 +52,7 @@ export function dryvValidatableValue<TModel extends object = any, TValue = any>(
       if (!_session) {
         throw new Error('No validation session found')
       }
-      return _session.validateField(validatable)
+      return _session.validateField(validatable as any)
     },
     get path(): string {
       return (parent?.path ? parent.path + '.' : '') + (field ? String(field) : '')

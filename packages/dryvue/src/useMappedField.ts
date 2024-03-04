@@ -10,7 +10,7 @@ import { Ref } from '@vue/reactivity'
 export function useMappedField<TModel extends object, TTo>(
   model: DryvObject<TModel>,
   field: keyof TModel,
-  mappedValue: Ref<TTo>
+  mappedValue: Ref<TTo | undefined>
 ): DryvValidatable<any, TTo> {
   if (!model[field]) {
     model[field] = null!
@@ -21,10 +21,10 @@ export function useMappedField<TModel extends object, TTo>(
   return {
     _isDryvValidatable: true,
     groupShown: false,
-    get value(): TTo {
+    get value(): TTo | undefined {
       return mappedValue.value
     },
-    set value(value: TTo) {
+    set value(value: TTo | undefined) {
       mappedValue.value = value
     },
     get parent(): DryvValidatable | undefined {
@@ -80,6 +80,9 @@ export function useMappedField<TModel extends object, TTo>(
     },
     set type(_) {
       throw new Error('The method must not be called on this instance.')
+    },
+    toJSON(): any {
+      return { ...this, parent: undefined, _isDryvValidatable: undefined, session: undefined }
     }
-  }
+  } as any
 }

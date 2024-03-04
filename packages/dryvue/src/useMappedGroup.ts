@@ -4,15 +4,15 @@ import { Ref } from '@vue/reactivity'
 export function useMappedGroup<TModel extends object, TTo>(
   session: DryvValidationSession<TModel>,
   groupName: string,
-  field: Ref<TTo>
+  field: Ref<TTo | undefined>
 ): DryvValidatable<any, TTo> {
   return {
     _isDryvValidatable: true,
     groupShown: false,
-    get value(): TTo {
+    get value(): TTo | undefined {
       return field.value
     },
-    set value(value: TTo) {
+    set value(value: TTo | undefined) {
       field.value = value
     },
     get parent(): DryvValidatable | undefined {
@@ -63,6 +63,9 @@ export function useMappedGroup<TModel extends object, TTo>(
     },
     set type(_) {
       throw new Error('The method must not be called on this instance.')
+    },
+    toJSON(): any {
+      return { ...this, parent: undefined, _isDryvValidatable: undefined, session: undefined }
     }
-  }
+  } as any
 }
