@@ -12,7 +12,7 @@
 import { type DryvValidatable, useDryvValueProp } from 'dryvue'
 
 const props = defineProps<{
-  modelValue: string | DryvValidatable<any, string>
+  modelValue: string | DryvValidatable<any, string> | undefined
   label: string
 }>()
 
