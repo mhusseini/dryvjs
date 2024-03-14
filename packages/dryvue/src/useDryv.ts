@@ -16,8 +16,8 @@ import {
   dryvValidationSession
 } from 'dryvjs'
 import { computed, isRef, watch, type Ref } from 'vue'
-import { useMappedField } from '@/useMappedField'
-import { useMappedGroup } from '@/useMappedGroup'
+import { useMappedField } from './useMappedField'
+import { useMappedGroup } from './useMappedGroup'
 
 export interface UseDryvResult<TModel extends object> {
   session: DryvValidationSession<TModel>

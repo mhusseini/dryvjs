@@ -11,7 +11,7 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
-    "dryvue": "workspace:2.0.0-pre-0",
+    "dryvue": "workspace:^2.0.0-pre-0",
     "vue": "^3.3.4"
   },
   "devDependencies": {

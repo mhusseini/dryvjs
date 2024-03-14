@@ -1,4 +1,4 @@
-export interface PersonalData {
+export interface PersonalData extends Object {
   anrede: string
   vorname: string
   nachname: string
@@ -7,4 +7,11 @@ export interface PersonalData {
   telefonNummer?: string
   werberVertragsnummer?: string
   child?: PersonalData
+  location?: Location
+}
+
+export interface Location {
+  street: string
+  city: string
+  zip: string
 }

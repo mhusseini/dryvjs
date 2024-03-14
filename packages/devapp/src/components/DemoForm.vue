@@ -4,8 +4,7 @@
       <validating-input v-model="validatable.anrede" label="Anrede" />
       <validating-input v-model="validatable.vorname" label="Vorname" />
       <validating-input v-model="validatable.nachname" label="Nachname" />
-      <validating-input v-model="validatable2" label="Telefonnummer" />
-      <validating-input v-model="validatable3" label="Kommunikation" />
+      <validating-input v-model="validatable.child!.child!.nachname" label="Nachname" />
     </div>
     <div class="button-bar">
       <button @click.prevent="randomize">Randomize</button>
@@ -17,7 +16,7 @@
   <table>
     <tr>
       <td>
-        <pre class="debug"> {{ session }} </pre>
+        <pre class="debug"> {{ validatable }} </pre>
       </td>
       <td>
         <pre class="debug"> {{ model }} </pre>
@@ -36,19 +35,32 @@ import { personalDataValidationRules } from '@/PersonalDataValidationRules'
 let data: PersonalData = reactive({
   anrede: 'text',
   vorname: 'text',
-  nachname: 'text'
+  nachname: 'text',
+  child: {
+    anrede: 'text2',
+    vorname: 'text2',
+    nachname: 'text2',
+    child: {
+      anrede: 'text3',
+      vorname: 'text3',
+      nachname: 'text3'
+    },
+    location: {
+      street: 'street1',
+      city: 'city1',
+      zip: 'zip1'
+    }
+  }
 })
 
 defineEmits()
 
 const result = ref<DryvValidationResult>()
 const { model, rollback, dirty } = useTransaction(data)
-const { validatable, validate, valid, clear, updateModel, useMappedField, useMappedGroup } =
-  useDryv(model, personalDataValidationRules)
-
-const other = ref(123)
-const validatable2 = useMappedField('telefonNummer', other)
-const validatable3 = useMappedGroup('kommunikation', other)
+const { validatable, validate, valid, clear, updateModel } = useDryv(
+  model,
+  personalDataValidationRules
+)
 
 function revert() {
   rollback()

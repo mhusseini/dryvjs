@@ -114,9 +114,7 @@ export type DryvObject<TModel extends object> = {
           ? DryvValidatable<TModel, TModel[Property]>
           : TModel[Property] extends object
             ? DryvObject<TModel[Property]>
-            : TModel[Property] extends object
-              ? DryvObject<TModel[Property]>
-              : DryvValidatable<TModel, TModel[Property]>
+            : DryvValidatable<TModel, TModel[Property]>
 } & {
   $model: DryvProxy<TModel> | undefined
   toJSON(): any
@@ -132,6 +130,7 @@ export interface DryvValidationSession<TModel extends object> {
     fields: Record<string, DryvFieldValidationResult | undefined>
     groups: Record<string, DryvFieldValidationResult | undefined>
   }
+
   validateObject(
     objOrProxy: DryvValidatable<TModel> | DryvProxy<TModel>
   ): Promise<DryvValidationResult>
