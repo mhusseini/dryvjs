@@ -18,6 +18,8 @@ export interface DryvValidationRule<TModel extends object> {
 
 export type DrvvRuleInvocations<TModel extends object> = {
   [Property in keyof TModel]?: DryvValidationRule<TModel>[]
+} & {
+  [path: string]: DryvValidationRule<TModel>[]
 }
 
 export interface DryvValidationRuleSet<TModel extends object, TParameters = object> {

@@ -17,10 +17,16 @@ export function dryvValidatableValue<TModel extends object = any, TValue = any>(
   getter: () => TValue,
   setter: (value: TValue) => void
 ): DryvValidatableInternal<TModel, TValue> {
+  let _text: string | null = null
   const validatable: DryvValidatableInternal<TModel, TValue> = options.objectWrapper!({
     _isDryvValidatable: true,
     field,
-    text: null,
+    get text() {
+      return _text
+    },
+    set text(value: string | null) {
+      _text = value
+    },
     group: null,
     type: null,
     get value(): TValue {

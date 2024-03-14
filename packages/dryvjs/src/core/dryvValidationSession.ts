@@ -66,15 +66,11 @@ export function dryvValidationSession<TModel extends object>(
 
       try {
         const newValidationChain = startValidationChain()
-        const fieldResults = (await Promise.all(
-          Object.entries<DryvValidatable>(obj.value)
-            .filter(([field, value]) => isDryvValidatable(value) && !isExcludedField(field))
-            .map(([_, value]) =>
-              value.validate().then((result) => {
-                return { ...result, path: value.path }
-              })
-            )
-        )) as DryvValidationResult[]
+        const fieldResults: DryvValidationResult[] = await Promise.all(
+          Array.from(traverseFields(obj.value)).map(([field, value]) =>
+            value.validate().then((result) => ({ ...result, path: value.path ?? undefined }))
+          )
+        )
         const result = createObjectResults(fieldResults.filter((r) => !!r))
 
         obj.type = result.hasErrors ? 'error' : result.hasWarnings ? 'warning' : 'success'
@@ -88,7 +84,6 @@ export function dryvValidationSession<TModel extends object>(
         _depth--
       }
     },
-
     async validateField<TValue>(
       field: DryvValidatable<TModel, TValue>,
       model?: DryvProxy<TModel>
@@ -156,6 +151,24 @@ export function dryvValidationSession<TModel extends object>(
     _processedFields = undefined
   }
 
+  function* traverseFields(obj: any): IterableIterator<[string, DryvValidatable]> {
+    for (const key in obj) {
+      if (!(!isExcludedField(key) && obj.hasOwnProperty(key))) {
+        continue
+      }
+
+      const value = obj[key]
+      if (typeof value !== 'object') {
+        continue
+      }
+      if (isDryvValidatable(value)) {
+        yield [key, value]
+      } else {
+        yield* traverseFields(value)
+      }
+    }
+  }
+
   function isExcludedField(fieldName: string, path?: string): boolean {
     if (!options.excludedFields) {
       return false
@@ -186,7 +199,7 @@ export function dryvValidationSession<TModel extends object>(
       _processedFields[field] = true
     }
 
-    const rules = ruleSet?.validators?.[field] as DryvValidationRule<TModel>[]
+    const rules = ruleSet?.validators?.[validatable.path!] as DryvValidationRule<TModel>[]
 
     if (!rules || rules.length <= 0) {
       return Promise.resolve(null)
@@ -328,6 +341,7 @@ function createFieldValidationResult<TModel extends object, TValue>(
     field.type = result.type
     field.text = result.text
     field.group = result.group
+    ;(window as any)._field = field
 
     const type = result.type?.toLowerCase()
 

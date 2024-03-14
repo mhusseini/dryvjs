@@ -330,6 +330,13 @@ export const personalDataValidationRules: DryvValidationRuleSet<PersonalData> = 
                 })
         }
       }
+    ],
+    'location.street': [
+      {
+        validate(model) {
+          return model.location?.street === 'aa' ? "That's a stupid name" : null
+        }
+      }
     ]
   },
   disablers: {},

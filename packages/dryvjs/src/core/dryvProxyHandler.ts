@@ -5,113 +5,125 @@ import { dryvValidatableObject } from './dryvValidatableObject'
 import { dryvValidatableValue } from './dryvValidatableValue'
 import type { DryvValidationSession } from './typings'
 
-function updateModel<TModel extends object>(model: TModel, newValues: TModel) {
-  for (const key in newValues) {
-    if (newValues.hasOwnProperty(key)) {
-      model[key] = newValues[key]
-    }
-  }
-}
-
 export function dryvProxyHandler<TModel extends object>(
   field: keyof TModel | undefined,
   session: DryvValidationSession<TModel>,
   options: DryvOptions
 ): ProxyHandler<TModel> {
-  const _excludedFields: { [field: string]: boolean } = {}
-  let _dryv: DryvValidatableInternal<TModel> | null = null
+  return new DryvProxyHandler(field, session, options)
+}
 
-  return {
-    get(target: TModel, fieldSymbol: string | symbol, receiver: any): any {
-      const fieldName = String(fieldSymbol)
-      if (fieldName === '$validatable') {
-        return getDryv(receiver)
-      }
+class DryvProxyHandler<TModel extends object> {
+  private _excludedFields: { [field: string]: boolean } = {}
+  private _validatable: DryvValidatableInternal<TModel> | null = null
+  private _values: { [field: string]: any } = {}
 
-      if (isExcludedField(fieldName)) {
-        return Reflect.get(target, fieldName, receiver)
-      }
+  constructor(
+    private field: keyof TModel | undefined,
+    private session: DryvValidationSession<TModel>,
+    private options: DryvOptions
+  ) {}
 
-      const originalValue = Reflect.get(target, fieldName, receiver)
-      const field = fieldName as keyof TModel
-      let resultValue
-
-      if (originalValue && typeof originalValue === 'object') {
-        resultValue = ensureObjectProxy(originalValue, field as keyof TModel, receiver, session)
-        if (resultValue !== originalValue) {
-          Reflect.set(target, fieldName, resultValue)
-        }
-      } else if (typeof originalValue !== 'function') {
-        ensureValueProxy(field as keyof TModel, receiver, session)
-        resultValue = originalValue
-      }
-
-      return resultValue
-    },
-
-    set(target: TModel, fieldSymbol: string, value: any, receiver: any): boolean {
-      const fieldName = String(fieldSymbol)
-      if (fieldName === '$validatable') {
-        throw new Error('The $validatable property is read-only.')
-      }
-
-      const field = fieldName as keyof TModel
-
-      if (typeof value === 'function') {
-        return Reflect.set(target, field, value)
-      }
-
-      if (isExcludedField(fieldName)) {
-        return Reflect.set(target, field, value)
-      }
-
-      const originalValue = Reflect.get(target, field, receiver)
-
-      if (!value && isDryvProxy(originalValue)) {
-        originalValue.$validatable.parent = undefined
-      }
-
-      let targetValue
-      let proxy: DryvValidatable | undefined = undefined
-
-      if (value && typeof value === 'object') {
-        targetValue = ensureObjectProxy(value, field as keyof TModel, receiver, session)
-      } else {
-        proxy = ensureValueProxy(field as keyof TModel, receiver, session)
-        targetValue = value
-      }
-
-      const result = Reflect.set(target, field, targetValue)
-
-      proxy?.validate().catch(console.error)
-
-      return result
+  get(target: TModel, fieldSymbol: string | symbol, receiver: any): any {
+    const fieldName = String(fieldSymbol)
+    if (fieldName === '$validatable') {
+      return this.getDryv(receiver)
     }
+
+    if (this.isExcludedField(fieldName)) {
+      return Reflect.get(target, fieldName, receiver)
+    }
+
+    if (this._values[fieldName] !== undefined) {
+      return this._values[fieldName]
+    }
+
+    const originalValue = Reflect.get(target, fieldName, receiver)
+    const field = fieldName as keyof TModel
+    let resultValue
+
+    if (originalValue && typeof originalValue === 'object') {
+      resultValue = this.ensureObjectProxy(
+        originalValue,
+        field as keyof TModel,
+        receiver,
+        this.session
+      )
+      if (resultValue !== originalValue) {
+        //Reflect.set(target, fieldName, resultValue, receiver)
+        this._values[fieldName] = resultValue
+      }
+    } else if (typeof originalValue !== 'function') {
+      this.ensureValueProxy(field as keyof TModel, receiver, this.session)
+      resultValue = originalValue
+    }
+
+    return resultValue
   }
 
-  function ensureObjectProxy(
+  set(target: TModel, fieldSymbol: string, value: any, receiver: any): boolean {
+    const fieldName = String(fieldSymbol)
+    if (fieldName === '$validatable') {
+      throw new Error('The $validatable property is read-only.')
+    }
+
+    const field = fieldName as keyof TModel
+
+    if (typeof value === 'function') {
+      return Reflect.set(target, field, value, receiver)
+    }
+
+    if (this.isExcludedField(fieldName)) {
+      return Reflect.set(target, field, value, receiver)
+    }
+
+    const originalValue = this._values[fieldName] ?? Reflect.get(target, field, receiver)
+
+    if (!value && isDryvProxy(originalValue)) {
+      originalValue.$validatable.parent = undefined
+    }
+
+    let targetValue
+    let proxy: DryvValidatable | undefined = undefined
+
+    if (value && typeof value === 'object') {
+      targetValue = this.ensureObjectProxy(value, field as keyof TModel, receiver, this.session)
+    } else {
+      proxy = this.ensureValueProxy(field as keyof TModel, receiver, this.session)
+      targetValue = value
+    }
+
+    this._values[fieldName] = targetValue
+    const result = Reflect.set(target, field, value, receiver)
+
+    proxy?.validate().catch(console.error)
+
+    return result
+  }
+
+  private ensureObjectProxy(
     value: any,
     field: keyof TModel,
     receiver: TModel,
     session: DryvValidationSession<TModel>
   ) {
     const proxy: DryvProxy<any> = !isDryvProxy(value)
-      ? dryvProxy(value, field, session, options)
+      ? dryvProxy(value, field, session, this.options)
       : value
 
-    const dryv = getDryv(receiver)
+    const dryv = this.getDryv(receiver)
     dryv.value[field] = proxy.$validatable.value
     proxy.$validatable.parent = dryv
 
     return proxy
   }
 
-  function ensureValueProxy(
+  private ensureValueProxy(
     field: keyof TModel,
     receiver: TModel,
     session: DryvValidationSession<TModel>
   ): DryvValidatable {
-    const dryv = getDryv(receiver)
+    const dryv = this.getDryv(receiver)
     const dryvObject = dryv.value
 
     if (isDryvValidatable(dryvObject[field])) {
@@ -122,31 +134,38 @@ export function dryvProxyHandler<TModel extends object>(
       field,
       dryv,
       session,
-      options,
+      this.options,
       () => receiver[field],
       (value) => (receiver[field] = value)
     )
 
-    const proxy = options.objectWrapper!(validatable)
+    const proxy = this.options.objectWrapper!(validatable)
 
     dryvObject[field] = proxy
 
     return proxy
   }
 
-  function getDryv(model: TModel) {
-    if (!_dryv) {
-      _dryv = dryvValidatableObject<TModel>(field, session, model, options)
+  private getDryv(model: TModel) {
+    if (!this._validatable) {
+      this._validatable = dryvValidatableObject<TModel>(
+        this.field,
+        this.session,
+        model,
+        this.options
+      )
     }
 
-    return _dryv
+    return this._validatable
   }
 
-  function isExcludedField(field: string) {
-    if (_excludedFields[field] === undefined) {
-      _excludedFields[field] = !!options.excludedFields?.find((regexp) => regexp?.test(field))
+  private isExcludedField(field: string) {
+    if (this._excludedFields[field] === undefined) {
+      this._excludedFields[field] = !!this.options.excludedFields?.find((regexp) =>
+        regexp?.test(field)
+      )
     }
 
-    return _excludedFields[field]
+    return this._excludedFields[field]
   }
 }

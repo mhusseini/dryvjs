@@ -4,7 +4,7 @@
       <validating-input v-model="validatable.anrede" label="Anrede" />
       <validating-input v-model="validatable.vorname" label="Vorname" />
       <validating-input v-model="validatable.nachname" label="Nachname" />
-      <validating-input v-model="validatable.child!.child!.nachname" label="Nachname" />
+      <validating-input v-model="validatable.location!.street" label="Steet" />
     </div>
     <div class="button-bar">
       <button @click.prevent="randomize">Randomize</button>
@@ -26,9 +26,9 @@
 </template>
 
 <script setup lang="ts">
-import ValidatingInput from '@/components/ValidatingInputOptionsApi.vue'
+import ValidatingInput from '@/components/ValidatingInput.vue'
 import type { PersonalData } from '@/models'
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { type DryvValidationResult, useDryv, useTransaction } from 'dryvue'
 import { personalDataValidationRules } from '@/PersonalDataValidationRules'
 
@@ -36,20 +36,10 @@ let data: PersonalData = reactive({
   anrede: 'text',
   vorname: 'text',
   nachname: 'text',
-  child: {
-    anrede: 'text2',
-    vorname: 'text2',
-    nachname: 'text2',
-    child: {
-      anrede: 'text3',
-      vorname: 'text3',
-      nachname: 'text3'
-    },
-    location: {
-      street: 'street1',
-      city: 'city1',
-      zip: 'zip1'
-    }
+  location: {
+    street: 'street1'
+    // city: 'city1',
+    // zip: 'zip1'
   }
 })
 
@@ -57,11 +47,16 @@ defineEmits()
 
 const result = ref<DryvValidationResult>()
 const { model, rollback, dirty } = useTransaction(data)
-const { validatable, validate, valid, clear, updateModel } = useDryv(
-  model,
-  personalDataValidationRules
-)
+const {
+  validatable,
+  validate,
+  valid,
+  clear,
+  updateModel,
+  model: proxy
+} = useDryv(model, personalDataValidationRules)
 
+const x = computed(() => validatable.location!.street === (window as any)._field)
 function revert() {
   rollback()
   clear()
@@ -90,16 +85,13 @@ async function send() {
 }
 
 function randomize() {
-  updateModel({
-    anrede: 'Herr',
-    vorname: 'Max',
-    nachname: 'Mustermann',
-    child: {
-      anrede: 'Frau',
-      vorname: 'Erika',
-      nachname: 'Musterfrau'
-    }
-  })
+  proxy.location = undefined
+  // updateModel({
+  //   anrede: 'Herr',
+  //   vorname: 'Max',
+  //   nachname: 'Mustermann',
+  //   location: undefined
+  // })
 }
 </script>
 

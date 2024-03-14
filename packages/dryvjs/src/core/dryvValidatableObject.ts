@@ -10,6 +10,7 @@ import type {
 } from './typings'
 import { isDryvValidatable } from './isDryvValidatable'
 import { dryvValidatableValue } from './dryvValidatableValue'
+import { isDryvProxy } from './isDryvProxy'
 
 export function dryvValidatableObject<TModel extends object = any, TValue extends object = any>(
   field: keyof TModel | undefined,
@@ -17,12 +18,13 @@ export function dryvValidatableObject<TModel extends object = any, TValue extend
   model: TModel,
   options: DryvOptions
 ): DryvValidatableInternal<TModel, DryvObject<TValue>> {
-  let _parent = isDryvValidatable(parentOrSession)
-    ? (parentOrSession as DryvValidatableInternal)
-    : undefined
-  const _session: DryvValidationSession<TModel> | undefined = _parent
-    ? undefined
-    : (parentOrSession as DryvValidationSession<TModel>)
+  const parentIsValidatable = isDryvValidatable(parentOrSession)
+  const handler = new DryvValidatableObjectHandler(
+    model,
+    parentIsValidatable ? (parentOrSession as DryvValidatableInternal) : undefined,
+    parentIsValidatable ? undefined : (parentOrSession as DryvValidationSession<TModel>),
+    options
+  )
   const _value: DryvObject<TValue> = new Proxy(
     {
       $model: model,
@@ -30,24 +32,7 @@ export function dryvValidatableObject<TModel extends object = any, TValue extend
         return { ...this, $model: undefined }
       }
     } as any,
-    {
-      set(target: TModel, field: string, value: any, receiver: any): boolean {
-        return target.hasOwnProperty(field) || isDryvValidatable(value)
-          ? Reflect.set(target, field, value)
-          : Reflect.set(
-              target,
-              field,
-              dryvValidatableValue(
-                field as keyof TModel,
-                receiver,
-                _parent?.session ?? _session,
-                options,
-                () => (model as any)[field],
-                (value) => ((model as any)[field] = value)
-              )
-            )
-      }
-    }
+    handler
   )
 
   const validatable: DryvValidatableInternal<TModel, DryvObject<TValue>> = options.objectWrapper!({
@@ -61,13 +46,13 @@ export function dryvValidatableObject<TModel extends object = any, TValue extend
       return _value
     },
     get parent(): DryvValidatable | undefined {
-      return _parent
+      return handler.parent
     },
     set parent(value: DryvValidatableInternal | undefined) {
-      _parent = value
+      handler.parent = value
     },
     get session(): DryvValidationSession<TModel> | undefined {
-      return _parent?.session ?? _session
+      return handler.session
     },
     get hasError(): boolean {
       return this.type === 'error'
@@ -79,10 +64,10 @@ export function dryvValidatableObject<TModel extends object = any, TValue extend
       return !this.hasError && !this.hasWarning
     },
     get path(): string {
-      return (_parent?.path ? _parent.path + '.' : '') + (field ? String(field) : '')
+      return (handler.parent?.path ? handler.parent.path + '.' : '') + (field ? String(field) : '')
     },
     async validate(): Promise<DryvValidationResult> {
-      const session = _parent?.session ?? _session
+      const session = handler.session
       if (!session) {
         throw new Error('No validation session found')
       }
@@ -123,4 +108,37 @@ export function dryvValidatableObject<TModel extends object = any, TValue extend
   })
 
   return validatable
+}
+
+class DryvValidatableObjectHandler<TModel extends object> {
+  _session?: DryvValidationSession<TModel>
+  get session(): DryvValidationSession<TModel> | undefined {
+    return this.parent?.session ?? this._session
+  }
+
+  constructor(
+    public model: TModel,
+    public parent: DryvValidatableInternal | undefined,
+    session: DryvValidationSession<TModel> | undefined,
+    private options: DryvOptions
+  ) {
+    this._session = session
+  }
+
+  set(target: TModel, field: string, value: any, receiver: any): boolean {
+    return target.hasOwnProperty(field) || isDryvValidatable(value) || isDryvProxy(value)
+      ? Reflect.set(target, field, value)
+      : Reflect.set(
+          target,
+          field,
+          dryvValidatableValue(
+            field as keyof TModel,
+            receiver,
+            this.session,
+            this.options,
+            () => (this.model as any)[field],
+            (value) => ((this.model as any)[field] = value)
+          )
+        )
+  }
 }
