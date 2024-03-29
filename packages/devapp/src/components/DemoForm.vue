@@ -46,7 +46,7 @@ let data: PersonalData = reactive({
 defineEmits()
 
 const result = ref<DryvValidationResult>()
-const { model, rollback, dirty } = useTransaction(data)
+const { model, commit, dirty } = useTransaction(data)
 const {
   validatable,
   validate,
@@ -56,10 +56,14 @@ const {
   model: proxy
 } = useDryv(model, personalDataValidationRules)
 
-const x = computed(() => validatable.location!.street === (window as any)._field)
 function revert() {
-  rollback()
-  clear()
+  Object.assign(proxy, {
+    anrede: 'Herr',
+    vorname: 'Max',
+    nachname: 'Mustermann'
+  })
+  proxy.vorname = 'hallottttt'
+  //commit()
 }
 
 async function send() {

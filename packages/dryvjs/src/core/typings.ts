@@ -9,9 +9,9 @@ export interface DryvValidationRule<TModel extends object> {
   async?: boolean
   annotations?: {
     required?: boolean
-    [path: string | symbol]: unknown
+    [path: string]: unknown
   }
-  related?: (keyof TModel)[]
+  related?: string[]
   group?: string
   validate: ($m: TModel, session: DryvValidationSession<TModel>) => DryvValidateFunctionResult
 }

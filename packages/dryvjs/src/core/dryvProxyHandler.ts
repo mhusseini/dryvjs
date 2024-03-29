@@ -16,13 +16,15 @@ export function dryvProxyHandler<TModel extends object>(
 class DryvProxyHandler<TModel extends object> {
   private _excludedFields: { [field: string]: boolean } = {}
   private _validatable: DryvValidatableInternal<TModel> | null = null
-  private _values: { [field: string]: any } = {}
+  private _values: { [field: string]: any }
 
   constructor(
     private field: keyof TModel | undefined,
     private session: DryvValidationSession<TModel>,
     private options: DryvOptions
-  ) {}
+  ) {
+    this._values = options.objectWrapper!({})
+  }
 
   get(target: TModel, fieldSymbol: string | symbol, receiver: any): any {
     const fieldName = String(fieldSymbol)
@@ -42,7 +44,7 @@ class DryvProxyHandler<TModel extends object> {
     const field = fieldName as keyof TModel
     let resultValue
 
-    if (originalValue && typeof originalValue === 'object') {
+    if (originalValue && typeof originalValue === 'object' && !Array.isArray(originalValue)) {
       resultValue = this.ensureObjectProxy(
         originalValue,
         field as keyof TModel,
@@ -86,7 +88,7 @@ class DryvProxyHandler<TModel extends object> {
     let targetValue
     let proxy: DryvValidatable | undefined = undefined
 
-    if (value && typeof value === 'object') {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
       targetValue = this.ensureObjectProxy(value, field as keyof TModel, receiver, this.session)
     } else {
       proxy = this.ensureValueProxy(field as keyof TModel, receiver, this.session)

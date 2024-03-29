@@ -1,4 +1,4 @@
-import { dryvTransaction, type DryvOptions } from 'dryvjs'
+import { dryvTransaction, type DryvOptions, DryvTransactionOptions } from 'dryvjs'
 import { computed } from 'vue'
 import type { Ref } from '@vue/reactivity'
 
@@ -11,7 +11,7 @@ export interface UseTransactionResult<TModel extends object = any> {
 
 export function useTransaction<TModel extends object>(
   model: TModel,
-  options?: DryvOptions
+  options?: DryvTransactionOptions
 ): UseTransactionResult<TModel> {
   const result = dryvTransaction(model, options)
 

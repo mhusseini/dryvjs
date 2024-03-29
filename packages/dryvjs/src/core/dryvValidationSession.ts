@@ -243,12 +243,13 @@ export function dryvValidationSession<TModel extends object>(
     try {
       for (const rule of rules) {
         rule.related?.forEach((relatedField) => {
-          if (!relatedField) {
+          if (!relatedField || relatedField === validatable.path) {
             return
           }
           const field = getMemberByPath(model.$validatable.value!, relatedField as string)
           if (!field) {
-            model[relatedField] = null!
+            return
+            //model[relatedField] = null!
           }
           session.validateField(field, model)
         })
@@ -341,7 +342,6 @@ function createFieldValidationResult<TModel extends object, TValue>(
     field.type = result.type
     field.text = result.text
     field.group = result.group
-    ;(window as any)._field = field
 
     const type = result.type?.toLowerCase()
 

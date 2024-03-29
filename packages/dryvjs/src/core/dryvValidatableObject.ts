@@ -12,6 +12,14 @@ import { isDryvValidatable } from './isDryvValidatable'
 import { dryvValidatableValue } from './dryvValidatableValue'
 import { isDryvProxy } from './isDryvProxy'
 
+const excludedFromUpdate: any = {
+  $model: true,
+  toJSON: true,
+  parent: true,
+  _isDryvValidatable: true,
+  session: true
+}
+
 export function dryvValidatableObject<TModel extends object = any, TValue extends object = any>(
   field: keyof TModel | undefined,
   parentOrSession: DryvValidatableInternal | DryvValidationSession<TModel> | undefined,
@@ -89,8 +97,15 @@ export function dryvValidatableObject<TModel extends object = any, TValue extend
     },
     updateValue(value: any) {
       const model = this.value
+      const keys = Array.from(
+        new Set([
+          ...Object.keys(value),
+          ...Object.keys(model).filter((k) => !excludedFromUpdate[k])
+        ])
+      )
 
-      Object.entries(value).forEach(([key, entry]) => {
+      keys.forEach((key) => {
+        const entry = value[key]
         const newValue = isDryvValidatable(entry) ? (entry as DryvValidatable).value : entry
         const oldValue = model[key as keyof TValue] as DryvObject<any>
         if (isDryvValidatable(oldValue)) {

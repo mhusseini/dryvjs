@@ -333,6 +333,7 @@ export const personalDataValidationRules: DryvValidationRuleSet<PersonalData> = 
     ],
     'location.street': [
       {
+        annotations: { required: true },
         validate(model) {
           return model.location?.street === 'aa' ? "That's a stupid name" : null
         }
