@@ -29,7 +29,7 @@ export function dryvProxy<TModel extends object>(
 
     Object.keys(model)
       .filter((prop) => !options!.excludedFields?.find((regexp) => regexp.test(prop)))
-      .forEach((prop) => (proxy[prop as keyof TModel] = proxy[prop as keyof TModel]))
+      .forEach((prop) => (proxy[prop as keyof TModel] = model[prop as keyof TModel] as any))
 
     return proxy
   } finally {

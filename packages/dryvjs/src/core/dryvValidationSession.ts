@@ -1,5 +1,6 @@
 import type {
   DryvFieldValidationResult,
+  DryvObject,
   DryvOptions,
   DryvProxy,
   DryvValidatable,
@@ -13,10 +14,12 @@ import type {
 
 import { isDryvProxy, isDryvValidatable } from '.'
 import { getMemberByPath } from './getMemberByPath'
+import { dryvValidatableObject } from '@/core/dryvValidatableObject'
+import { isDryvObjectProxy } from '../../dist/isDryvObjectProxy'
 
-export function dryvValidationSession<TModel extends object>(
+export function dryvValidationSession<TModel extends object, TParameters = object>(
   options: DryvOptions,
-  ruleSet: DryvValidationRuleSet<TModel>
+  ruleSet: DryvValidationRuleSet<TModel, TParameters>
 ): DryvValidationSession<TModel> {
   if (!options.callServer) {
     throw new Error('The callServer option is required.')
@@ -67,7 +70,7 @@ export function dryvValidationSession<TModel extends object>(
       try {
         const newValidationChain = startValidationChain()
         const fieldResults: DryvValidationResult[] = await Promise.all(
-          Array.from(traverseFields(obj.value)).map(([field, value]) =>
+          Array.from(traverseFields(ruleSet, obj.value)).map(([field, value]) =>
             value.validate().then((result) => ({ ...result, path: value.path ?? undefined }))
           )
         )
@@ -151,20 +154,40 @@ export function dryvValidationSession<TModel extends object>(
     _processedFields = undefined
   }
 
-  function* traverseFields(obj: any): IterableIterator<[string, DryvValidatable]> {
+  function* traverseFields(
+    ruleSet: DryvValidationRuleSet<TModel, TParameters>,
+    obj: any,
+    parentPath?: string
+  ): IterableIterator<[string, DryvValidatable]> {
+    if (!parentPath) {
+      parentPath = ''
+    }
+
     for (const key in obj) {
       if (!(!isExcludedField(key) && obj.hasOwnProperty(key))) {
+        console.log('*** excluded field ' + key)
+        continue
+      }
+      const path = parentPath ? parentPath + '.' + key : key
+      const value = obj[key]
+      if (typeof value !== 'object') {
+        console.log('*** what field ' + path)
         continue
       }
 
-      const value = obj[key]
-      if (typeof value !== 'object') {
+      const model = (obj as any).$model ?? obj
+      const disablers = ruleSet.disablers?.[key]
+      if (disablers && disablers.find((disabler) => disabler.validate(model, session))) {
+        console.log('*** skipping field ' + path)
         continue
       }
+
       if (isDryvValidatable(value)) {
-        yield [key, value]
+        console.log('*** using field ' + path)
+        yield [path, value]
       } else {
-        yield* traverseFields(value)
+        console.log('*** drilling into field ' + path)
+        yield* traverseFields(ruleSet, value, path)
       }
     }
   }
@@ -183,9 +206,9 @@ export function dryvValidationSession<TModel extends object>(
     return _excludedFields[key]
   }
 
-  async function validateFieldInternal<TModel extends object>(
+  async function validateFieldInternal<TModel extends object, TParameters = object>(
     session: DryvValidationSession<TModel>,
-    ruleSet: DryvValidationRuleSet<TModel>,
+    ruleSet: DryvValidationRuleSet<TModel, TParameters>,
     model: DryvProxy<TModel>,
     validatable: DryvValidatable<TModel>,
     options: DryvOptions
@@ -212,9 +235,9 @@ export function dryvValidationSession<TModel extends object>(
     return await runValidators(session, rules, model, validatable, options)
   }
 
-  async function runDisablers<TModel extends object>(
+  async function runDisablers<TModel extends object, TParameters = object>(
     session: DryvValidationSession<TModel>,
-    ruleSet: DryvValidationRuleSet<TModel>,
+    ruleSet: DryvValidationRuleSet<TModel, TParameters>,
     model: TModel,
     field: keyof TModel
   ) {
@@ -254,7 +277,7 @@ export function dryvValidationSession<TModel extends object>(
           session.validateField(field, model)
         })
         const r = await rule.validate(model, session)
-        if (!r) {
+        if (!r || r === true) {
           // continue
         } else if (typeof r === 'string') {
           result = {

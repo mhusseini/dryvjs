@@ -85,7 +85,7 @@ class DryvProxyHandler<TModel extends object> {
       originalValue.$validatable.parent = undefined
     }
 
-    let targetValue
+    let targetValue = value
     let proxy: DryvValidatable | undefined = undefined
 
     if (value && typeof value === 'object' && !Array.isArray(value)) {

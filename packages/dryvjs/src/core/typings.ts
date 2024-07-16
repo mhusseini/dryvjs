@@ -1,6 +1,7 @@
 export type DryvValidateFunctionResult =
   | DryvFieldValidationResult
   | string
+  | boolean
   | null
   | undefined
   | Promise<DryvFieldValidationResult | string | null | undefined>
@@ -148,7 +149,7 @@ export interface DryvValidationSession<TModel extends object> {
     handleResult(
       session: DryvValidationSession<TModel>,
       $m: TModel,
-      field: keyof TModel,
+      field: keyof TModel | string,
       rule: DryvValidationRule<TModel> | undefined | null,
       result: any
     ): Promise<any>

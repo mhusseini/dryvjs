@@ -11,6 +11,7 @@ import type {
 import { isDryvValidatable } from './isDryvValidatable'
 import { dryvValidatableValue } from './dryvValidatableValue'
 import { isDryvProxy } from './isDryvProxy'
+import { isDryvObjectProxy } from '../../dist/isDryvObjectProxy'
 
 const excludedFromUpdate: any = {
   $model: true,
@@ -141,19 +142,26 @@ class DryvValidatableObjectHandler<TModel extends object> {
   }
 
   set(target: TModel, field: string, value: any, receiver: any): boolean {
-    return target.hasOwnProperty(field) || isDryvValidatable(value) || isDryvProxy(value)
-      ? Reflect.set(target, field, value)
-      : Reflect.set(
-          target,
-          field,
-          dryvValidatableValue(
-            field as keyof TModel,
-            receiver,
-            this.session,
-            this.options,
-            () => (this.model as any)[field],
-            (value) => ((this.model as any)[field] = value)
-          )
-        )
+    if (isDryvValidatable(value) || isDryvProxy(value)) {
+      return Reflect.set(target, field, value)
+    }
+
+    const originalValue = Reflect.get(target, field, receiver)
+    if (isDryvValidatable(originalValue) && !isDryvObjectProxy(originalValue)) {
+      return Reflect.set(originalValue, 'value', value)
+    }
+
+    return Reflect.set(
+      target,
+      field,
+      dryvValidatableValue(
+        field as keyof TModel,
+        receiver,
+        this.session,
+        this.options,
+        () => (this.model as any)[field],
+        (value) => ((this.model as any)[field] = value)
+      )
+    )
   }
 }

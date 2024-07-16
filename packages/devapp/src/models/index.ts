@@ -1,3 +1,5 @@
+export * from './Lieferadresse'
+
 export interface PersonalData extends Object {
   anrede: string
   vorname: string
@@ -8,6 +10,7 @@ export interface PersonalData extends Object {
   werberVertragsnummer?: string
   child?: PersonalData
   location?: Location
+  numbers?: number[]
 }
 
 export interface Location {

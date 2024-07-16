@@ -340,7 +340,15 @@ export const personalDataValidationRules: DryvValidationRuleSet<PersonalData> = 
       }
     ]
   },
-  disablers: {},
+  disablers: {
+    anrede: [
+      {
+        validate: function ($m) {
+          return $m.vorname === 'test'
+        }
+      }
+    ]
+  },
   parameters: {
     maxgeburtstag: '28.11.2005 00:00:00',
     mingeburtstag: '28.11.1903 00:00:00',

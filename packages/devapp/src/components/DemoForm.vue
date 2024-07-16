@@ -1,14 +1,24 @@
 <template>
   <form>
     <div :class="{ invalid: !valid }">
-      <validating-input v-model="validatable.anrede" label="Anrede" />
-      <validating-input v-model="validatable.vorname" label="Vorname" />
-      <validating-input v-model="validatable.nachname" label="Nachname" />
-      <validating-input v-model="validatable.location!.street" label="Steet" />
+      <h2>Lieferadresse</h2>
+      <validating-input v-model="validatable.lieferadresse.strasse" label="Straße" />
+      <validating-input v-model="validatable.lieferadresse.hausnummer" label="Hausnummer" />
+      <validating-input v-model="validatable.lieferadresse.postleitzahl" label="PLZ" />
+      <validating-input v-model="validatable.lieferadresse.ort" label="Ort" />
+      <h2>Rechnungsadresse</h2>
+      <input type="checkbox" v-model="validatable.abweichendeRechnungsadresse" />
+      <!--      <validating-input v-model="validatable.rechnungsadresse.vorname" label="Anrede" />-->
+      <!--      <validating-input v-model="validatable.rechnungsadresse.vorname" label="Vorname" />-->
+      <!--      <validating-input v-model="validatable.rechnungsadresse.nachname" label="Nachname" />-->
+      <!--      <validating-input v-model="validatable.rechnungsadresse.strasse" label="Straße" />-->
+      <!--      <validating-input v-model="validatable.rechnungsadresse.hausnummer" label="Hausnummer" />-->
+      <!--      <validating-input v-model="validatable.rechnungsadresse.postleitzahl" label="PLZ" />-->
+      <!--      <validating-input v-model="validatable.rechnungsadresse.ort" label="Ort" />-->
     </div>
     <div class="button-bar">
-      <button @click.prevent="randomize">Randomize</button>
-      <button @click.prevent="revert" :disabled="!dirty && valid">Revert</button>
+      <!--      <button @click.prevent="randomize">Randomize</button>-->
+      <!--      <button @click.prevent="revert" :disabled="!dirty && valid">Revert</button>-->
       <button @click.prevent="validate">Validate</button>
       <button @click.prevent="send">Send</button>
     </div>
@@ -27,20 +37,28 @@
 
 <script setup lang="ts">
 import ValidatingInput from '@/components/ValidatingInput.vue'
-import type { PersonalData } from '@/models'
+import type { Lieferadresse, PersonalData } from '@/models'
 import { computed, reactive, ref } from 'vue'
 import { type DryvValidationResult, useDryv, useTransaction } from 'dryvue'
-import { personalDataValidationRules } from '@/PersonalDataValidationRules'
+import { lieferadresseValidationRules } from '@/LieferadresseValidationRules'
 
-let data: PersonalData = reactive({
-  anrede: 'text',
-  vorname: 'text',
-  nachname: 'text',
-  location: {
-    street: 'street1'
-    // city: 'city1',
-    // zip: 'zip1'
+let data: Lieferadresse = reactive({
+  abweichendeRechnungsadresse: false,
+  lieferadresse: {
+    postleitzahl: null,
+    ort: null,
+    strasse: null,
+    hausnummer: null
   }
+  // rechnungsadresse: {
+  //   postleitzahl: null,
+  //   ort: null,
+  //   strasse: null,
+  //   hausnummer: null,
+  //   vorname: null,
+  //   nachname: null,
+  //   anrede: null
+  // }
 })
 
 defineEmits()
@@ -54,17 +72,7 @@ const {
   clear,
   updateModel,
   model: proxy
-} = useDryv(model, personalDataValidationRules)
-
-function revert() {
-  Object.assign(proxy, {
-    anrede: 'Herr',
-    vorname: 'Max',
-    nachname: 'Mustermann'
-  })
-  proxy.vorname = 'hallottttt'
-  //commit()
-}
+} = useDryv(model, lieferadresseValidationRules)
 
 async function send() {
   result.value = await validate()
@@ -86,16 +94,6 @@ async function send() {
   //
   // setValidationResult(response)
   alert('yay')
-}
-
-function randomize() {
-  proxy.location = undefined
-  // updateModel({
-  //   anrede: 'Herr',
-  //   vorname: 'Max',
-  //   nachname: 'Mustermann',
-  //   location: undefined
-  // })
 }
 </script>
 

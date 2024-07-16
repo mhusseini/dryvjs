@@ -19,9 +19,10 @@ import { computed, isRef, watch, type Ref } from 'vue'
 import { useMappedField } from './useMappedField'
 import { useMappedGroup } from './useMappedGroup'
 
-export interface UseDryvResult<TModel extends object> {
+export interface UseDryvResult<TModel extends object, TParameters = object> {
   session: DryvValidationSession<TModel>
   model: TModel
+  parameters?: TParameters
   validatable: DryvObject<TModel>
   validate: () => Promise<DryvValidationResult>
   valid: Ref<boolean>
@@ -37,13 +38,13 @@ export interface UseDryvResult<TModel extends object> {
   useMappedGroup<TTo>(groupName: string, field: Ref<TTo | undefined>): DryvValidatable<any, TTo>
 }
 
-export function useDryv<TModel extends object>(
+export function useDryv<TModel extends object, TParameters = object>(
   model: TModel | Ref<TModel | undefined>,
-  ruleSet: string | DryvValidationRuleSet<TModel>,
+  ruleSetOrName: string | DryvValidationRuleSet<TModel, TParameters>,
   options?: DryvOptions
-): UseDryvResult<TModel> {
+): UseDryvResult<TModel, TParameters> {
   options = dryvOptions(options)
-  ruleSet = findRuleSet(ruleSet)
+  const ruleSet = findRuleSet<TModel, TParameters>(ruleSetOrName)
 
   if (isRef(model)) {
     const ref = model
@@ -54,14 +55,15 @@ export function useDryv<TModel extends object>(
     model = model.value
   }
 
-  const session = dryvValidationSession<TModel>(options, ruleSet)
+  const session = dryvValidationSession<TModel, TParameters>(options, ruleSet)
   const proxy = dryvProxy<TModel>(model, undefined, session, options)
 
-  annotate<TModel>(proxy, ruleSet, options)
+  annotate<TModel, TParameters>(proxy, ruleSet, options)
 
   return {
     session,
     model: proxy,
+    parameters: ruleSet.parameters,
     validatable: proxy.$validatable.value!,
     validate: async () => await proxy.$validatable.validate(),
     valid: computed(() => !proxy.$validatable.type || proxy.$validatable.type === 'success'),
@@ -76,7 +78,9 @@ export function useDryv<TModel extends object>(
   }
 }
 
-function findRuleSet<TModel extends object>(ruleSet: string | DryvValidationRuleSet<TModel>) {
+function findRuleSet<TModel extends object, TParameters = object>(
+  ruleSet: string | DryvValidationRuleSet<TModel, TParameters>
+): DryvValidationRuleSet<TModel, TParameters> {
   switch (typeof ruleSet) {
     case 'undefined':
       throw new Error(
@@ -84,14 +88,13 @@ function findRuleSet<TModel extends object>(ruleSet: string | DryvValidationRule
       )
     case 'string': {
       const ruleSetName = ruleSet
-      const foundRuleSet = dryvRuleSet<TModel>(ruleSetName)
+      const foundRuleSet = dryvRuleSet<TModel, TParameters>(ruleSetName)
 
       if (!foundRuleSet) {
         throw new Error(`Could not find a validation rule set with the name '${ruleSetName}'`)
       }
 
-      ruleSet = foundRuleSet
-      break
+      return foundRuleSet
     }
   }
   return ruleSet
