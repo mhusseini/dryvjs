@@ -3,7 +3,7 @@ import {
   DryvGroupValidationResult,
   DryvValidatable,
   DryvValidationResultType,
-  isDryvValidatable
+  DryvValidator
 } from 'dryvjs'
 import { Ref } from '@vue/reactivity'
 
@@ -39,9 +39,9 @@ export function useDryvGroupSlot(
   return computed<DryvGroupValidationResult[]>(() => {
     const groups: Record<string, Record<string, any>> = {}
     nodes.forEach((node) => {
-      const validatable: DryvValidatable = node.props?.modelValue
+      const validatable = node.props?.modelValue
 
-      if (!isDryvValidatable(validatable)) {
+      if (!(validatable instanceof DryvValidator)) {
         return
       }
 

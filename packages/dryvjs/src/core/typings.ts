@@ -1,3 +1,5 @@
+import { DryvValidator } from '@/core/DryvValidator'
+
 export type DryvValidateFunctionResult =
   | DryvFieldValidationResult
   | string
@@ -55,10 +57,6 @@ export interface DryvFieldValidationResult {
 
 export type DryvValidationResultType = 'error' | 'warning' | 'success' | string
 
-export type DryvProxy<TModel extends object> = TModel & {
-  $validatable: DryvValidatable<TModel, DryvObject<TModel>>
-}
-
 export interface DryvGroupValidationResult {
   name: string
   results: {
@@ -67,80 +65,22 @@ export interface DryvGroupValidationResult {
   }[]
 }
 
-export interface DryvValidatable<TModel extends object = any, TValue = any> {
-  _isDryvValidatable: true
-  required?: boolean | null
-  text?: string | null
-  path?: string | null
-  group?: string | null
-  groupShown?: boolean | null
-  type?: DryvValidationResultType | null
-  value?: TValue | undefined
-  parent?: DryvValidatable | undefined
-  field?: keyof TModel | undefined
-
-  get hasError(): boolean
-
-  get hasWarning(): boolean
-
-  get isSuccess(): boolean
-
-  validate(): Promise<DryvValidationResult>
-
-  clear(): void
-
-  set(response: DryvServerValidationResponse | DryvServerErrors): boolean
-
-  updateValue(value: any): void
-}
-
-export interface DryvValidatableInternal<TModel extends object = any, TValue = any>
-  extends DryvValidatable<TModel, TValue> {
-  get session(): DryvValidationSession<TModel> | undefined
-}
-
-export interface DryvValidationGroup<TModel extends object> {
-  name: string
-  fields: DryvValidatable<TModel>
-  text?: string | null
-  type?: DryvValidationResultType | null
-}
-
-export type DryvObject<TModel extends object> = {
-  [Property in keyof TModel]: TModel[Property] extends boolean
-    ? DryvValidatable<TModel, TModel[Property]>
-    : TModel[Property] extends string
-      ? DryvValidatable<TModel, TModel[Property]>
-      : TModel[Property] extends Date
-        ? DryvValidatable<TModel, TModel[Property]>
-        : TModel[Property] extends Array<infer ArrayType>
-          ? DryvValidatable<TModel, TModel[Property]>
-          : TModel[Property] extends object
-            ? DryvObject<TModel[Property]>
-            : DryvValidatable<TModel, TModel[Property]>
-} & {
-  $model: DryvProxy<TModel> | undefined
-  toJSON(): any
-}
-
 export interface DryvValidationSessionInternal<TModel extends object>
   extends DryvValidationSession<TModel> {
   $initializing?: boolean
 }
 
-export interface DryvValidationSession<TModel extends object> {
+export interface DryvValidationSession<TModel extends object, TParameters = object> {
   results: {
     fields: Record<string, DryvFieldValidationResult | undefined>
     groups: Record<string, DryvFieldValidationResult | undefined>
   }
 
-  validateObject(
-    objOrProxy: DryvValidatable<TModel> | DryvProxy<TModel>
-  ): Promise<DryvValidationResult>
+  validateObject(objectValidator: DryvValidator<TModel, TParameters>): Promise<DryvValidationResult>
 
-  validateField<TValue>(
-    field: DryvValidatable<TModel, TValue>,
-    model?: DryvProxy<TModel>
+  validateField(
+    field: DryvValidator<TModel, TParameters>,
+    model?: TModel
   ): Promise<DryvValidationResult>
 
   dryv: {
@@ -163,7 +103,7 @@ export interface DryvOptions {
 
   excludedFields?: RegExp[]
 
-  objectWrapper?<TObject>(object: TObject): TObject
+  objectWrapper<TObject>(object: TObject): TObject
 
   callServer?(url: string, method: string, data: any): Promise<DryvServerValidationResponse>
 
@@ -189,4 +129,10 @@ export type DryvServerValidationResponse =
 
 export interface DryvServerErrors {
   [field: string]: DryvFieldValidationResult
+}
+
+export interface FieldEvent<TModel> {
+  oldValue: any
+  newValue: any
+  field: keyof TModel
 }

@@ -6,24 +6,24 @@ import type {
   DryvValidationSession
 } from 'dryvjs'
 import {
-  annotate,
+  DryvObjectValidator,
   dryvOptions,
-  dryvProxy,
   dryvRuleSet,
   DryvServerErrors,
   DryvServerValidationResponse,
-  DryvValidatable,
-  dryvValidationSession
+  DryvValidatable
 } from 'dryvjs'
 import { computed, isRef, watch, type Ref } from 'vue'
 import { useMappedField } from './useMappedField'
 import { useMappedGroup } from './useMappedGroup'
+import { dryvValidatorSession } from 'dryvjs/dist/core/v2/dryvValidationSession'
+import { annotateValidator } from 'dryvjs/dist/core/annotateValidator'
 
 export interface UseDryvResult<TModel extends object, TParameters = object> {
   session: DryvValidationSession<TModel>
   model: TModel
   parameters?: TParameters
-  validatable: DryvObject<TModel>
+  validatable: DryvObjectValidator<TModel, TParameters>
   validate: () => Promise<DryvValidationResult>
   valid: Ref<boolean>
   clear: () => void
@@ -45,37 +45,44 @@ export function useDryv<TModel extends object, TParameters = object>(
 ): UseDryvResult<TModel, TParameters> {
   options = dryvOptions(options)
   const ruleSet = findRuleSet<TModel, TParameters>(ruleSetOrName)
+  const session = dryvValidatorSession<TModel, TParameters>(options, ruleSet)
+  let validator: DryvObjectValidator<TModel, TParameters>
 
   if (isRef(model)) {
     const ref = model
-    watch(ref, (newModel) => proxy.$validatable.updateValue(newModel))
+    validator = new DryvObjectValidator<TModel, TParameters>(
+      model.value ?? ({} as any),
+      session,
+      undefined,
+      options
+    )
+    watch(ref, (newModel) => (validator.value = newModel))
     if (!model.value) {
       throw new Error('The initial value of the model cannot be null or undefined.')
     }
-    model = model.value
+  } else {
+    validator = new DryvObjectValidator<TModel, TParameters>(model, session, undefined, options)
   }
-
-  const session = dryvValidationSession<TModel, TParameters>(options, ruleSet)
-  const proxy = dryvProxy<TModel>(model, undefined, session, options)
-
-  annotate<TModel, TParameters>(proxy, ruleSet, options)
+  
+  annotateValidator<TModel, TParameters>(validator, ruleSet, options)
 
   return {
     session,
-    model: proxy,
+    model: validator.proxy,
     parameters: ruleSet.parameters,
-    validatable: proxy.$validatable.value!,
-    validate: async () => await proxy.$validatable.validate(),
-    valid: computed(() => !proxy.$validatable.type || proxy.$validatable.type === 'success'),
-    clear: () => proxy.$validatable.clear(),
-    updateModel: (newValues: TModel | DryvObject<TModel>) =>
-      proxy.$validatable.updateValue(newValues),
-    useMappedField: (field, mappedValue) =>
-      useMappedField(proxy.$validatable.value!, field, mappedValue),
-    useMappedGroup: (groupName, field) => useMappedGroup(session, groupName, field),
+    validatable: validator.transparentProxy,
+    validate: async () => await validator.validate(),
+    valid: computed(() => validator.isSuccess),
+    clear: () => validator.clear(),
+    updateModel: (newValues: TModel) => (validator.value = newValues),
+    useMappedField: (field: any, mappedValue: any) => {
+      throw new Error('Method not implemented.')
+    },
+    useMappedGroup: (groupName: string, field: Ref<unknown>) =>
+      useMappedGroup(session, groupName, field),
     setValidationResult: (result: DryvServerValidationResponse | DryvServerErrors) =>
-      proxy.$validatable.set(result)
-  }
+      validator.setValidationResult(result)
+  } as any
 }
 
 function findRuleSet<TModel extends object, TParameters = object>(

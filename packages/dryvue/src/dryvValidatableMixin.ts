@@ -1,11 +1,11 @@
 import { defineComponent } from 'vue'
-import { DryvValidatable, isDryvValidatable } from 'dryvjs'
+import { DryvValidator } from 'dryvjs'
 
 type Emit = (...args: any[]) => any
 
 export interface DryvValidatableMixin<TValue> {
-  modelValue: TValue | DryvValidatable<any, TValue>
-  validatable: DryvValidatable<any, TValue>
+  modelValue: TValue | DryvValidator
+  validatable: DryvValidator
 }
 
 export function dryvValidatableMixin<TValue>() {
@@ -13,7 +13,7 @@ export function dryvValidatableMixin<TValue>() {
     props: ['modelValue'],
     data() {
       return {
-        validatable: { value: undefined } as DryvValidatable<any, TValue>
+        validatable: { value: undefined } as DryvValidator
       }
     },
     watch: {
@@ -27,8 +27,8 @@ export function dryvValidatableMixin<TValue>() {
   })
 }
 
-function toDryvValidatable<TValue>(modelValue: TValue, emit: Emit): DryvValidatable<any, TValue> {
-  return isDryvValidatable(modelValue)
+function toDryvValidatable<TValue>(modelValue: TValue, emit: Emit): DryvValidator {
+  return modelValue instanceof DryvValidator
     ? (modelValue as any)
     : {
         get value(): TValue {

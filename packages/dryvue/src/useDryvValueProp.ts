@@ -1,26 +1,27 @@
 import type { Ref } from 'vue'
 import { ref, watchEffect } from 'vue'
-import { type DryvValidatable, isDryvValidatable } from 'dryvjs'
+import { DryvValidator } from 'dryvjs'
 
-export function useDryvValueProp<TModel extends object, T>(
+export function useDryvValueProp<TModel extends object, TValue = object>(
   emit: (event: any, ...args: any[]) => void,
-  prop: () => DryvValidatable<TModel, T> | T,
+  prop: () => DryvValidator | TValue,
   event: string = 'update:modelValue'
-): Ref<DryvValidatable<TModel, T>> {
+): Ref<DryvValidator> {
   const result = ref()
 
   watchEffect(() => {
     const modelValue = prop()
-    result.value = isDryvValidatable(modelValue)
-      ? modelValue
-      : {
-          get value() {
-            return modelValue
-          },
-          set value(newValue) {
-            emit(event as any, newValue)
+    result.value =
+      modelValue instanceof DryvValidator
+        ? modelValue
+        : {
+            get value() {
+              return modelValue
+            },
+            set value(newValue) {
+              emit(event as any, newValue)
+            }
           }
-        }
   })
 
   return result

@@ -1,26 +1,23 @@
-import type {
+import {
   DryvFieldValidationResult,
-  DryvObject,
+  DryvFieldValidator,
+  DryvObjectValidator,
   DryvOptions,
-  DryvProxy,
-  DryvValidatable,
   DryvValidateFunctionResult,
   DryvValidationResult,
+  DryvValidationResultType,
   DryvValidationRule,
   DryvValidationRuleSet,
   DryvValidationSession,
-  DryvValidationSessionInternal
-} from './typings'
+  DryvValidationSessionInternal,
+  DryvValidator
+} from '@/core'
+import { getValidatorByPath } from '@/core/getMemberByPath'
 
-import { isDryvProxy, isDryvValidatable } from '.'
-import { getMemberByPath } from './getMemberByPath'
-import { dryvValidatableObject } from '@/core/dryvValidatableObject'
-import { isDryvObjectProxy } from '../../dist/isDryvObjectProxy'
-
-export function dryvValidationSession<TModel extends object, TParameters = object>(
+export function dryvValidatorSession<TModel extends object, TParameters = object>(
   options: DryvOptions,
   ruleSet: DryvValidationRuleSet<TModel, TParameters>
-): DryvValidationSession<TModel> {
+): DryvValidationSession<TModel, TParameters> {
   if (!options.callServer) {
     throw new Error('The callServer option is required.')
   }
@@ -54,14 +51,25 @@ export function dryvValidationSession<TModel extends object, TParameters = objec
     }),
 
     async validateObject(
-      objOrProxy: DryvValidatable<TModel> | DryvProxy<TModel>
+      objectValidator: DryvObjectValidator<TModel, TParameters>
     ): Promise<DryvValidationResult> {
-      const obj: DryvValidatable<TModel> = isDryvProxy(objOrProxy)
-        ? (objOrProxy.$validatable as DryvValidatable<TModel>)
-        : (objOrProxy as DryvValidatable<TModel>)
-
-      if (!obj) {
-        throw new Error('The value null of undefined is not validatable.')
+      if (
+        await runDisablers(
+          session,
+          ruleSet,
+          objectValidator.rootModel,
+          objectValidator.field ?? ('' as any)
+        )
+      ) {
+        objectValidator.clear()
+        return {
+          success: true,
+          path: objectValidator.path!,
+          hasErrors: false,
+          hasWarnings: false,
+          warningHash: null,
+          results: []
+        }
       }
 
       _depth++
@@ -70,13 +78,17 @@ export function dryvValidationSession<TModel extends object, TParameters = objec
       try {
         const newValidationChain = startValidationChain()
         const fieldResults: DryvValidationResult[] = await Promise.all(
-          Array.from(traverseFields(ruleSet, obj.value)).map(([field, value]) =>
+          Array.from(traverseFields(ruleSet, objectValidator.value)).map(([field, value]) =>
             value.validate().then((result) => ({ ...result, path: value.path ?? undefined }))
           )
         )
         const result = createObjectResults(fieldResults.filter((r) => !!r))
 
-        obj.type = result.hasErrors ? 'error' : result.hasWarnings ? 'warning' : 'success'
+        objectValidator.type = result.hasErrors
+          ? 'error'
+          : result.hasWarnings
+            ? 'warning'
+            : 'success'
 
         if (newValidationChain) {
           endValidationChain()
@@ -87,9 +99,9 @@ export function dryvValidationSession<TModel extends object, TParameters = objec
         _depth--
       }
     },
-    async validateField<TValue>(
-      field: DryvValidatable<TModel, TValue>,
-      model?: DryvProxy<TModel>
+    async validateField(
+      field: DryvFieldValidator<TModel, TParameters>,
+      model?: TModel
     ): Promise<DryvValidationResult> {
       if (!canValidateFields() || _processedFields?.[field.field!]) {
         return success(field.path!)
@@ -158,7 +170,7 @@ export function dryvValidationSession<TModel extends object, TParameters = objec
     ruleSet: DryvValidationRuleSet<TModel, TParameters>,
     obj: any,
     parentPath?: string
-  ): IterableIterator<[string, DryvValidatable]> {
+  ): IterableIterator<[string, DryvValidator]> {
     if (!parentPath) {
       parentPath = ''
     }
@@ -182,7 +194,7 @@ export function dryvValidationSession<TModel extends object, TParameters = objec
         continue
       }
 
-      if (isDryvValidatable(value)) {
+      if (value instanceof DryvValidator) {
         console.log('*** using field ' + path)
         yield [path, value]
       } else {
@@ -209,8 +221,8 @@ export function dryvValidationSession<TModel extends object, TParameters = objec
   async function validateFieldInternal<TModel extends object, TParameters = object>(
     session: DryvValidationSession<TModel>,
     ruleSet: DryvValidationRuleSet<TModel, TParameters>,
-    model: DryvProxy<TModel>,
-    validatable: DryvValidatable<TModel>,
+    model: TModel,
+    validatable: DryvValidator<TModel, TParameters>,
     options: DryvOptions
   ): Promise<DryvFieldValidationResult | null> {
     const field = validatable.field
@@ -257,8 +269,8 @@ export function dryvValidationSession<TModel extends object, TParameters = objec
   async function runValidators<TModel extends object>(
     session: DryvValidationSession<TModel>,
     rules: DryvValidationRule<TModel>[],
-    model: DryvProxy<TModel>,
-    validatable: DryvValidatable<TModel>,
+    model: TModel,
+    validatable: DryvValidator<TModel>,
     options: DryvOptions
   ): Promise<DryvFieldValidationResult | null> {
     let result: DryvValidateFunctionResult = null
@@ -269,7 +281,7 @@ export function dryvValidationSession<TModel extends object, TParameters = objec
           if (!relatedField || relatedField === validatable.path) {
             return
           }
-          const field = getMemberByPath(model.$validatable.value!, relatedField as string)
+          const field = getValidatorByPath(validatable.rootValidator, relatedField as string)
           if (!field) {
             return
             //model[relatedField] = null!
@@ -311,12 +323,12 @@ export function dryvValidationSession<TModel extends object, TParameters = objec
   }
 }
 
-function getModel<TModel extends object>(parent: DryvValidatable<TModel>): DryvProxy<TModel> {
+function getModel<TModel extends object>(parent: DryvValidator<TModel>): TModel {
   while (parent.parent) {
     parent = parent.parent
   }
 
-  return (parent as any).$model ?? parent.value.$model
+  return parent.model
 }
 
 function success(path: string): DryvValidationResult {
@@ -357,14 +369,14 @@ function createObjectResults(results: DryvValidationResult[]): {
   }
 }
 
-function createFieldValidationResult<TModel extends object, TValue>(
+function createFieldValidationResult<TModel extends object, TParameters>(
   result: DryvFieldValidationResult | null,
-  field: DryvValidatable<TModel, TValue>
+  field: DryvValidator<TModel, TParameters>
 ): DryvValidationResult {
   if (result) {
-    field.type = result.type
-    field.text = result.text
-    field.group = result.group
+    field.type = result.type ?? 'success'
+    field.text = result.text ?? null
+    field.group = result.group ?? null
 
     const type = result.type?.toLowerCase()
 
