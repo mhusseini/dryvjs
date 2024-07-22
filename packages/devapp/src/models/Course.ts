@@ -1,6 +1,8 @@
 export interface Course {
   name?: string
-  attendees?: Attendee[]
+  people: {
+    attendees: Attendee[]
+  }
 }
 
 export interface Attendee {

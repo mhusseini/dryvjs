@@ -1,7 +1,6 @@
-import type { DryvValidationResult, DryvValidationSession, FieldEvent } from './'
-import { DryvFieldValidator, DryvOptions, DryvValidatableObject } from './'
+import type { DryvValidationSession } from './'
+import { DryvOptions } from './'
 import { DryvValidator } from './DryvValidator'
-import { dryvValidatableObject, observableProxy } from '@/internal'
 
 export abstract class DryvCompositeValidator<
   TModel extends object = any,
@@ -9,9 +8,9 @@ export abstract class DryvCompositeValidator<
 > extends DryvValidator<TModel, TModel, DryvCompositeValidator> {
   private _ignoreChildChanges = false
   private _isReverting = false
-  protected transparentProxy?: TTransparentProxy
+  private _transparentProxy?: TTransparentProxy
 
-  constructor(
+  protected constructor(
     model: TModel,
     session: DryvValidationSession<TModel>,
     parent: DryvCompositeValidator | undefined,
@@ -19,6 +18,14 @@ export abstract class DryvCompositeValidator<
     field?: keyof TModel
   ) {
     super(model, session, parent, options, field)
+  }
+
+  get transparentProxy(): TTransparentProxy {
+    return this._transparentProxy!
+  }
+
+  protected set transparentProxy(value: TTransparentProxy) {
+    this._transparentProxy = value
   }
 
   protected get isReverting() {

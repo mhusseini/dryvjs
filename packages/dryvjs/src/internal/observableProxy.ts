@@ -1,4 +1,4 @@
-import { ArrayEvent, FieldEvent } from '@/.'
+import { FieldEvent } from '@/.'
 
 export interface FieldEventHandler<TModel extends object> {
   (event: FieldEvent<TModel>): void

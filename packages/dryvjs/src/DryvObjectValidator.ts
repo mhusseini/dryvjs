@@ -33,11 +33,13 @@ export class DryvObjectValidator<TModel extends object = any> extends DryvCompos
     this.proxy = proxy
     this.model = model
 
+    Object.values(this.fields).forEach((field) => field?.destroy())
+
     for (const field in model) {
       this.fields[field] = createValidator(
         this,
-        model[field],
-        model,
+        proxy[field],
+        proxy,
         field,
         this.session,
         this.options
@@ -51,7 +53,7 @@ export class DryvObjectValidator<TModel extends object = any> extends DryvCompos
         validator = createValidator(
           this,
           event.newValue,
-          model,
+          proxy,
           event.field,
           this.session,
           this.options
@@ -88,7 +90,7 @@ export class DryvObjectValidator<TModel extends object = any> extends DryvCompos
     return this.session.validateObject(this)
   }
 
-  destroy() {
+  override onDestroy() {
     if (this._unregister) {
       this._unregister()
     }

@@ -1,11 +1,11 @@
 import { ArrayEvent } from '@/typings'
 
-export interface ArrayEventHandler<TModel extends object> {
+export interface ArrayEventHandler<TModel> {
   (event: ArrayEvent<TModel>): void
 }
 
-export function observableArrayProxy<TModel extends any[]>(model: TModel) {
-  const proxyHandler = new ObservableArrayProxyHandler<TModel>()
+export function observableArrayProxy<TModel>(model: TModel[]) {
+  const proxyHandler = new ObservableArrayProxyHandler<TModel>(model)
   const proxy = new Proxy(model, proxyHandler)
 
   return {
@@ -15,27 +15,29 @@ export function observableArrayProxy<TModel extends any[]>(model: TModel) {
   }
 }
 
-class ObservableArrayProxyHandler<TModel extends object> {
+class ObservableArrayProxyHandler<TModel> {
   private readonly _eventHandlers = new Map<number, (event: ArrayEvent<TModel>) => void>()
   private _nextId = 0
+
+  constructor(private array: TModel[]) {}
 
   set(target: TModel[], prop: string | symbol, value: any, receiver: any) {
     const result = Reflect.set(target, prop, value, receiver)
 
     if (prop === 'length' && value === 0) {
-      this.clear(target)
+      this.clear()
     }
 
     return result
   }
 
-  get(target: TModel, prop: string | symbol, receiver: any) {
+  get(target: TModel[], prop: string | symbol, receiver: any) {
     return prop === 'push' ||
       prop === 'pop' ||
       prop === 'shift' ||
       prop === 'unshift' ||
       prop === 'splice'
-      ? this[prop] ?? Reflect.get(target, prop, receiver)
+      ? this[prop]?.bind(this) ?? Reflect.get(target, prop, receiver)
       : Reflect.get(target, prop, receiver)
   }
 
@@ -48,40 +50,41 @@ class ObservableArrayProxyHandler<TModel extends object> {
     this._eventHandlers.delete(id)
   }
 
-  private clear(array: TModel[]) {
+  private clear() {
+    const array = this.array
     const items = [...array]
-    Reflect.get(array, 'splice').apply(array, [0, array.length])
+    array.splice(0, array.length)
     this.fire({ action: 'remove', oldValue: items })
   }
 
-  private push(array: TModel[], ...items: TModel[]) {
-    const result = Reflect.get(array, 'push').apply(array, items)
+  private push(...items: TModel[]) {
+    const result = this.array.push(...items)
     this.fire({ action: 'append', newValue: items })
     return result
   }
 
-  private pop(array: TModel[]) {
-    const item = Reflect.get(array, 'pop').apply(array)
+  private pop() {
+    const item = this.array.pop()
     if (item !== undefined) {
       this.fire({ action: 'remove', oldValue: [item] })
     }
   }
 
-  private shift(array: TModel[]) {
-    const item = Reflect.get(array, 'shift').apply(array)
+  private shift() {
+    const item = this.array.shift()
     if (item !== undefined) {
       this.fire({ action: 'remove', oldValue: [item] })
     }
   }
 
-  private unshift(array: TModel[], ...items: TModel[]) {
-    const result = Reflect.get(array, 'unshift').apply(array, items)
+  private unshift(...items: TModel[]) {
+    const result = this.array.unshift(...items)
     this.fire({ action: 'insert', newValue: items })
     return result
   }
 
-  private splice(array: TModel[], start: number, deleteCount: number, ...items: TModel[]) {
-    const deletedItems = Reflect.get(array, 'splice').apply(array, [start, deleteCount, ...items])
+  private splice(start: number, deleteCount: number, ...items: TModel[]) {
+    const deletedItems = this.array.splice(start, deleteCount, ...items)
     this.fire({ action: 'replace', oldValue: deletedItems, newValue: items })
     return deletedItems
   }

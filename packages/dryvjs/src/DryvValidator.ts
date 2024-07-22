@@ -13,7 +13,19 @@ export abstract class DryvValidator<
   TParent extends DryvValidator = any
 > {
   private _parent?: TParent | null
-  private _path?: string
+  private _index?: number
+
+  get index(): number | undefined {
+    return this._index
+  }
+
+  set index(value: number | undefined) {
+    if (this._index === value) {
+      return
+    }
+    this._index = value
+    this.updateHierarchy(true)
+  }
 
   get isDirty(): boolean {
     return this._reactive.isDirty
@@ -67,14 +79,6 @@ export abstract class DryvValidator<
   private _rootValidator: DryvValidator<TModel, any>
   private _reactive: any
 
-  public get rootModel() {
-    return this._rootModel
-  }
-
-  public get rootValidator() {
-    return this._rootValidator
-  }
-
   protected constructor(
     public model: TModel,
     protected session: DryvValidationSession<TModel>,
@@ -85,6 +89,8 @@ export abstract class DryvValidator<
     this._rootModel = model
     this._rootValidator = this
     this._reactive = options.reactiveWrapper({
+      path: null,
+      uniquePath: null,
       text: null,
       group: null,
       required: null,
@@ -141,7 +147,31 @@ export abstract class DryvValidator<
   }
 
   get path(): string {
-    return this._path ?? ''
+    return this._reactive.path ?? ''
+  }
+
+  private set path(value: string) {
+    this._reactive.path = value
+  }
+
+  get uniquePath(): string {
+    return this._reactive.uniquePath ?? ''
+  }
+
+  private set uniquePath(value: string) {
+    this._reactive.uniquePath = value
+  }
+
+  public get rootModel() {
+    return this._rootModel
+  }
+
+  protected set rootModel(value: any) {
+    this._rootModel = value
+  }
+
+  public get rootValidator() {
+    return this._rootValidator
   }
 
   get parent(): TParent | undefined | null {
@@ -150,19 +180,33 @@ export abstract class DryvValidator<
 
   set parent(parent: TParent | undefined | null) {
     this._parent = parent
+    this.updateHierarchy()
+
+    this.onParentChanged()
+  }
+
+  protected onParentChanged() {
+    // nop;
+  }
+
+  private updateHierarchy(cascade = false) {
+    const parent = this.parent
 
     if (parent) {
-      if (this.field) {
-        this._path = parent.path ? `${parent.path}.${String(this.field)}` : String(this.field)
-      } else {
-        this._path = ''
-      }
       this._rootModel = parent.rootModel ?? this.model
       this._rootValidator = parent.rootValidator
     } else {
-      this._path = this.field ? String(this.field) : ''
       this._rootModel = this.model
       this._rootValidator = this
+    }
+
+    this.path = [parent?.path, this.field].filter((x) => !!x).join('.')
+    this.uniquePath = [parent?.uniquePath, this.index, this.field]
+      .filter((x) => typeof x === 'number' || !!x)
+      .join('.')
+
+    if (cascade) {
+      this.childValidators().forEach((v) => v.updateHierarchy(true))
     }
   }
 
@@ -180,6 +224,14 @@ export abstract class DryvValidator<
       true
     )
   }
+  destroy() {
+    this.onDestroy()
+    this.childValidators().forEach((v) => v.destroy())
+  }
+
+  onDestroy() {
+    // nop
+  }
 
   toJSON(): any {
     return {
@@ -190,6 +242,7 @@ export abstract class DryvValidator<
       hasError: this.hasError,
       hasWarning: this.hasWarning,
       isSuccess: this.isSuccess,
+      uniquePath: this.uniquePath,
       _parent: undefined,
       _path: undefined,
       _rootModel: undefined,
@@ -199,6 +252,7 @@ export abstract class DryvValidator<
       _ignoreChildChanges: undefined,
       _isReverting: undefined,
       _items: undefined,
+      _uniquePath: undefined,
       rootValidator: undefined,
       rootModel: undefined,
       parent: undefined,

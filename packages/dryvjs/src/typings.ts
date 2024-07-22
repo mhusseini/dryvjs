@@ -68,11 +68,6 @@ export interface DryvGroupValidationResult {
   }[]
 }
 
-export interface DryvValidationSessionInternal<TModel extends object, TParameters = object>
-  extends DryvValidationSession<TModel, TParameters> {
-  $initializing?: boolean
-}
-
 export interface DryvOptions {
   exceptionHandling?: 'failValidation' | 'succeedValidation'
 
@@ -132,8 +127,17 @@ export type DryvValidatableField<TValue = object> = {
   validate(): Promise<DryvValidationResult>
 }
 
+export type DryvValidatable<TModel> =
+  TModel extends Array<infer TItem>
+    ? DryvValidatableArray<TItem>
+    : TModel extends object
+      ? DryvValidatableObject<TModel>
+      : DryvValidatableField<TModel>
+
+export type DryvValidatableArray<TModel = any> = Array<TModel> & {
+  [index: number]: DryvValidatable<TModel>
+}
+
 export type DryvValidatableObject<TModel extends object> = {
-  [Property in keyof TModel]: TModel[Property] extends object
-    ? DryvValidatableObject<TModel[Property]>
-    : DryvValidatableField<TModel[Property]>
+  [Property in keyof TModel]: DryvValidatable<TModel[Property]>
 }

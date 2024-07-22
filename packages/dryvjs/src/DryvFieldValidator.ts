@@ -1,11 +1,5 @@
 import type { DryvValidationResult, DryvValidationSession } from './'
-import {
-  DryvObjectValidator,
-  DryvOptions,
-  DryvServerErrors,
-  DryvServerValidationResponse,
-  DryvValidator
-} from './'
+import { DryvOptions, DryvServerErrors, DryvServerValidationResponse, DryvValidator } from './'
 import { getMemberByPath } from '@/internal'
 import { DryvCompositeValidator } from '@/DryvCompositeValidator'
 
@@ -68,8 +62,8 @@ export class DryvFieldValidator<TModel extends object, TParameters = any> extend
   setValidationResult(response: DryvServerValidationResponse | DryvServerErrors): boolean {
     const messages: DryvServerErrors =
       typeof response?.success === 'boolean' ? response.messages : response
-
     const message = getMemberByPath(messages, this.path!)
+
     if (message && message.type !== 'success') {
       this.text = message.text ?? ''
       this.group = message.group ?? ''

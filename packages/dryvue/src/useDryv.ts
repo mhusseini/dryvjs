@@ -68,7 +68,7 @@ export function useDryv<TModel extends object, TParameters = object>(
     session,
     model: validator.proxy,
     parameters: ruleSet.parameters,
-    validatable: validator.transparentProxy,
+    validatable: validator.transparentProxy!,
     validate: async () => await validator.validate(),
     valid: computed(() => validator.isSuccess),
     dirty: computed(() => validator.isDirty),

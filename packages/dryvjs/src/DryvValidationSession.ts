@@ -5,10 +5,10 @@ import {
   DryvValidationResult,
   DryvValidationRule,
   DryvValidationRuleSet,
-  DryvValidator,
-  DryvObjectValidator
+  DryvValidator
 } from '@/.'
 import { getValidatorByPath } from '@/internal'
+import { DryvCompositeValidator } from '@/DryvCompositeValidator'
 
 export class DryvValidationSession<TModel extends object = any, TParameters = any> {
   private _depth = 0
@@ -54,7 +54,7 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
     return this._depth > 0
   }
 
-  async validateObject(objectValidator: DryvObjectValidator): Promise<DryvValidationResult> {
+  async validateObject(objectValidator: DryvCompositeValidator): Promise<DryvValidationResult> {
     if (await this.runDisablers(objectValidator.rootModel, objectValidator.field ?? ('' as any))) {
       objectValidator.clear()
       return {
@@ -93,7 +93,7 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
   }
 
   async validateField(field: DryvValidator<TModel>, model?: TModel): Promise<DryvValidationResult> {
-    if (!this.canValidateFields() || this._processedFields?.[field.field!]) {
+    if (!this.canValidateFields() || this._processedFields?.[field.uniquePath!]) {
       return this.success(field.path!)
     }
 
@@ -163,7 +163,7 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
     }
 
     if (this._processedFields) {
-      this._processedFields[field] = true
+      this._processedFields[validatable.uniquePath] = true
     }
 
     const rules = this.ruleSet?.validators?.[validatable.path]

@@ -9,12 +9,12 @@ export const courseValidationRules: DryvValidationRuleSet<Course> = {
         annotations: {
           required: true
         },
-        validate: function ($m) {
+        validate: function ($m: Course) {
           return !/\S/.test($m.name || '') ? "Please provide the course's name" : null
         }
       }
     ],
-    'attendees.name': [
+    'people.attendees.name': [
       {
         annotations: {
           required: true
