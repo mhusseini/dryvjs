@@ -84,7 +84,7 @@ export abstract class DryvValidator<
   ) {
     this._rootModel = model
     this._rootValidator = this
-    this._reactive = options.objectWrapper({
+    this._reactive = options.reactiveWrapper({
       text: null,
       group: null,
       required: null,
@@ -126,7 +126,7 @@ export abstract class DryvValidator<
     }
   }
 
-  protected abstract childValidators(): DryvValidator[]
+  public abstract childValidators(): DryvValidator[]
 
   get hasError(): boolean {
     return this.type === 'error'
@@ -157,7 +157,7 @@ export abstract class DryvValidator<
       } else {
         this._path = ''
       }
-      this._rootModel = parent.rootModel
+      this._rootModel = parent.rootModel ?? this.model
       this._rootValidator = parent.rootValidator
     } else {
       this._path = this.field ? String(this.field) : ''
@@ -196,6 +196,9 @@ export abstract class DryvValidator<
       _rootValidator: undefined,
       _reactive: undefined,
       _initialValue: undefined,
+      _ignoreChildChanges: undefined,
+      _isReverting: undefined,
+      _items: undefined,
       rootValidator: undefined,
       rootModel: undefined,
       parent: undefined,

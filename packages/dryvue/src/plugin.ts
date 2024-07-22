@@ -10,7 +10,7 @@ export const Dryv: Plugin<[]> = {
     Object.assign(
       defaultDryvOptions,
       {
-        objectWrapper: (o: any) => reactive(o)
+        reactiveWrapper: (o: any) => reactive(o)
       },
       ...options
     )

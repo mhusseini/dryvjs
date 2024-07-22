@@ -1,4 +1,5 @@
 export * from './Lieferadresse'
+export * from './Course'
 
 export interface PersonalData extends Object {
   anrede: string

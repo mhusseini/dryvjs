@@ -1,24 +1,21 @@
-import type { DryvValidationResult, DryvValidationSession, FieldEvent } from './'
-import { DryvFieldValidator, DryvOptions, DryvValidatableObject } from './'
+import { createValidator, DryvValidationResult, DryvValidationSession, FieldEvent } from './'
+import { DryvOptions, DryvValidatableObject } from './'
 import { DryvValidator } from './DryvValidator'
 import { dryvValidatableObject, observableProxy } from '@/internal'
+import { DryvCompositeValidator } from '@/DryvCompositeValidator'
 
-export class DryvObjectValidator<TModel extends object = any> extends DryvValidator<
+export class DryvObjectValidator<TModel extends object = any> extends DryvCompositeValidator<
   TModel,
-  TModel,
-  DryvObjectValidator
+  DryvValidatableObject<TModel>
 > {
-  private _ignoreChildChanges = false
   private _unregister?: () => void
   readonly fields: { [field: string | symbol | number]: DryvValidator | null }
   proxy: TModel
-  readonly transparentProxy: DryvValidatableObject<TModel>
-  private _isReverting = false
 
   constructor(
     model: TModel,
     session: DryvValidationSession<TModel, any>,
-    parent: DryvObjectValidator | undefined,
+    parent: DryvCompositeValidator | undefined,
     options: DryvOptions,
     field?: keyof TModel
   ) {
@@ -37,18 +34,32 @@ export class DryvObjectValidator<TModel extends object = any> extends DryvValida
     this.model = model
 
     for (const field in model) {
-      this.fields[field] = this.createValidator(field, model[field])
+      this.fields[field] = createValidator(
+        this,
+        model[field],
+        model,
+        field,
+        this.session,
+        this.options
+      )
     }
 
-    const evendId = register((event: FieldEvent<TModel>) => {
+    const eventId = register((event: FieldEvent<TModel>) => {
       let validator = this.fields[event.field]
 
       if (validator === undefined) {
-        validator = this.createValidator(event.field, event.newValue)
+        validator = createValidator(
+          this,
+          event.newValue,
+          model,
+          event.field,
+          this.session,
+          this.options
+        )
         this.fields[event.field] = validator
       }
 
-      if (this._isReverting || validator === null) {
+      if (this.isReverting || validator === null) {
         return
       }
 
@@ -56,7 +67,7 @@ export class DryvObjectValidator<TModel extends object = any> extends DryvValida
       validator?.validate()
     })
 
-    this._unregister = () => unregister(evendId)
+    this._unregister = () => unregister(eventId)
 
     return this.proxy
   }
@@ -73,15 +84,6 @@ export class DryvObjectValidator<TModel extends object = any> extends DryvValida
     return Object.values(this.fields).filter((f) => !!f) as DryvValidator[]
   }
 
-  override revert() {
-    try {
-      this._isReverting = true
-      super.revert()
-    } finally {
-      this._isReverting = false
-    }
-  }
-
   async validate(): Promise<DryvValidationResult> {
     return this.session.validateObject(this)
   }
@@ -90,35 +92,5 @@ export class DryvObjectValidator<TModel extends object = any> extends DryvValida
     if (this._unregister) {
       this._unregister()
     }
-  }
-
-  refreshDirty() {
-    if (this._ignoreChildChanges) {
-      return
-    }
-
-    const wasDirty = this.isDirty
-    this.isDirty = Object.values(this.fields).some((f) => f?.isDirty)
-
-    if (this.isDirty !== wasDirty) {
-      this.parent?.refreshDirty()
-    }
-  }
-
-  private createValidator(field: keyof TModel, newValue: any): DryvValidator | null {
-    if (Array.isArray(newValue)) {
-      throw new Error('Arrays are not supported, yet.')
-    }
-
-    const type = typeof newValue
-    if (type === 'function') {
-      return null
-    }
-
-    if (newValue instanceof Object) {
-      return new DryvObjectValidator(newValue, this.session, this, this.options, field)
-    }
-
-    return new DryvFieldValidator(this.proxy!, this.session, this, this.options, field)
   }
 }

@@ -7,18 +7,19 @@ import {
   DryvValidator
 } from './'
 import { getMemberByPath } from '@/internal'
+import { DryvCompositeValidator } from '@/DryvCompositeValidator'
 
 export class DryvFieldValidator<TModel extends object, TParameters = any> extends DryvValidator<
   TModel,
   TParameters,
-  DryvObjectValidator
+  DryvCompositeValidator
 > {
   private _initialValue: TModel[keyof TModel]
 
   constructor(
     model: TModel,
-    session: DryvValidationSession<TModel, TParameters>,
-    parent: DryvObjectValidator,
+    session: DryvValidationSession,
+    parent: DryvCompositeValidator,
     options: DryvOptions,
     field: keyof TModel
   ) {

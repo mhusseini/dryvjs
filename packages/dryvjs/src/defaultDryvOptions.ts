@@ -7,7 +7,7 @@ import type {
 
 class DryvOptionsSingleton {
   public static readonly Instance: DryvOptions = {
-    objectWrapper: <TObject>(o: TObject) => o,
+    reactiveWrapper: <TObject>(o: TObject) => o,
     validationTrigger: 'autoAfterManual',
     excludedFields: [/^_/, /^\$/, /^Symbol\(/, /^toJSON$/, /^toString/],
     valueOfDate: (date: string) => {

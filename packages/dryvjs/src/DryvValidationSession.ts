@@ -6,16 +6,12 @@ import {
   DryvValidationRule,
   DryvValidationRuleSet,
   DryvValidator,
-  DryvObjectValidator,
-  DryvFieldValidator
+  DryvObjectValidator
 } from '@/.'
 import { getValidatorByPath } from '@/internal'
 
-export class DryvValidationSession<TModel extends object, TParameters = any> {
+export class DryvValidationSession<TModel extends object = any, TParameters = any> {
   private _depth = 0
-  private _excludedFields: {
-    [field: string]: boolean
-  } = {}
   private _isTriggered = false
   private _processedFields: { [field: string | symbol]: boolean } | undefined = undefined
 
@@ -48,7 +44,7 @@ export class DryvValidationSession<TModel extends object, TParameters = any> {
       valueOfDate: options.valueOfDate!
     }
 
-    this.results = options.objectWrapper!({
+    this.results = options.reactiveWrapper!({
       fields: {},
       groups: {}
     })
@@ -58,9 +54,7 @@ export class DryvValidationSession<TModel extends object, TParameters = any> {
     return this._depth > 0
   }
 
-  async validateObject(
-    objectValidator: DryvObjectValidator<TModel>
-  ): Promise<DryvValidationResult> {
+  async validateObject(objectValidator: DryvObjectValidator): Promise<DryvValidationResult> {
     if (await this.runDisablers(objectValidator.rootModel, objectValidator.field ?? ('' as any))) {
       objectValidator.clear()
       return {
@@ -79,9 +73,10 @@ export class DryvValidationSession<TModel extends object, TParameters = any> {
     try {
       const newValidationChain = this.startValidationChain()
       const fieldResults: DryvValidationResult[] = await Promise.all(
-        Array.from(this.traverseFields(objectValidator.fields)).map(([, value]) =>
-          value.validate().then((result) => ({ ...result, path: value.path ?? undefined }))
-        )
+        objectValidator.childValidators().map(async (v) => {
+          const result = await v.validate()
+          return { ...result, path: v.path }
+        })
       )
       const result = this.createObjectResults(fieldResults.filter((r) => !!r))
 
@@ -97,10 +92,7 @@ export class DryvValidationSession<TModel extends object, TParameters = any> {
     }
   }
 
-  async validateField(
-    field: DryvFieldValidator<TModel>,
-    model?: TModel
-  ): Promise<DryvValidationResult> {
+  async validateField(field: DryvValidator<TModel>, model?: TModel): Promise<DryvValidationResult> {
     if (!this.canValidateFields() || this._processedFields?.[field.field!]) {
       return this.success(field.path!)
     }
@@ -159,52 +151,6 @@ export class DryvValidationSession<TModel extends object, TParameters = any> {
 
   private endValidationChain(): void {
     this._processedFields = undefined
-  }
-
-  private *traverseFields(
-    obj: any,
-    parentPath?: string
-  ): IterableIterator<[string, DryvValidator]> {
-    if (!parentPath) {
-      parentPath = ''
-    }
-
-    for (const key in obj) {
-      if (!(!this.isExcludedField(key) && obj.hasOwnProperty(key))) {
-        continue
-      }
-      const path = parentPath ? parentPath + '.' + key : key
-      const value = obj[key]
-      if (typeof value !== 'object') {
-        continue
-      }
-
-      const model = (obj as any).$model ?? obj
-      const disablers = this.ruleSet.disablers?.[key]
-      if (disablers && disablers.find((disabler) => disabler.validate(model, this))) {
-        continue
-      }
-
-      if (value instanceof DryvValidator) {
-        yield [path, value]
-      } else {
-        yield* this.traverseFields(value, path)
-      }
-    }
-  }
-
-  private isExcludedField(fieldName: string, path?: string): boolean {
-    if (!this.options.excludedFields) {
-      return false
-    }
-
-    const key = path ? path + '.' + fieldName : fieldName
-
-    if (this._excludedFields[key] === undefined) {
-      this._excludedFields[key] = !!this.options.excludedFields.find((regexp) => regexp.test(key))
-    }
-
-    return this._excludedFields[key]
   }
 
   private async validateFieldInternal(

@@ -1,4 +1,5 @@
 import { DryvFieldValidator, DryvObjectValidator, DryvValidatableObject } from '@/.'
+import { DryvCompositeValidator } from '@/DryvCompositeValidator'
 
 export function dryvValidatableObject<TModel extends object>(
   validator: DryvObjectValidator<TModel>
@@ -15,8 +16,8 @@ class DryvTransparentProxyHandler<TModel extends object> {
   }
 
   get(target: DryvObjectValidator<TModel>, prop: string | symbol, receiver: any) {
-    const innerValue = Reflect.get(target.fields, prop, receiver)
-    return innerValue instanceof DryvObjectValidator ? innerValue.transparentProxy : innerValue
+    const innerValue = target.fields[prop]
+    return innerValue instanceof DryvCompositeValidator ? innerValue.transparentProxy : innerValue
   }
 
   set(target: DryvObjectValidator<TModel>, prop: string | symbol, value: any, receiver: any) {
@@ -45,5 +46,16 @@ class DryvTransparentProxyHandler<TModel extends object> {
           configurable: decriptor?.configurable
         }
       : undefined
+  }
+}
+
+export function dryvValidatableArray<TModel extends object>(items: TModel[]): TModel[] {
+  return new Proxy(items, new DryvTransparentArrayProxyHandler<TModel>())
+}
+
+class DryvTransparentArrayProxyHandler<TModel extends object> {
+  get(target: TModel[], prop: string | symbol, receiver: any) {
+    const innerValue = Reflect.get(target, prop, receiver)
+    return innerValue instanceof DryvCompositeValidator ? innerValue.transparentProxy : innerValue
   }
 }

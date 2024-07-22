@@ -16,7 +16,10 @@ export interface DryvValidationRule<TModel extends object> {
   }
   related?: string[]
   group?: string
-  validate: ($m: TModel, session: DryvValidationSession<TModel>) => DryvValidateFunctionResult
+  validate: <TInput = TModel>(
+    $m: TInput,
+    session: DryvValidationSession<TModel>
+  ) => DryvValidateFunctionResult
 }
 
 export type DrvvRuleInvocations<TModel extends object> = {
@@ -75,7 +78,7 @@ export interface DryvOptions {
 
   excludedFields?: RegExp[]
 
-  objectWrapper<TObject>(object: TObject): TObject
+  reactiveWrapper<TObject>(object: TObject): TObject
 
   callServer?(url: string, method: string, data: any): Promise<DryvServerValidationResponse>
 
@@ -107,6 +110,12 @@ export interface FieldEvent<TModel> {
   oldValue: any
   newValue: any
   field: keyof TModel
+}
+
+export interface ArrayEvent<TModel> {
+  action: 'insert' | 'append' | 'remove' | 'replace'
+  oldValue?: TModel[]
+  newValue?: TModel[]
 }
 
 export type DryvValidatableField<TValue = object> = {

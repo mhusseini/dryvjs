@@ -1,20 +1,30 @@
 <template>
   <form>
     <div :class="{ invalid: !valid }">
-      <h2>Lieferadresse</h2>
-      <validating-input v-model="validatable.lieferadresse.strasse" label="Straße" />
-      <validating-input v-model="validatable.lieferadresse.hausnummer" label="Hausnummer" />
-      <validating-input v-model="validatable.lieferadresse.postleitzahl" label="PLZ" />
-      <validating-input v-model="validatable.lieferadresse.ort" label="Ort" />
-      <h2>Rechnungsadresse</h2>
-      <input type="checkbox" v-model="validatable.abweichendeRechnungsadresse" />
-      <validating-input v-model="validatable.rechnungsadresse.vorname" label="Anrede" />
-      <validating-input v-model="validatable.rechnungsadresse.vorname" label="Vorname" />
-      <validating-input v-model="validatable.rechnungsadresse.nachname" label="Nachname" />
-      <validating-input v-model="validatable.rechnungsadresse.strasse" label="Straße" />
-      <validating-input v-model="validatable.rechnungsadresse.hausnummer" label="Hausnummer" />
-      <validating-input v-model="validatable.rechnungsadresse.postleitzahl" label="PLZ" />
-      <validating-input v-model="validatable.rechnungsadresse.ort" label="Ort" />
+      <fieldset>
+        <legend>Course</legend>
+        <validating-input v-model="validatable.name" label="Name" />
+      </fieldset>
+      <fieldset v-for="attendee in validatable.attendees!">
+        <legend>Attendee</legend>
+        <validating-input v-model="attendee.name" label="Name" />
+        <validating-input v-model="attendee.email" label="Email" />
+        <validating-input v-model="attendee.phone" label="Phone" />
+      </fieldset>
+      <!--      <h2>Lieferadresse</h2>-->
+      <!--      <validating-input v-model="validatable.lieferadresse.strasse" label="Straße" />-->
+      <!--      <validating-input v-model="validatable.lieferadresse.hausnummer" label="Hausnummer" />-->
+      <!--      <validating-input v-model="validatable.lieferadresse.postleitzahl" label="PLZ" />-->
+      <!--      <validating-input v-model="validatable.lieferadresse.ort" label="Ort" />-->
+      <!--      <h2>Rechnungsadresse</h2>-->
+      <!--      <input type="checkbox" v-model="validatable.abweichendeRechnungsadresse" />-->
+      <!--      <validating-input v-model="validatable.rechnungsadresse.vorname" label="Anrede" />-->
+      <!--      <validating-input v-model="validatable.rechnungsadresse.vorname" label="Vorname" />-->
+      <!--      <validating-input v-model="validatable.rechnungsadresse.nachname" label="Nachname" />-->
+      <!--      <validating-input v-model="validatable.rechnungsadresse.strasse" label="Straße" />-->
+      <!--      <validating-input v-model="validatable.rechnungsadresse.hausnummer" label="Hausnummer" />-->
+      <!--      <validating-input v-model="validatable.rechnungsadresse.postleitzahl" label="PLZ" />-->
+      <!--      <validating-input v-model="validatable.rechnungsadresse.ort" label="Ort" />-->
     </div>
     <div class="button-bar">
       <button @click.prevent="validate">Validate</button>
@@ -37,33 +47,25 @@
 
 <script setup lang="ts">
 import ValidatingInput from '@/components/ValidatingInput.vue'
-import type { Lieferadresse, PersonalData } from '@/models'
-import { computed, reactive, ref } from 'vue'
-import { dryvTransaction, type DryvValidationResult, useDryv, useTransaction } from 'dryvue'
-import { lieferadresseValidationRules } from '@/LieferadresseValidationRules'
+import type { Course, Lieferadresse } from '@/models'
+import { reactive } from 'vue'
+import { useDryv } from 'dryvue'
+import { courseValidationRules } from '@/CourseValidationRules'
 
-let model: Lieferadresse = reactive({
-  abweichendeRechnungsadresse: false,
-  lieferadresse: {
-    postleitzahl: null,
-    ort: null,
-    strasse: null,
-    hausnummer: null
-  },
-  rechnungsadresse: {
-    postleitzahl: null,
-    ort: null,
-    strasse: null,
-    hausnummer: null,
-    vorname: null,
-    nachname: null,
-    anrede: null
-  }
-})
+let model = reactive({
+  name: null,
+  attendees: [
+    {
+      name: null,
+      email: null,
+      phone: null
+    }
+  ]
+}) as any as Course
 
 const { validate, validatable, valid, dirty, commit, revert } = useDryv(
   model,
-  lieferadresseValidationRules
+  courseValidationRules
 )
 
 // defineEmits()
