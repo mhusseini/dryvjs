@@ -1,4 +1,4 @@
-import { DryvValidator } from '@/core/DryvValidator'
+import { DryvValidationSession } from '@/.'
 
 export type DryvValidateFunctionResult =
   | DryvFieldValidationResult
@@ -68,31 +68,6 @@ export interface DryvGroupValidationResult {
 export interface DryvValidationSessionInternal<TModel extends object, TParameters = object>
   extends DryvValidationSession<TModel, TParameters> {
   $initializing?: boolean
-}
-
-export interface DryvValidationSession<TModel extends object, TParameters = any> {
-  results: {
-    fields: Record<string, DryvFieldValidationResult | undefined>
-    groups: Record<string, DryvFieldValidationResult | undefined>
-  }
-
-  validateObject(objectValidator: DryvValidator<TModel>): Promise<DryvValidationResult>
-
-  validateField(field: DryvValidator<TModel>, model?: TModel): Promise<DryvValidationResult>
-
-  dryv: {
-    callServer(url: string, method: string, data: any): Promise<any>
-
-    handleResult(
-      session: DryvValidationSession<TModel>,
-      $m: TModel,
-      field: keyof TModel | string,
-      rule: DryvValidationRule<TModel> | undefined | null,
-      result: any
-    ): Promise<any>
-
-    valueOfDate(date: string, locale: string, format: string): number
-  }
 }
 
 export interface DryvOptions {

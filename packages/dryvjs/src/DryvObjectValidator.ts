@@ -1,8 +1,7 @@
-import type { DryvValidationResult, DryvValidationSession, FieldEvent } from '@/core'
-import { DryvFieldValidator, DryvOptions, DryvValidatableObject } from '@/core'
-import { DryvValidator } from '@/core/DryvValidator'
-import { dryvValidatableObject } from '@/core/dryvValidatableObject'
-import { observableProxy } from '@/core/observableProxy'
+import type { DryvValidationResult, DryvValidationSession, FieldEvent } from './'
+import { DryvFieldValidator, DryvOptions, DryvValidatableObject } from './'
+import { DryvValidator } from './DryvValidator'
+import { dryvValidatableObject, observableProxy } from '@/internal'
 
 export class DryvObjectValidator<TModel extends object = any> extends DryvValidator<
   TModel,

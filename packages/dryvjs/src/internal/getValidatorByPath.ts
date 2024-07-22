@@ -1,6 +1,6 @@
-import { DryvValidator } from '@/core/DryvValidator'
-import { DryvFieldValidator } from '@/core/DryvFieldValidator'
-import { DryvObjectValidator } from '@/core/DryvObjectValidator'
+import { DryvValidator } from '@/DryvValidator'
+import { DryvFieldValidator } from '@/DryvFieldValidator'
+import { DryvObjectValidator } from '@/DryvObjectValidator'
 
 export function getValidatorByPath<TModel extends object>(
   obj: DryvValidator<TModel>,

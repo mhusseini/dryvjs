@@ -1,4 +1,3 @@
-import { DryvValidator } from '@/core/DryvValidator'
 import {
   DryvFieldValidationResult,
   DryvOptions,
@@ -6,15 +5,13 @@ import {
   DryvValidationResult,
   DryvValidationRule,
   DryvValidationRuleSet,
-  DryvValidationSession
-} from '@/core/typings'
-import { DryvObjectValidator } from '@/core/DryvObjectValidator'
-import { DryvFieldValidator } from '@/core/DryvFieldValidator'
-import { getValidatorByPath } from '@/core/getValidatorByPath'
+  DryvValidator,
+  DryvObjectValidator,
+  DryvFieldValidator
+} from '@/.'
+import { getValidatorByPath } from '@/internal'
 
-export class DryvValidationSessionImplementation<TModel extends object, TParameters = any>
-  implements DryvValidationSession<TModel, TParameters>
-{
+export class DryvValidationSession<TModel extends object, TParameters = any> {
   private _depth = 0
   private _excludedFields: {
     [field: string]: boolean
@@ -174,28 +171,23 @@ export class DryvValidationSessionImplementation<TModel extends object, TParamet
 
     for (const key in obj) {
       if (!(!this.isExcludedField(key) && obj.hasOwnProperty(key))) {
-        console.log('*** excluded field ' + key)
         continue
       }
       const path = parentPath ? parentPath + '.' + key : key
       const value = obj[key]
       if (typeof value !== 'object') {
-        console.log('*** what field ' + path)
         continue
       }
 
       const model = (obj as any).$model ?? obj
       const disablers = this.ruleSet.disablers?.[key]
       if (disablers && disablers.find((disabler) => disabler.validate(model, this))) {
-        console.log('*** skipping field ' + path)
         continue
       }
 
       if (value instanceof DryvValidator) {
-        console.log('*** using field ' + path)
         yield [path, value]
       } else {
-        console.log('*** drilling into field ' + path)
         yield* this.traverseFields(value, path)
       }
     }

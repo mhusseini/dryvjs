@@ -1,4 +1,4 @@
-import { DryvFieldValidator, DryvObjectValidator, DryvValidationRuleSet } from '@/core'
+import { DryvFieldValidator, DryvObjectValidator, DryvValidationRuleSet } from '@/.'
 
 export function annotateValidator<TModel extends object, TParameters = object>(
   validator: DryvObjectValidator<TModel>,

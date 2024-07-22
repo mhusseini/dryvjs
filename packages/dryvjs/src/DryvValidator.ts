@@ -5,7 +5,7 @@ import {
   DryvValidationResult,
   DryvValidationResultType,
   DryvValidationSession
-} from '@/core'
+} from './'
 
 export abstract class DryvValidator<
   TModel extends object = any,

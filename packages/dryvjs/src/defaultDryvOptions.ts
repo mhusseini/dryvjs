@@ -3,7 +3,7 @@ import type {
   DryvValidationRuleSetResolver,
   DryvValidationRule,
   DryvValidationSession
-} from './typings'
+} from '@/.'
 
 class DryvOptionsSingleton {
   public static readonly Instance: DryvOptions = {

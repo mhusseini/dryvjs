@@ -1,7 +1,6 @@
 export * from 'dryvjs'
 export * from './plugin'
 export * from './useDryv'
-export * from './useTransaction'
 export * from './useDryvGroupSlot'
 export * from './useDryvValueProp'
 export * from './dryvValidatableMixin'

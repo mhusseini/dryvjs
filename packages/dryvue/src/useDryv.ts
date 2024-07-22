@@ -1,9 +1,4 @@
-import type {
-  DryvOptions,
-  DryvValidationResult,
-  DryvValidationRuleSet,
-  DryvValidationSession
-} from 'dryvjs'
+import type { DryvOptions, DryvValidationResult, DryvValidationRuleSet } from 'dryvjs'
 import {
   DryvObjectValidator,
   dryvOptions,
@@ -11,13 +6,13 @@ import {
   DryvServerErrors,
   DryvServerValidationResponse,
   DryvValidatableObject,
+  DryvValidationSession,
   DryvValidator
 } from 'dryvjs'
 import { computed, isRef, watch, type Ref } from 'vue'
 import { useMappedField } from './useMappedField'
 import { useMappedGroup } from './useMappedGroup'
-import { annotateValidator } from 'dryvjs/dist/core/annotateValidator'
-import { DryvValidationSessionImplementation } from 'dryvjs/dist/core/DryvValidationSessionImplementation'
+import { annotateValidator } from 'dryvjs/dist/internal'
 
 export interface UseDryvResult<TModel extends object, TParameters = object> {
   session: DryvValidationSession<TModel>
@@ -48,7 +43,7 @@ export function useDryv<TModel extends object, TParameters = object>(
 ): UseDryvResult<TModel, TParameters> {
   options = dryvOptions(options)
   const ruleSet = findRuleSet<TModel, TParameters>(ruleSetOrName)
-  const session = new DryvValidationSessionImplementation<TModel, TParameters>(options, ruleSet)
+  const session = new DryvValidationSession<TModel, TParameters>(options, ruleSet)
   let validator: DryvObjectValidator<TModel>
 
   if (isRef(model)) {
