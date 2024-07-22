@@ -7,7 +7,7 @@ import {
   DryvValidationSession
 } from '@/core'
 
-export abstract class DryvValidator<TModel extends object = any, TValue = object> {
+export abstract class DryvValidator<TModel extends object = any, TValue = any> {
   private _parent?: DryvValidator | null
   private _path?: string
 

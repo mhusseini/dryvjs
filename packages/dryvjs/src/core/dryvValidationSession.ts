@@ -5,7 +5,6 @@ import {
   DryvOptions,
   DryvValidateFunctionResult,
   DryvValidationResult,
-  DryvValidationResultType,
   DryvValidationRule,
   DryvValidationRuleSet,
   DryvValidationSession,
@@ -38,7 +37,7 @@ export function dryvValidatorSession<TModel extends object, TParameters = object
     return _depth > 0
   }
 
-  const session: DryvValidationSessionInternal<TModel> = {
+  const session: DryvValidationSessionInternal<TModel, TParameters> = {
     dryv: {
       callServer: options.callServer,
       handleResult: options.handleResult,
@@ -51,7 +50,7 @@ export function dryvValidatorSession<TModel extends object, TParameters = object
     }),
 
     async validateObject(
-      objectValidator: DryvObjectValidator<TModel, TParameters>
+      objectValidator: DryvObjectValidator<TModel>
     ): Promise<DryvValidationResult> {
       if (
         await runDisablers(
@@ -78,7 +77,7 @@ export function dryvValidatorSession<TModel extends object, TParameters = object
       try {
         const newValidationChain = startValidationChain()
         const fieldResults: DryvValidationResult[] = await Promise.all(
-          Array.from(traverseFields(ruleSet, objectValidator.value)).map(([field, value]) =>
+          Array.from(traverseFields(ruleSet, objectValidator.value)).map(([, value]) =>
             value.validate().then((result) => ({ ...result, path: value.path ?? undefined }))
           )
         )

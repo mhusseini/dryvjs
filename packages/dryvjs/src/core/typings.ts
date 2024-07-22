@@ -65,8 +65,8 @@ export interface DryvGroupValidationResult {
   }[]
 }
 
-export interface DryvValidationSessionInternal<TModel extends object>
-  extends DryvValidationSession<TModel> {
+export interface DryvValidationSessionInternal<TModel extends object, TParameters = object>
+  extends DryvValidationSession<TModel, TParameters> {
   $initializing?: boolean
 }
 
@@ -76,12 +76,9 @@ export interface DryvValidationSession<TModel extends object, TParameters = obje
     groups: Record<string, DryvFieldValidationResult | undefined>
   }
 
-  validateObject(objectValidator: DryvValidator<TModel, TParameters>): Promise<DryvValidationResult>
+  validateObject(objectValidator: DryvValidator<TModel>): Promise<DryvValidationResult>
 
-  validateField(
-    field: DryvValidator<TModel, TParameters>,
-    model?: TModel
-  ): Promise<DryvValidationResult>
+  validateField(field: DryvValidator<TModel>, model?: TModel): Promise<DryvValidationResult>
 
   dryv: {
     callServer(url: string, method: string, data: any): Promise<any>
