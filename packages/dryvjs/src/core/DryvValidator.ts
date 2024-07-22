@@ -7,46 +7,70 @@ import {
   DryvValidationSession
 } from '@/core'
 
-export abstract class DryvValidator<TModel extends object = any, TValue = any> {
-  private _parent?: DryvValidator | null
+export abstract class DryvValidator<
+  TModel extends object = any,
+  TValue = any,
+  TParent extends DryvValidator = any
+> {
+  private _parent?: TParent | null
   private _path?: string
+
+  get isDirty(): boolean {
+    return this._reactive.isDirty
+  }
+
+  protected set isDirty(value: boolean) {
+    this._reactive.isDirty = value
+  }
 
   get text(): string | null {
     return this._reactive.text
   }
+
   set text(value: string | null) {
     this._reactive.text = value
   }
+
   get group(): string | null {
     return this._reactive.group
   }
+
   set group(value: string | null) {
     this._reactive.group = value
   }
+
   get required(): boolean | null {
     return this._reactive.required
   }
+
   set required(value: boolean | null) {
     this._reactive.required = value
   }
+
   get groupShown(): boolean {
     return this._reactive.groupShown
   }
+
   set groupShown(value: boolean) {
     this._reactive.groupShown = value
   }
+
   get type(): DryvValidationResultType | null {
     return this._reactive.type
   }
+
   set type(value: DryvValidationResultType | null) {
     this._reactive.type = value
   }
+
   private _rootModel: any
   private _rootValidator: DryvValidator<TModel, any>
   private _reactive: any
+
   public get rootModel() {
     return this._rootModel
   }
+
   public get rootValidator() {
     return this._rootValidator
   }
@@ -54,7 +78,7 @@ export abstract class DryvValidator<TModel extends object = any, TValue = any> {
   protected constructor(
     public model: TModel,
     protected session: DryvValidationSession<TModel>,
-    parent: DryvValidator | undefined,
+    parent: TParent | undefined,
     protected options: DryvOptions,
     public readonly field: keyof TModel | undefined = undefined
   ) {
@@ -65,7 +89,8 @@ export abstract class DryvValidator<TModel extends object = any, TValue = any> {
       group: null,
       required: null,
       groupShown: false,
-      type: null
+      type: null,
+      isDirty: false
     })
     this.parent = parent
   }
@@ -75,7 +100,33 @@ export abstract class DryvValidator<TModel extends object = any, TValue = any> {
 
   abstract validate(): Promise<DryvValidationResult>
 
-  abstract childValidators(): DryvValidator[]
+  abstract refreshDirty(): void
+
+  revert() {
+    this.type = null
+    this.text = null
+    this.group = null
+    this.groupShown = false
+    this.isDirty = false
+
+    for (const validator of this.childValidators()) {
+      validator?.revert()
+    }
+  }
+
+  commit() {
+    this.type = null
+    this.text = null
+    this.group = null
+    this.groupShown = false
+    this.isDirty = false
+
+    for (const validator of this.childValidators()) {
+      validator?.commit()
+    }
+  }
+
+  protected abstract childValidators(): DryvValidator[]
 
   get hasError(): boolean {
     return this.type === 'error'
@@ -93,11 +144,11 @@ export abstract class DryvValidator<TModel extends object = any, TValue = any> {
     return this._path ?? ''
   }
 
-  get parent(): DryvValidator | undefined | null {
+  get parent(): TParent | undefined | null {
     return this._parent
   }
 
-  set parent(parent: DryvValidator | undefined | null) {
+  set parent(parent: TParent | undefined | null) {
     this._parent = parent
 
     if (parent) {
@@ -135,6 +186,7 @@ export abstract class DryvValidator<TModel extends object = any, TValue = any> {
       ...this,
       value: this.value,
       path: this.path,
+      text: this.text,
       hasError: this.hasError,
       hasWarning: this.hasWarning,
       isSuccess: this.isSuccess,
@@ -143,6 +195,7 @@ export abstract class DryvValidator<TModel extends object = any, TValue = any> {
       _rootModel: undefined,
       _rootValidator: undefined,
       _reactive: undefined,
+      _initialValue: undefined,
       rootValidator: undefined,
       rootModel: undefined,
       parent: undefined,

@@ -1,19 +1,29 @@
 import type { DryvValidationResult, DryvValidationSession } from '@/core'
-import { DryvOptions, DryvServerErrors, DryvServerValidationResponse, DryvValidator } from '@/core'
+import {
+  DryvObjectValidator,
+  DryvOptions,
+  DryvServerErrors,
+  DryvServerValidationResponse,
+  DryvValidator
+} from '@/core'
 import { getMemberByPath } from '@/core/getMemberByPath'
 
 export class DryvFieldValidator<TModel extends object, TParameters = any> extends DryvValidator<
   TModel,
-  TParameters
+  TParameters,
+  DryvObjectValidator
 > {
+  private _initialValue: TModel[keyof TModel]
+
   constructor(
     model: TModel,
     session: DryvValidationSession<TModel, TParameters>,
-    parent: DryvValidator,
+    parent: DryvObjectValidator,
     options: DryvOptions,
     field: keyof TModel
   ) {
     super(model, session, parent, options, field)
+    this._initialValue = model[field]
   }
 
   override get value(): any {
@@ -22,6 +32,28 @@ export class DryvFieldValidator<TModel extends object, TParameters = any> extend
 
   override set value(value: any) {
     this.model[this.field!] = value
+  }
+
+  override refreshDirty() {
+    const wasDirty = this.isDirty
+    const v = this.value
+    const iv = this._initialValue
+
+    this.isDirty = !!v !== !!iv && v !== iv
+
+    if (this.isDirty !== wasDirty) {
+      this.parent?.refreshDirty()
+    }
+  }
+
+  override revert() {
+    this.value = this._initialValue
+    super.revert()
+  }
+
+  override commit() {
+    this._initialValue = this.value
+    super.commit()
   }
 
   override childValidators(): DryvValidator[] {

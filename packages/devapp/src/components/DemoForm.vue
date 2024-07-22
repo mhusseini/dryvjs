@@ -17,9 +17,9 @@
       <validating-input v-model="validatable.rechnungsadresse.ort" label="Ort" />
     </div>
     <div class="button-bar">
-      <!--      <button @click.prevent="randomize">Randomize</button>-->
-      <!--      <button @click.prevent="revert" :disabled="!dirty && valid">Revert</button>-->
       <button @click.prevent="validate">Validate</button>
+      <button @click.prevent="commit" :disabled="!dirty || !valid">Commit</button>
+      <button @click.prevent="revert" :disabled="!dirty">Revert</button>
       <!--      <button @click.prevent="send">Send</button>-->
     </div>
   </form>
@@ -39,7 +39,7 @@
 import ValidatingInput from '@/components/ValidatingInput.vue'
 import type { Lieferadresse, PersonalData } from '@/models'
 import { computed, reactive, ref } from 'vue'
-import { type DryvValidationResult, useDryv, useTransaction } from 'dryvue'
+import { dryvTransaction, type DryvValidationResult, useDryv, useTransaction } from 'dryvue'
 import { lieferadresseValidationRules } from '@/LieferadresseValidationRules'
 
 let model: Lieferadresse = reactive({
@@ -61,7 +61,10 @@ let model: Lieferadresse = reactive({
   }
 })
 
-const { validate, validatable } = useDryv(model, lieferadresseValidationRules)
+const { validate, validatable, valid, dirty, commit, revert } = useDryv(
+  model,
+  lieferadresseValidationRules
+)
 
 // defineEmits()
 //

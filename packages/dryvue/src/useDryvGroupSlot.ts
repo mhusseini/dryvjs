@@ -1,10 +1,5 @@
 import { VNode, computed, useSlots } from 'vue'
-import {
-  DryvGroupValidationResult,
-  DryvValidatable,
-  DryvValidationResultType,
-  DryvValidator
-} from 'dryvjs'
+import { DryvGroupValidationResult, DryvValidationResultType, DryvValidator } from 'dryvjs'
 import { Ref } from '@vue/reactivity'
 
 export function useDryvGroupSlot(): Ref<DryvGroupValidationResult[]>

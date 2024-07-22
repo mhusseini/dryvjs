@@ -4,16 +4,22 @@ import { DryvValidator } from '@/core/DryvValidator'
 import { dryvValidatableObject } from '@/core/dryvValidatableObject'
 import { observableProxy } from '@/core/observableProxy'
 
-export class DryvObjectValidator<TModel extends object> extends DryvValidator<TModel, TModel> {
+export class DryvObjectValidator<TModel extends object = any> extends DryvValidator<
+  TModel,
+  TModel,
+  DryvObjectValidator
+> {
+  private _ignoreChildChanges = false
   private _unregister?: () => void
   readonly fields: { [field: string | symbol | number]: DryvValidator | null }
   proxy: TModel
   readonly transparentProxy: DryvValidatableObject<TModel>
+  private _isReverting = false
 
   constructor(
     model: TModel,
     session: DryvValidationSession<TModel, any>,
-    parent: DryvValidator | undefined,
+    parent: DryvObjectValidator | undefined,
     options: DryvOptions,
     field?: keyof TModel
   ) {
@@ -36,10 +42,19 @@ export class DryvObjectValidator<TModel extends object> extends DryvValidator<TM
     }
 
     const evendId = register((event: FieldEvent<TModel>) => {
-      if (this.fields[event.field]) {
+      let validator = this.fields[event.field]
+
+      if (validator === undefined) {
+        validator = this.createValidator(event.field, event.newValue)
+        this.fields[event.field] = validator
+      }
+
+      if (this._isReverting || validator === null) {
         return
       }
-      this.fields[event.field] = this.createValidator(event.field, event.newValue)
+
+      validator?.refreshDirty()
+      validator?.validate()
     })
 
     this._unregister = () => unregister(evendId)
@@ -59,6 +74,15 @@ export class DryvObjectValidator<TModel extends object> extends DryvValidator<TM
     return Object.values(this.fields).filter((f) => !!f) as DryvValidator[]
   }
 
+  override revert() {
+    try {
+      this._isReverting = true
+      super.revert()
+    } finally {
+      this._isReverting = false
+    }
+  }
+
   async validate(): Promise<DryvValidationResult> {
     return this.session.validateObject(this)
   }
@@ -66,6 +90,19 @@ export class DryvObjectValidator<TModel extends object> extends DryvValidator<TM
   destroy() {
     if (this._unregister) {
       this._unregister()
+    }
+  }
+
+  refreshDirty() {
+    if (this._ignoreChildChanges) {
+      return
+    }
+
+    const wasDirty = this.isDirty
+    this.isDirty = Object.values(this.fields).some((f) => f?.isDirty)
+
+    if (this.isDirty !== wasDirty) {
+      this.parent?.refreshDirty()
     }
   }
 

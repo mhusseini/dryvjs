@@ -24,9 +24,12 @@ export interface UseDryvResult<TModel extends object, TParameters = object> {
   model: TModel
   parameters?: TParameters
   validatable: DryvValidatableObject<TModel>
-  validate: () => Promise<DryvValidationResult>
   valid: Ref<boolean>
+  dirty: Ref<boolean>
+  validate: () => Promise<DryvValidationResult>
   clear: () => void
+  commit: () => void
+  revert: () => void
   setValidationResult: (result: DryvServerValidationResponse | DryvServerErrors) => boolean
   updateModel: (newValues: TModel) => void
 
@@ -73,7 +76,10 @@ export function useDryv<TModel extends object, TParameters = object>(
     validatable: validator.transparentProxy,
     validate: async () => await validator.validate(),
     valid: computed(() => validator.isSuccess),
+    dirty: computed(() => validator.isDirty),
     clear: () => validator.clear(),
+    commit: () => validator.commit(),
+    revert: () => validator.revert(),
     updateModel: (newValues: TModel) => (validator.value = newValues),
     useMappedField: (field: any, mappedValue: any) =>
       useMappedField<any, any>(session, field, mappedValue),
