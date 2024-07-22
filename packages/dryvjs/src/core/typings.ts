@@ -70,7 +70,7 @@ export interface DryvValidationSessionInternal<TModel extends object, TParameter
   $initializing?: boolean
 }
 
-export interface DryvValidationSession<TModel extends object, TParameters = object> {
+export interface DryvValidationSession<TModel extends object, TParameters = any> {
   results: {
     fields: Record<string, DryvFieldValidationResult | undefined>
     groups: Record<string, DryvFieldValidationResult | undefined>

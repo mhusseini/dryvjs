@@ -1,0 +1,403 @@
+import { DryvValidator } from '@/core/DryvValidator'
+import {
+  DryvFieldValidationResult,
+  DryvOptions,
+  DryvValidateFunctionResult,
+  DryvValidationResult,
+  DryvValidationRule,
+  DryvValidationRuleSet,
+  DryvValidationSession
+} from '@/core/typings'
+import { DryvObjectValidator } from '@/core/DryvObjectValidator'
+import { DryvFieldValidator } from '@/core/DryvFieldValidator'
+import { getValidatorByPath } from '@/core/getValidatorByPath'
+
+export class DryvValidationSessionImplementation<TModel extends object, TParameters = any>
+  implements DryvValidationSession<TModel, TParameters>
+{
+  private _depth = 0
+  private _excludedFields: {
+    [field: string]: boolean
+  } = {}
+  private _isTriggered = false
+  private _processedFields: { [field: string | symbol]: boolean } | undefined = undefined
+
+  readonly results: {
+    fields: Record<string, DryvFieldValidationResult | undefined>
+    groups: Record<string, DryvFieldValidationResult | undefined>
+  }
+
+  readonly dryv: {
+    callServer(url: string, method: string, data: any): Promise<any>
+
+    handleResult(
+      session: DryvValidationSession<TModel>,
+      $m: TModel,
+      field: keyof TModel | string,
+      rule: DryvValidationRule<TModel> | undefined | null,
+      result: any
+    ): Promise<any>
+
+    valueOfDate(date: string, locale: string, format: string): number
+  }
+
+  constructor(
+    private options: DryvOptions,
+    private ruleSet: DryvValidationRuleSet<TModel, TParameters>
+  ) {
+    this.dryv = {
+      callServer: options.callServer!,
+      handleResult: options.handleResult!,
+      valueOfDate: options.valueOfDate!
+    }
+
+    this.results = options.objectWrapper!({
+      fields: {},
+      groups: {}
+    })
+  }
+
+  get isValidating() {
+    return this._depth > 0
+  }
+
+  async validateObject(
+    objectValidator: DryvObjectValidator<TModel>
+  ): Promise<DryvValidationResult> {
+    if (await this.runDisablers(objectValidator.rootModel, objectValidator.field ?? ('' as any))) {
+      objectValidator.clear()
+      return {
+        success: true,
+        path: objectValidator.path!,
+        hasErrors: false,
+        hasWarnings: false,
+        warningHash: null,
+        results: []
+      }
+    }
+
+    this._depth++
+    this._isTriggered = true
+
+    try {
+      const newValidationChain = this.startValidationChain()
+      const fieldResults: DryvValidationResult[] = await Promise.all(
+        Array.from(this.traverseFields(objectValidator.fields)).map(([, value]) =>
+          value.validate().then((result) => ({ ...result, path: value.path ?? undefined }))
+        )
+      )
+      const result = this.createObjectResults(fieldResults.filter((r) => !!r))
+
+      objectValidator.type = result.hasErrors ? 'error' : result.hasWarnings ? 'warning' : 'success'
+
+      if (newValidationChain) {
+        this.endValidationChain()
+      }
+
+      return result
+    } finally {
+      this._depth--
+    }
+  }
+
+  async validateField(
+    field: DryvFieldValidator<TModel>,
+    model?: TModel
+  ): Promise<DryvValidationResult> {
+    if (!this.canValidateFields() || this._processedFields?.[field.field!]) {
+      return this.success(field.path!)
+    }
+
+    if (!model) {
+      model = this.getModel(field)
+    }
+
+    const newValidationChain = this.startValidationChain()
+    const fieldResult = await this.validateFieldInternal(model, field)
+    const result = this.createFieldValidationResult(fieldResult, field)
+
+    this.results.fields[field.path!] = result.success ? undefined : fieldResult ?? undefined
+    if (fieldResult?.group) {
+      this.results.groups[fieldResult?.group] = result.success ? undefined : fieldResult
+    }
+
+    if (newValidationChain) {
+      this.endValidationChain()
+    }
+
+    return result
+  }
+
+  private canValidateFields(): boolean {
+    switch (this.options.validationTrigger) {
+      case 'auto':
+        // if (this.$initializing) {
+        //   return false
+        // }
+        break
+      case 'manual':
+        if (!this.isValidating) {
+          return false
+        }
+        break
+      case 'autoAfterManual':
+        if (!this._isTriggered && !this.isValidating) {
+          return false
+        }
+        break
+    }
+
+    return true
+  }
+
+  private startValidationChain(): boolean {
+    const newValidationChain = !this._processedFields
+
+    if (newValidationChain) {
+      this._processedFields = {}
+    }
+
+    return newValidationChain
+  }
+
+  private endValidationChain(): void {
+    this._processedFields = undefined
+  }
+
+  private *traverseFields(
+    obj: any,
+    parentPath?: string
+  ): IterableIterator<[string, DryvValidator]> {
+    if (!parentPath) {
+      parentPath = ''
+    }
+
+    for (const key in obj) {
+      if (!(!this.isExcludedField(key) && obj.hasOwnProperty(key))) {
+        console.log('*** excluded field ' + key)
+        continue
+      }
+      const path = parentPath ? parentPath + '.' + key : key
+      const value = obj[key]
+      if (typeof value !== 'object') {
+        console.log('*** what field ' + path)
+        continue
+      }
+
+      const model = (obj as any).$model ?? obj
+      const disablers = this.ruleSet.disablers?.[key]
+      if (disablers && disablers.find((disabler) => disabler.validate(model, this))) {
+        console.log('*** skipping field ' + path)
+        continue
+      }
+
+      if (value instanceof DryvValidator) {
+        console.log('*** using field ' + path)
+        yield [path, value]
+      } else {
+        console.log('*** drilling into field ' + path)
+        yield* this.traverseFields(value, path)
+      }
+    }
+  }
+
+  private isExcludedField(fieldName: string, path?: string): boolean {
+    if (!this.options.excludedFields) {
+      return false
+    }
+
+    const key = path ? path + '.' + fieldName : fieldName
+
+    if (this._excludedFields[key] === undefined) {
+      this._excludedFields[key] = !!this.options.excludedFields.find((regexp) => regexp.test(key))
+    }
+
+    return this._excludedFields[key]
+  }
+
+  private async validateFieldInternal(
+    model: TModel,
+    validatable: DryvValidator<TModel, TParameters>
+  ): Promise<DryvFieldValidationResult | null> {
+    const field = validatable.field
+    if (!field || !this.ruleSet) {
+      return Promise.resolve(null)
+    }
+
+    if (this._processedFields) {
+      this._processedFields[field] = true
+    }
+
+    const rules = this.ruleSet?.validators?.[validatable.path]
+
+    if (!rules || rules.length <= 0) {
+      return Promise.resolve(null)
+    }
+
+    if (await this.runDisablers(model, field)) {
+      return Promise.resolve(null)
+    }
+
+    return await this.runValidators(rules, model, validatable)
+  }
+
+  private async runDisablers(model: any, field: keyof TModel | string): Promise<boolean> {
+    const disablers = this.ruleSet?.disablers?.[field]
+
+    if (disablers && disablers.length > 0) {
+      for (const rule of disablers) {
+        if (await rule.validate(model, this)) {
+          return true
+        }
+      }
+    }
+
+    return false
+  }
+
+  private async runValidators(
+    rules: DryvValidationRule<TModel>[],
+    model: TModel,
+    validatable: DryvValidator<TModel>
+  ): Promise<DryvFieldValidationResult | null> {
+    let result: DryvValidateFunctionResult = null
+
+    try {
+      for (const rule of rules) {
+        rule.related?.forEach((relatedField) => {
+          if (!relatedField || relatedField === validatable.path) {
+            return
+          }
+          const field = getValidatorByPath(validatable.rootValidator, relatedField as string)
+          if (!field) {
+            return
+            //model[relatedField] = null!
+          }
+          this.validateField(field, model)
+        })
+        const r = await rule.validate(model, this)
+        if (!r || r === true) {
+          // continue
+        } else if (typeof r === 'string') {
+          result = {
+            path: validatable.path!,
+            type: 'error',
+            text: r,
+            group: rule.group
+          }
+          break
+        } else if (r.type !== 'success') {
+          result = r
+          if (!result.group) {
+            result.group = rule.group
+          }
+          break
+        }
+      }
+    } catch (error) {
+      console.error(`DRYV: Error validating field '${String(validatable.field)}'`, error)
+      if (this.options.exceptionHandling === 'failValidation') {
+        result = {
+          path: validatable.path!,
+          type: 'error',
+          text: 'Validation failed.',
+          group: null
+        }
+      }
+    }
+
+    return result && result.type !== 'success' ? result : null
+  }
+
+  private getModel<TModel extends object>(parent: DryvValidator<TModel>): TModel {
+    while (parent.parent) {
+      parent = parent.parent
+    }
+
+    return parent.model
+  }
+
+  private success(path: string): DryvValidationResult {
+    return {
+      results: [],
+      success: true,
+      hasErrors: false,
+      hasWarnings: false,
+      warningHash: null,
+      path
+    }
+  }
+
+  private createObjectResults(results: DryvValidationResult[]): {
+    results: DryvFieldValidationResult[]
+    hasErrors: boolean
+    hasWarnings: boolean
+    warningHash: string
+    success: boolean
+  } {
+    const fieldResults = results
+      .filter((r) => r)
+      .flatMap((r) => r.results.map((r2) => ({ ...r2, path: r.path })))
+    const hasWarnings = fieldResults.some((r) => r.type === 'warning')
+    const hasErrors = fieldResults.some((r) => r.type === 'error')
+
+    return {
+      results: fieldResults,
+      hasErrors: hasErrors,
+      hasWarnings: hasWarnings,
+      warningHash: this.hashCode(
+        fieldResults
+          .filter((r) => r.type === 'warning')
+          .map((r) => r.text)
+          .join()
+      ),
+      success: !hasErrors && !hasWarnings
+    }
+  }
+
+  private createFieldValidationResult<TModel extends object, TParameters>(
+    result: DryvFieldValidationResult | null,
+    field: DryvValidator<TModel, TParameters>
+  ): DryvValidationResult {
+    if (result) {
+      field.type = result.type ?? 'success'
+      field.text = result.text ?? null
+      field.group = result.group ?? null
+
+      const type = result.type?.toLowerCase()
+
+      return type === 'success'
+        ? this.success(field.path!)
+        : {
+            results: [result],
+            hasErrors: type === 'error',
+            hasWarnings: type === 'warning',
+            warningHash: type === 'warning' ? result.text : null,
+            success: type === 'success' || !type,
+            path: String(field.path)
+          }
+    } else {
+      field.type = 'success'
+      field.text = null
+      field.group = null
+
+      return this.success(field.path!)
+    }
+  }
+
+  private hashCode(text?: string) {
+    if (!text || text.length === 0) {
+      return ''
+    }
+
+    let hash = 0
+
+    for (let i = 0; i < text.length; i++) {
+      const chr = text.charCodeAt(i)
+      hash = (hash << 5) - hash + chr
+      hash |= 0 // Convert to 32bit integer
+    }
+
+    return Math.abs(hash).toString(16)
+  }
+}

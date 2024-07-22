@@ -1,12 +1,12 @@
 import type { DryvValidationResult, DryvValidationSession, FieldEvent } from '@/core'
 import { DryvFieldValidator, DryvOptions, DryvValidatableObject } from '@/core'
 import { DryvValidator } from '@/core/DryvValidator'
-import { dryvObjectValidatorTransparentProxy } from '@/core/dryvObjectValidatorTransparentProxy'
-import { observableProxy } from '@/core/ObservableProxy'
+import { dryvValidatableObject } from '@/core/dryvValidatableObject'
+import { observableProxy } from '@/core/observableProxy'
 
 export class DryvObjectValidator<TModel extends object> extends DryvValidator<TModel, TModel> {
+  private _unregister?: () => void
   readonly fields: { [field: string | symbol | number]: DryvValidator | null }
-  private unregister?: () => void
   proxy: TModel
   readonly transparentProxy: DryvValidatableObject<TModel>
 
@@ -19,13 +19,13 @@ export class DryvObjectValidator<TModel extends object> extends DryvValidator<TM
   ) {
     super(model, session, parent, options, field)
     this.fields = {}
-    this.transparentProxy = dryvObjectValidatorTransparentProxy(this)
+    this.transparentProxy = dryvValidatableObject(this)
     this.proxy = this.updateModel(model)
   }
 
   private updateModel(model: TModel): TModel {
-    if (this.unregister) {
-      this.unregister()
+    if (this._unregister) {
+      this._unregister()
     }
     const { proxy, register, unregister } = observableProxy(model)
     this.proxy = proxy
@@ -42,7 +42,7 @@ export class DryvObjectValidator<TModel extends object> extends DryvValidator<TM
       this.fields[event.field] = this.createValidator(event.field, event.newValue)
     })
 
-    this.unregister = () => unregister(evendId)
+    this._unregister = () => unregister(evendId)
 
     return this.proxy
   }
@@ -64,8 +64,8 @@ export class DryvObjectValidator<TModel extends object> extends DryvValidator<TM
   }
 
   destroy() {
-    if (this.unregister) {
-      this.unregister()
+    if (this._unregister) {
+      this._unregister()
     }
   }
 

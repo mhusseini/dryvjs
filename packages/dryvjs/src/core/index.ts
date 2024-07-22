@@ -1,4 +1,4 @@
-export * from './dryvValidationSession'
+export * from './DryvValidationSessionImplementation'
 export * from './dryvOptions'
 export * from './dryvRuleSet'
 export * from './defaultDryvOptions'

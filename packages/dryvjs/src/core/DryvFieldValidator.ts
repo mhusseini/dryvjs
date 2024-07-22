@@ -2,7 +2,7 @@ import type { DryvValidationResult, DryvValidationSession } from '@/core'
 import { DryvOptions, DryvServerErrors, DryvServerValidationResponse, DryvValidator } from '@/core'
 import { getMemberByPath } from '@/core/getMemberByPath'
 
-export class DryvFieldValidator<TModel extends object, TParameters = object> extends DryvValidator<
+export class DryvFieldValidator<TModel extends object, TParameters = any> extends DryvValidator<
   TModel,
   TParameters
 > {

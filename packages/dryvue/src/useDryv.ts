@@ -16,8 +16,8 @@ import {
 import { computed, isRef, watch, type Ref } from 'vue'
 import { useMappedField } from './useMappedField'
 import { useMappedGroup } from './useMappedGroup'
-import { dryvValidatorSession } from 'dryvjs/dist/core/v2/dryvValidationSession'
 import { annotateValidator } from 'dryvjs/dist/core/annotateValidator'
+import { DryvValidationSessionImplementation } from 'dryvjs/dist/core/DryvValidationSessionImplementation'
 
 export interface UseDryvResult<TModel extends object, TParameters = object> {
   session: DryvValidationSession<TModel>
@@ -45,7 +45,7 @@ export function useDryv<TModel extends object, TParameters = object>(
 ): UseDryvResult<TModel, TParameters> {
   options = dryvOptions(options)
   const ruleSet = findRuleSet<TModel, TParameters>(ruleSetOrName)
-  const session = dryvValidatorSession<TModel, TParameters>(options, ruleSet)
+  const session = new DryvValidationSessionImplementation<TModel, TParameters>(options, ruleSet)
   let validator: DryvObjectValidator<TModel>
 
   if (isRef(model)) {

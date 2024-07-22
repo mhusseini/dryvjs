@@ -89,8 +89,8 @@ export abstract class DryvValidator<TModel extends object = any, TValue = any> {
     return !this.hasError && !this.hasWarning
   }
 
-  get path(): string | null {
-    return this._path ?? null
+  get path(): string {
+    return this._path ?? ''
   }
 
   get parent(): DryvValidator | undefined | null {
