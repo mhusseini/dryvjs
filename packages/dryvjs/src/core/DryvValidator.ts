@@ -7,7 +7,7 @@ import {
   DryvValidationSession
 } from '@/core'
 
-export abstract class DryvValidator<TModel extends object = any, TParameters = object> {
+export abstract class DryvValidator<TModel extends object = any, TValue = object> {
   private _parent?: DryvValidator | null
   private _path?: string
 
@@ -41,8 +41,8 @@ export abstract class DryvValidator<TModel extends object = any, TParameters = o
   set type(value: DryvValidationResultType | null) {
     this._reactive.type = value
   }
-  private _rootModel: TModel
-  private _rootValidator: DryvValidator<TModel>
+  private _rootModel: any
+  private _rootValidator: DryvValidator<TModel, any>
   private _reactive: any
   public get rootModel() {
     return this._rootModel
@@ -53,7 +53,7 @@ export abstract class DryvValidator<TModel extends object = any, TParameters = o
 
   protected constructor(
     public model: TModel,
-    protected session: DryvValidationSession<TModel, TParameters>,
+    protected session: DryvValidationSession<TModel>,
     parent: DryvValidator | undefined,
     protected options: DryvOptions,
     public readonly field: keyof TModel | undefined = undefined
@@ -70,8 +70,8 @@ export abstract class DryvValidator<TModel extends object = any, TParameters = o
     this.parent = parent
   }
 
-  abstract get value(): any
-  abstract set value(value: any)
+  abstract get value(): TValue
+  abstract set value(value: TValue)
 
   abstract validate(): Promise<DryvValidationResult>
 

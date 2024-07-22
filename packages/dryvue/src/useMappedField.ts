@@ -1,25 +1,24 @@
 import {
-  DryvObject,
   DryvServerErrors,
   DryvServerValidationResponse,
-  DryvValidatable,
-  DryvValidationResult
+  DryvValidationResult,
+  DryvValidator
 } from 'dryvjs'
 import { Ref } from '@vue/reactivity'
 
 export function useMappedField<TModel extends object, TTo>(
-  model: DryvObject<TModel>,
+  model: TModel,
   field: keyof TModel,
   mappedValue: Ref<TTo | undefined>
-): DryvValidatable<any, TTo> {
+): DryvValidator<any, TTo> {
   if (!model[field]) {
     model[field] = null!
   }
 
-  const validatable = model[field] as DryvValidatable<any, TTo>
+  const validatable = model[field] as DryvValidator<any, TTo>
 
   return {
-    _isDryvValidatable: true,
+    _isDryvValidator: true,
     groupShown: false,
     get value(): TTo | undefined {
       return mappedValue.value
@@ -27,10 +26,10 @@ export function useMappedField<TModel extends object, TTo>(
     set value(value: TTo | undefined) {
       mappedValue.value = value
     },
-    get parent(): DryvValidatable | undefined {
+    get parent(): DryvValidator | null | undefined {
       return validatable.parent
     },
-    set parent(value: DryvValidatable | undefined) {
+    set parent(value: DryvValidator | undefined) {
       validatable.parent = value
     },
     get hasError(): boolean {
@@ -51,11 +50,11 @@ export function useMappedField<TModel extends object, TTo>(
     clear(): void {
       validatable.clear()
     },
-    set(response: DryvServerValidationResponse | DryvServerErrors): boolean {
-      return validatable.set(response)
+    setValidationResult(response: DryvServerValidationResponse | DryvServerErrors): boolean {
+      return validatable.setValidationResult(response)
     },
     updateValue(value: any): void {
-      validatable.updateValue(value)
+      validatable.value = value
     },
     get required(): boolean | null | undefined {
       return validatable.required
@@ -82,7 +81,7 @@ export function useMappedField<TModel extends object, TTo>(
       throw new Error('The method must not be called on this instance.')
     },
     toJSON(): any {
-      return { ...this, parent: undefined, _isDryvValidatable: undefined, session: undefined }
+      return { ...this, parent: undefined, _isDryvValidator: undefined, session: undefined }
     }
   } as any
 }

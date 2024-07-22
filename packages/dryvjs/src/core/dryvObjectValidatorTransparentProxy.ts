@@ -1,9 +1,9 @@
-import { DryvFieldValidator, DryvObjectValidator } from '@/core'
+import { DryvFieldValidator, DryvObjectValidator, DryvValidatableObject } from '@/core'
 
-export function dryvObjectValidatorTransparentProxy<TModel extends object, TParameters = object>(
-  target: DryvObjectValidator<TModel, TParameters>
-) {
-  return new Proxy<DryvObjectValidator<TModel, TParameters>>(target, {
+export function dryvObjectValidatorTransparentProxy<TModel extends object>(
+  target: DryvObjectValidator<TModel>
+): DryvValidatableObject<TModel> {
+  return new Proxy(target, {
     ownKeys(target) {
       return target.proxy ? Reflect.ownKeys(target.proxy) : []
     },
@@ -36,5 +36,5 @@ export function dryvObjectValidatorTransparentProxy<TModel extends object, TPara
           }
         : undefined
     }
-  })
+  }) as DryvValidatableObject<TModel>
 }

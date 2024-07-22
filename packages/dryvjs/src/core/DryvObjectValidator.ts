@@ -1,21 +1,18 @@
 import type { DryvValidationResult, DryvValidationSession, FieldEvent } from '@/core'
-import { DryvFieldValidator, DryvOptions } from '@/core'
+import { DryvFieldValidator, DryvOptions, DryvValidatableObject } from '@/core'
 import { DryvValidator } from '@/core/DryvValidator'
 import { dryvObjectValidatorTransparentProxy } from '@/core/dryvObjectValidatorTransparentProxy'
 import { observableProxy } from '@/core/ObservableProxy'
 
-export class DryvObjectValidator<TModel extends object, TParameters = object> extends DryvValidator<
-  TModel,
-  TParameters
-> {
+export class DryvObjectValidator<TModel extends object> extends DryvValidator<TModel, TModel> {
   readonly fields: { [field: string | symbol | number]: DryvValidator | null }
   private unregister?: () => void
   proxy: TModel
-  readonly transparentProxy: DryvObjectValidator<TModel, TParameters>
+  readonly transparentProxy: DryvValidatableObject<TModel>
 
   constructor(
     model: TModel,
-    session: DryvValidationSession<TModel, TParameters>,
+    session: DryvValidationSession<TModel, any>,
     parent: DryvValidator | undefined,
     options: DryvOptions,
     field?: keyof TModel
@@ -50,11 +47,11 @@ export class DryvObjectValidator<TModel extends object, TParameters = object> ex
     return this.proxy
   }
 
-  override get value(): any {
-    return this.fields
+  override get value(): TModel {
+    return this.proxy
   }
 
-  override set value(value: any) {
+  override set value(value: TModel) {
     this.updateModel(value)
   }
 

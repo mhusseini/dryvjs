@@ -136,3 +136,23 @@ export interface FieldEvent<TModel> {
   newValue: any
   field: keyof TModel
 }
+
+export type DryvValidatableField<TValue = object> = {
+  path: string
+  type: DryvValidationResultType | null
+  text: string | null
+  group: string | null
+  groupShown: boolean
+  success: boolean
+  hasErrors: boolean
+  hasWarnings: boolean
+  warningHash: string | undefined | null
+  value: TValue
+  validate(): Promise<DryvValidationResult>
+}
+
+export type DryvValidatableObject<TModel extends object> = {
+  [Property in keyof TModel]: TModel[Property] extends object
+    ? DryvValidatableObject<TModel[Property]>
+    : DryvValidatableField<TModel[Property]>
+}

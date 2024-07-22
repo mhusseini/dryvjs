@@ -1,13 +1,13 @@
-import { DryvValidatable, DryvValidationResult, DryvValidationSession } from 'dryvjs'
+import { DryvValidationResult, DryvValidationSession, DryvValidator } from 'dryvjs'
 import { Ref } from '@vue/reactivity'
 
-export function useMappedGroup<TModel extends object, TTo>(
-  session: DryvValidationSession<TModel>,
+export function useMappedGroup<TModel extends object, TParameters, TTo>(
+  session: DryvValidationSession<TModel, TParameters>,
   groupName: string,
   field: Ref<TTo | undefined>
-): DryvValidatable<any, TTo> {
+): DryvValidator<any, TTo> {
   return {
-    _isDryvValidatable: true,
+    _isDryvValidator: true,
     groupShown: false,
     get value(): TTo | undefined {
       return field.value
@@ -15,7 +15,7 @@ export function useMappedGroup<TModel extends object, TTo>(
     set value(value: TTo | undefined) {
       field.value = value
     },
-    get parent(): DryvValidatable | undefined {
+    get parent(): DryvValidator | undefined {
       return undefined
     },
     set parent(_) {
@@ -65,7 +65,7 @@ export function useMappedGroup<TModel extends object, TTo>(
       throw new Error('The method must not be called on this instance.')
     },
     toJSON(): any {
-      return { ...this, parent: undefined, _isDryvValidatable: undefined, session: undefined }
+      return { ...this, parent: undefined, _isDryvValidator: undefined, session: undefined }
     }
   } as any
 }

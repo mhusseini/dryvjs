@@ -1,5 +1,4 @@
 import type {
-  DryvObject,
   DryvOptions,
   DryvValidationResult,
   DryvValidationRuleSet,
@@ -11,7 +10,8 @@ import {
   dryvRuleSet,
   DryvServerErrors,
   DryvServerValidationResponse,
-  DryvValidatable
+  DryvValidatableObject,
+  DryvValidator
 } from 'dryvjs'
 import { computed, isRef, watch, type Ref } from 'vue'
 import { useMappedField } from './useMappedField'
@@ -23,7 +23,7 @@ export interface UseDryvResult<TModel extends object, TParameters = object> {
   session: DryvValidationSession<TModel>
   model: TModel
   parameters?: TParameters
-  validatable: DryvObjectValidator<TModel, TParameters>
+  validatable: DryvValidatableObject<TModel>
   validate: () => Promise<DryvValidationResult>
   valid: Ref<boolean>
   clear: () => void
@@ -33,9 +33,9 @@ export interface UseDryvResult<TModel extends object, TParameters = object> {
   useMappedField<TTo>(
     field: keyof TModel,
     mappedValue: Ref<TTo | undefined>
-  ): DryvValidatable<any, TTo>
+  ): DryvValidator<any, TTo>
 
-  useMappedGroup<TTo>(groupName: string, field: Ref<TTo | undefined>): DryvValidatable<any, TTo>
+  useMappedGroup<TTo>(groupName: string, field: Ref<TTo | undefined>): DryvValidator<any, TTo>
 }
 
 export function useDryv<TModel extends object, TParameters = object>(
@@ -46,25 +46,25 @@ export function useDryv<TModel extends object, TParameters = object>(
   options = dryvOptions(options)
   const ruleSet = findRuleSet<TModel, TParameters>(ruleSetOrName)
   const session = dryvValidatorSession<TModel, TParameters>(options, ruleSet)
-  let validator: DryvObjectValidator<TModel, TParameters>
+  let validator: DryvObjectValidator<TModel>
 
   if (isRef(model)) {
     const ref = model
-    validator = new DryvObjectValidator<TModel, TParameters>(
+    validator = new DryvObjectValidator<TModel>(
       model.value ?? ({} as any),
       session,
       undefined,
       options
     )
-    watch(ref, (newModel) => (validator.value = newModel))
+    watch(ref, (newModel) => (validator.value = newModel ?? ({} as any)))
     if (!model.value) {
       throw new Error('The initial value of the model cannot be null or undefined.')
     }
   } else {
-    validator = new DryvObjectValidator<TModel, TParameters>(model, session, undefined, options)
+    validator = new DryvObjectValidator<TModel>(model, session, undefined, options)
   }
-  
-  annotateValidator<TModel, TParameters>(validator, ruleSet, options)
+
+  annotateValidator<TModel, TParameters>(validator, ruleSet)
 
   return {
     session,
@@ -75,9 +75,8 @@ export function useDryv<TModel extends object, TParameters = object>(
     valid: computed(() => validator.isSuccess),
     clear: () => validator.clear(),
     updateModel: (newValues: TModel) => (validator.value = newValues),
-    useMappedField: (field: any, mappedValue: any) => {
-      throw new Error('Method not implemented.')
-    },
+    useMappedField: (field: any, mappedValue: any) =>
+      useMappedField<any, any>(session, field, mappedValue),
     useMappedGroup: (groupName: string, field: Ref<unknown>) =>
       useMappedGroup(session, groupName, field),
     setValidationResult: (result: DryvServerValidationResponse | DryvServerErrors) =>
