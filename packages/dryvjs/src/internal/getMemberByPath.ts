@@ -2,7 +2,7 @@ export function getMemberByPath<TModel extends object, TResult = any>(
   obj: TModel,
   path: string
 ): TResult | TModel | null {
-  if (!path) {
+  if (!path || !obj) {
     return obj
   }
   let result: any = obj
@@ -16,4 +16,3 @@ export function getMemberByPath<TModel extends object, TResult = any>(
 
   return result as TResult
 }
-

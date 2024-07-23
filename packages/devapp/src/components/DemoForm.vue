@@ -71,10 +71,12 @@ let data = reactive({
   }
 }) as any as Course
 
-const { model, validate, validatable, valid, dirty, commit, revert } = useDryv(
+const { model, validate, validatable, valid, dirty, commit, revert, setValidationResult } = useDryv(
   data,
   courseValidationRules
 )
+
+setValidationResult('')
 
 // defineEmits()
 //
