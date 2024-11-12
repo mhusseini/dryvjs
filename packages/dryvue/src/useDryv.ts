@@ -1,22 +1,26 @@
-import type { DryvOptions, DryvValidationResult, DryvValidationRuleSet } from 'dryvjs'
+import type {
+  DryvOptions,
+  DryvValidatableObject,
+  DryvValidationResult,
+  DryvValidationRuleSet
+} from 'dryvjs'
 import {
   DryvObjectValidator,
   dryvOptions,
   dryvRuleSet,
   DryvServerErrors,
   DryvServerValidationResponse,
-  DryvValidatableObject,
   DryvValidationSession,
   DryvValidator
 } from 'dryvjs'
 import { computed, isRef, watch, type Ref } from 'vue'
 import { useMappedField } from './useMappedField'
 import { useMappedGroup } from './useMappedGroup'
-import { annotateValidator } from 'dryvjs/dist/internal'
 
 export interface UseDryvResult<TModel extends object, TParameters = object> {
   session: DryvValidationSession<TModel>
   model: TModel
+  options: DryvOptions
   parameters?: TParameters
   validatable: DryvValidatableObject<TModel>
   valid: Ref<boolean>
@@ -41,7 +45,8 @@ export function useDryv<TModel extends object, TParameters = object>(
   ruleSetOrName: string | DryvValidationRuleSet<TModel, TParameters>,
   options?: DryvOptions
 ): UseDryvResult<TModel, TParameters> {
-  options = dryvOptions(options)
+  const o = dryvOptions(options)
+  options = o?.reactiveWrapper(o) ?? o
   const ruleSet = findRuleSet<TModel, TParameters>(ruleSetOrName)
   const session = new DryvValidationSession<TModel, TParameters>(options, ruleSet)
   let validator: DryvObjectValidator<TModel>
@@ -62,10 +67,9 @@ export function useDryv<TModel extends object, TParameters = object>(
     validator = new DryvObjectValidator<TModel>(model, session, undefined, options)
   }
 
-  annotateValidator<TModel, TParameters>(validator, ruleSet)
-
   return {
     session,
+    options,
     model: validator.proxy,
     parameters: ruleSet.parameters,
     validatable: validator.transparentProxy!,

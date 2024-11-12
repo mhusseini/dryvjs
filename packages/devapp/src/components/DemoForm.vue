@@ -1,10 +1,10 @@
 <template>
   <form>
     <div :class="{ invalid: !valid }">
-      <!--      <fieldset>-->
-      <!--        <legend>Course</legend>-->
-      <!--        <validating-input v-model="validatable.name" label="Name" />-->
-      <!--      </fieldset>-->
+      <fieldset>
+        <legend>Course</legend>
+        <validating-input v-model="validatable.name" label="Name" />
+      </fieldset>
       <fieldset v-for="attendee in validatable.people.attendees!">
         <legend>Attendee</legend>
         <div v-if="attendee">
@@ -65,7 +65,7 @@ const attendees = reactive(
   }))
 )
 let data = reactive({
-  //name: null,
+  name: null,
   people: {
     attendees
   }

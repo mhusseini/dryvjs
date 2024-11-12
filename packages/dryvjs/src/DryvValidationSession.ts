@@ -36,7 +36,7 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
 
   constructor(
     private options: DryvOptions,
-    private ruleSet: DryvValidationRuleSet<TModel, TParameters>
+    public ruleSet: DryvValidationRuleSet<TModel, TParameters>
   ) {
     this.dryv = {
       callServer: options.callServer!,
