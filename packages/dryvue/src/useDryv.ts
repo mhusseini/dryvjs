@@ -16,6 +16,7 @@ import {
 import { computed, isRef, watch, type Ref } from 'vue'
 import { useMappedField } from './useMappedField'
 import { useMappedGroup } from './useMappedGroup'
+import { getValidator } from 'dryvjs/dist/internal'
 
 export interface UseDryvResult<TModel extends object, TParameters = object> {
   session: DryvValidationSession<TModel>
@@ -30,7 +31,6 @@ export interface UseDryvResult<TModel extends object, TParameters = object> {
   commit: () => void
   revert: () => void
   setValidationResult: (result: DryvServerValidationResponse | DryvServerErrors) => boolean
-  updateModel: (newValues: TModel) => void
 
   useMappedField<TTo>(
     field: keyof TModel,
@@ -79,7 +79,7 @@ export function useDryv<TModel extends object, TParameters = object>(
     clear: () => validator.clear(),
     commit: () => validator.commit(),
     revert: () => validator.revert(),
-    updateModel: (newValues: TModel) => (validator.value = newValues),
+    // updateModel: (newValues: TModel) => (validator.value = newValues),
     useMappedField: (field: any, mappedValue: any) =>
       useMappedField<any, any>(session, field, mappedValue),
     useMappedGroup: (groupName: string, field: Ref<unknown>) =>

@@ -16,6 +16,9 @@ class DryvTransparentProxyHandler<TModel extends object> {
   }
 
   get(target: DryvObjectValidator<TModel>, prop: string | symbol) {
+    if (prop === '$validator') {
+      return target
+    }
     const innerValue = target.fields[prop]
     return innerValue instanceof DryvCompositeValidator ? innerValue.transparentProxy : innerValue
   }

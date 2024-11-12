@@ -1,7 +1,6 @@
-export * from './getMemberByPath'
 export * from './annotateValidator'
 export * from './observableProxy'
 export * from './observableArrayProxy'
 export * from './getValidatorByPath'
 export * from './dryvValidatableObject'
-export { dryvValidatableArray } from '@/internal/dryvValidatableArray'
+export * from './dryvValidatableArray'
