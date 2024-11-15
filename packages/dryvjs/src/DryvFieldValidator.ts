@@ -33,7 +33,7 @@ export class DryvFieldValidator<TModel extends object, TParameters = any> extend
     const v = this.value
     const iv = this._initialValue
 
-    this.isDirty = !!v !== !!iv && v !== iv
+    this.isDirty = !!v !== !!iv || v !== iv
 
     if (this.isDirty !== wasDirty) {
       this.parent?.refreshDirty()
