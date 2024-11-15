@@ -1,4 +1,4 @@
-import { DryvValidationSession } from '@/.'
+import { DryvValidationSession } from './DryvValidationSession'
 
 export type DryvValidateFunctionResult =
   | DryvFieldValidationResult

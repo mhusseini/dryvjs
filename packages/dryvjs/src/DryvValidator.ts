@@ -12,6 +12,7 @@ export abstract class DryvValidator<
   TValue = any,
   TParent extends DryvValidator = any
 > {
+  public readonly __dryvValidator = true
   private _parent?: TParent | null
   private _index?: number
 

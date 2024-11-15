@@ -1,4 +1,4 @@
-export * from './annotateValidator'
+//export * from './annotateValidator'
 export * from './observableProxy'
 export * from './observableArrayProxy'
 export * from './getValidatorByPath'

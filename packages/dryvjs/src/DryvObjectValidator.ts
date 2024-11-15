@@ -1,7 +1,7 @@
 import { createValidator, DryvValidationResult, DryvValidationSession, FieldEvent } from './'
 import { DryvOptions, DryvValidatableObject } from './'
 import { DryvValidator } from './DryvValidator'
-import { annotateValidator, dryvValidatableObject, observableProxy } from '@/internal'
+import { dryvValidatableObject, observableProxy } from '@/internal'
 import { DryvCompositeValidator } from '@/DryvCompositeValidator'
 
 export class DryvObjectValidator<TModel extends object = any> extends DryvCompositeValidator<
@@ -70,7 +70,7 @@ export class DryvObjectValidator<TModel extends object = any> extends DryvCompos
     })
 
     this._unregister = () => unregister(eventId)
-    annotateValidator(this, this.session.ruleSet)
+    //annotateValidator(this, this.session.ruleSet)
 
     return this.proxy
   }

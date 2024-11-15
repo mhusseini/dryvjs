@@ -1,6 +1,6 @@
-import { VNode, computed, useSlots } from 'vue'
+import { type VNode, computed, useSlots, type VNodeChild, isVNode } from 'vue'
 import type { DryvGroupValidationResult, DryvValidationResultType } from 'dryvjs'
-import { Ref } from '@vue/reactivity'
+import { type Ref } from '@vue/reactivity'
 import { DryvValidator } from 'dryvjs'
 
 export function useDryvGroupSlot(): Ref<DryvGroupValidationResult[]>
@@ -34,7 +34,8 @@ export function useDryvGroupSlot(
 
   return computed<DryvGroupValidationResult[]>(() => {
     const groups: Record<string, Record<string, any>> = {}
-    nodes.forEach((node) => {
+    const children = nodes.map((n) => getAllVNodes(n)).flat()
+    children.forEach((node) => {
       const validatable = node.props?.modelValue
 
       if (!(validatable instanceof DryvValidator)) {
@@ -110,4 +111,45 @@ function useNamedSlot(name: string): VNode[] {
   }
 
   return namedSlot()
+}
+
+function getAllVNodes(vnode: VNode): VNode[] {
+  const vnodes: VNode[] = []
+
+  function traverse(node: VNodeChild) {
+    if (Array.isArray(node)) {
+      for (const child of node) {
+        traverse(child)
+      }
+    } else if (isVNode(node)) {
+      vnodes.push(node)
+
+      const dynamicChildren = (node as any).dynamicChildren
+      if (dynamicChildren && dynamicChildren.length > 0) {
+        for (const child of dynamicChildren) {
+          traverse(child)
+        }
+      } else {
+        const { children } = node
+
+        if (Array.isArray(children)) {
+          for (const child of children) {
+            traverse(child)
+          }
+        } else if (typeof children === 'object' && children !== null) {
+          for (const key in children) {
+            const slot = children[key]
+            if (typeof slot === 'function') {
+              const slotContent = slot({})
+              traverse(slotContent)
+            }
+          }
+        }
+      }
+    }
+  }
+
+  traverse(vnode)
+
+  return vnodes
 }

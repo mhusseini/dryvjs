@@ -27,5 +27,9 @@ export function createValidator<TModel extends object>(
     return new DryvObjectValidator<TModel>(value, session, parent, options, field)
   }
 
-  return new DryvFieldValidator<TModel>(model!, session, parent, options, field!)
+  const validator = new DryvFieldValidator<TModel>(model!, session, parent, options, field!)
+  const rules = session.ruleSet.validators[validator.path ?? '']
+  validator.required = !!rules?.find((rule) => !!rule.annotations?.required)
+
+  return validator
 }
