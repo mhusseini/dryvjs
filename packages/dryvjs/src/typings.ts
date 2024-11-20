@@ -134,7 +134,7 @@ export type DryvValidatable<TModel> =
       ? DryvValidatableObject<TModel>
       : DryvValidatableField<TModel>
 
-export type DryvValidatableArray<TModel = any> = Array<TModel> & {
+export type DryvValidatableArray<TModel = any> = {
   [index: number]: DryvValidatable<TModel>
 }
 

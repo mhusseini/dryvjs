@@ -14,7 +14,7 @@ export class DryvObjectValidator<TModel extends object = any> extends DryvCompos
 
   constructor(
     model: TModel,
-    session: DryvValidationSession<TModel, any>,
+    session: DryvValidationSession<TModel>,
     parent: DryvCompositeValidator | undefined,
     options: DryvOptions,
     field?: keyof TModel
@@ -49,7 +49,9 @@ export class DryvObjectValidator<TModel extends object = any> extends DryvCompos
     const eventId = register((event: FieldEvent<TModel>) => {
       let validator = this.fields[event.field]
 
-      if (validator === undefined) {
+      if (validator === undefined ||
+        (validator instanceof DryvCompositeValidator && validator.value !== event.newValue)) {
+        validator?.destroy()
         validator = createValidator(
           this,
           event.newValue,
