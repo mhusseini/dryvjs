@@ -1,6 +1,6 @@
 {
   "name": "dryvue",
-  "version": "2.0.0-pre-92",
+  "version": "2.0.0-pre-93",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "commonjs",
@@ -10,12 +10,12 @@
   ],
   "scripts": {
     "dev": "tsc && (concurrently \"tsc -w\" \"tsc-alias -w\")",
-    "build": "tsc",
+    "build": "tsc && tsc-alias",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
     "format": "prettier --write src/"
   },
   "dependencies": {
-    "dryvjs": "workspace:^1.0.0-pre-92"
+    "dryvjs": "workspace:^1.0.0-pre-93"
   },
   "peerDependencies": {
     "vue": "^3.3.4"

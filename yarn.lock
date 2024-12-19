@@ -1132,7 +1132,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"dryvjs@workspace:^1.0.0-pre-25, dryvjs@workspace:packages/dryvjs":
+"dryvjs@workspace:^1.0.0-pre-92, dryvjs@workspace:packages/dryvjs":
   version: 0.0.0-use.local
   resolution: "dryvjs@workspace:packages/dryvjs"
   dependencies:
@@ -1156,7 +1156,7 @@ __metadata:
     "@tsconfig/node18": "npm:^18.2.2"
     "@types/node": "npm:^18.18.5"
     concurrently: "npm:^8.2.2"
-    dryvjs: "workspace:^1.0.0-pre-25"
+    dryvjs: "workspace:^1.0.0-pre-92"
     eslint: "npm:^8.49.0"
     npm-run-all2: "npm:^6.1.1"
     prettier: "npm:^3.0.3"
