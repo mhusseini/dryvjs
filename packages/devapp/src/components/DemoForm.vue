@@ -1,34 +1,22 @@
 <template>
   <form>
     <div :class="{ invalid: !valid }">
-      <!--      <fieldset>-->
-      <!--        <legend>Course</legend>-->
-      <!--        <validating-input v-model="validatable.name" label="Name" />-->
-      <!--      </fieldset>-->
-      <!--      <fieldset v-for="attendee in validatable.people.attendees!">-->
-      <!--        <legend>Attendee</legend>-->
-      <!--        <div v-if="attendee">-->
-      <!--          <validating-input v-model="attendee.name" label="Name" />-->
-      <!--          &lt;!&ndash;        <validating-input v-model="attendee.email" label="Email" />&ndash;&gt;-->
-      <!--          &lt;!&ndash;        <validating-input v-model="attendee.phone" label="Phone" />&ndash;&gt;-->
-      <!--        </div>-->
-      <!--      </fieldset>-->
-      <h2>Lieferadresse</h2>
-      <validation-group>
-        <validating-input v-model="validatable.lieferadresse.strasse" label="Straße" />
-        <validating-input v-model="validatable.lieferadresse.hausnummer" label="Hausnummer" />
-        <validating-input v-model="validatable.lieferadresse.postleitzahl" label="PLZ" />
-        <validating-input v-model="validatable.lieferadresse.ort" label="Ort" />
-      </validation-group>
-      <h2>Rechnungsadresse</h2>
-      <input type="checkbox" v-model="validatable.abweichendeRechnungsadresse" />
-      <validating-input v-model="validatable.rechnungsadresse.vorname" label="Anrede" />
-      <validating-input v-model="validatable.rechnungsadresse.vorname" label="Vorname" />
-      <validating-input v-model="validatable.rechnungsadresse.nachname" label="Nachname" />
-      <validating-input v-model="validatable.rechnungsadresse.strasse" label="Straße" />
-      <validating-input v-model="validatable.rechnungsadresse.hausnummer" label="Hausnummer" />
-      <validating-input v-model="validatable.rechnungsadresse.postleitzahl" label="PLZ" />
-      <validating-input v-model="validatable.rechnungsadresse.ort" label="Ort" />
+      <fieldset>
+        <legend>Files</legend>
+        <validating-input v-model="validatable.name" label="Name" />
+        <input type="file" multiple @change="validatable.test = ($event.target as any)!.files" />
+        <input type="file" multiple @change="validatable.file = ($event.target as any)!.files[0]" />
+        <input type="file" multiple @change="validatable.files = ($event.target as any)!.files" />
+        <div class="error" v-show="validatable.file?.hasErrors && !validatable.file?.groupShown">
+          {{ validatable.file?.text }}
+        </div>
+        <div v-for="file in validatable.files" :key="file.value.name">
+          <span>{{ file.value.name }}</span>
+        </div>
+        <div class="error">
+          {{ validatable.files.$validator.text }}
+        </div>
+      </fieldset>
     </div>
     <div class="button-bar">
       <button @click.prevent="validate">Validate</button>
@@ -60,6 +48,7 @@ import { useDryv } from 'dryvue'
 //import { courseValidationRules } from '@/CourseValidationRules'
 import { lieferadresseValidationRules } from '@/LieferadresseValidationRules'
 import ValidationGroup from '@/components/ValidationGroup.vue'
+import type { DryvValidationRuleSet } from 'dryvjs'
 
 // const attendees = reactive(
 //   [1, 2, 3, 4].map((_) => ({
@@ -75,27 +64,70 @@ import ValidationGroup from '@/components/ValidationGroup.vue'
 //   }
 // }) as any as Course
 
-const data = reactive<Lieferadresse>({
-  lieferadresse: {
-    strasse: null,
-    hausnummer: null,
-    postleitzahl: null,
-    ort: null
-  },
-  rechnungsadresse: {
-    vorname: null,
-    nachname: null,
-    strasse: null,
-    hausnummer: null,
-    postleitzahl: null,
-    ort: null
-  },
-  abweichendeRechnungsadresse: false
+interface FormData {
+  name?: string
+  file?: File | null
+  files?: File[] | null
+  test?: FileList
+}
+
+const data: FormData = reactive<FormData>({
+  name: '',
+  file: null,
+  files: []
 })
+
+const x: FormData;
+x.files?.find(f => f.type)
 
 const { model, validate, validatable, valid, dirty, commit, revert, setValidationResult } = useDryv(
   data,
-  lieferadresseValidationRules
+  {
+    validators: {
+      name: [
+        {
+          validate: function ($m: FormData) {
+            return !$m.name
+              ? {
+                  type: 'error',
+                  text: 'Der Name darf nicht leer sein'
+                }
+              : null
+          }
+        }
+      ],
+      file: [
+        {
+          annotations: {
+            required: true
+          },
+          validate: function ($m: FormData) {
+            return !$m.file
+              ? {
+                  type: 'error',
+                  text: 'Bitte eine Datei auswählen'
+                }
+              : null
+          }
+        }
+      ],
+      files: [
+        {
+          annotations: {
+            required: true
+          },
+          validate: function ($m: FormData) {
+            return $m.files.reduce((acc, cur) => acc + cur.size, 0) > 10
+              ? {
+                  type: 'error',
+                  text: 'Die Dateien sind zu groß'
+                }
+              : null
+          }
+        }
+      ]
+    }
+  } as DryvValidationRuleSet<FormData>
 )
 
 setValidationResult('')

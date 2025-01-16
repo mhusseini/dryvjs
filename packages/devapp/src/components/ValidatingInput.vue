@@ -2,7 +2,7 @@
   <div class="row">
     <label>{{ label }}<span v-if="validatable.required">*</span>: </label>
     <input ref="input" v-model="validatable.value" />
-    <div class="error" v-show="validatable.hasError && !validatable.groupShown">
+    <div class="error" v-show="validatable.hasErrors && !validatable.groupShown">
       {{ validatable.text }}
     </div>
   </div>
@@ -12,7 +12,7 @@
 import { type DryvValidatable, useDryvValueProp } from 'dryvue'
 
 const props = defineProps<{
-  modelValue: string | DryvValidatable<any, string> | undefined
+  modelValue: string | DryvValidatable<any> | undefined
   label: string
 }>()
 

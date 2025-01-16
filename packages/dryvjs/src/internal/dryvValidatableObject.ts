@@ -7,7 +7,7 @@ export function dryvValidatableObject<TModel extends object>(
   return new Proxy(
     validator,
     new DryvTransparentProxyHandler<TModel>()
-  ) as DryvValidatableObject<TModel>
+  ) as unknown as DryvValidatableObject<TModel>
 }
 
 class DryvTransparentProxyHandler<TModel extends object> {

@@ -1,4 +1,6 @@
 import { DryvValidationSession } from './DryvValidationSession'
+import { DryvArrayValidator } from '@/DryvArrayValidator'
+import { DryvObjectValidator } from '@/DryvObjectValidator'
 
 export type DryvValidateFunctionResult =
   | DryvFieldValidationResult
@@ -128,16 +130,72 @@ export type DryvValidatableField<TValue = object> = {
 }
 
 export type DryvValidatable<TModel> =
-  TModel extends Array<infer TItem>
+  NonNullable<TModel> extends Array<infer TItem>
     ? DryvValidatableArray<TItem>
-    : TModel extends object
-      ? DryvValidatableObject<TModel>
-      : DryvValidatableField<TModel>
+    : NonNullable<TModel> extends FileList
+      ? DryvValidatableArray<File>
+      : NonNullable<TModel> extends SpecialType
+        ? DryvValidatableField<TModel>
+        : NonNullable<TModel> extends object
+          ? DryvValidatableObject<NonNullable<TModel>>
+          : DryvValidatableField<TModel>
 
-export type DryvValidatableArray<TModel = any> = {
-  [index: number]: DryvValidatable<TModel>
+export interface DryvValidatableArray<TModel = any> extends Array<DryvValidatable<TModel>> {
+  $validator: DryvArrayValidator<TModel>
 }
 
 export type DryvValidatableObject<TModel extends object> = {
-  [Property in keyof TModel]: DryvValidatable<TModel[Property]>
+  [Property in keyof TModel]: NonNullable<TModel[Property]> extends Array<infer TItem>
+    ? DryvValidatableArray<TItem>
+    : NonNullable<TModel[Property]> extends FileList
+      ? DryvValidatableArray<File>
+      : NonNullable<TModel[Property]> extends SpecialType
+        ? DryvValidatableField<TModel[Property]>
+        : NonNullable<TModel[Property]> extends object
+          ? DryvValidatableObject<NonNullable<TModel[Property]>>
+          : DryvValidatableField<TModel[Property]>
+} & {
+  $validator: DryvObjectValidator<TModel>
 }
+
+type SpecialType =
+  // File and Blob
+  | File
+  | FileList
+  | Blob
+
+  // ArrayBuffer and Typed Arrays
+  | ArrayBuffer
+  | DataView
+  | Uint8Array
+  | Uint16Array
+  | Uint32Array
+  | Int8Array
+  | Int16Array
+  | Int32Array
+  | Float32Array
+  | Float64Array
+  | BigUint64Array
+  | BigInt64Array
+
+  // DOM Elements
+  | HTMLElement
+  | SVGElement
+  | Document
+  | Window
+
+  // WebAssembly
+  | WebAssembly.Module
+  | WebAssembly.Instance
+  | WebAssembly.Memory
+  | WebAssembly.Table
+
+  // Promise and Error
+  | Promise<any>
+  | Error
+  | TypeError
+  | RangeError
+  | ReferenceError
+  | SyntaxError
+  | URIError
+  | EvalError

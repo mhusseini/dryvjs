@@ -1,5 +1,5 @@
 import type { DryvValidationResult, DryvValidationSession } from './'
-import { DryvOptions, DryvServerErrors, DryvServerValidationResponse, DryvValidator } from './'
+import { DryvOptions, DryvValidator } from './'
 import { DryvCompositeValidator } from '@/DryvCompositeValidator'
 
 export class DryvFieldValidator<TModel extends object, TParameters = any> extends DryvValidator<
@@ -56,24 +56,5 @@ export class DryvFieldValidator<TModel extends object, TParameters = any> extend
 
   override async validate(): Promise<DryvValidationResult> {
     return this.session.validateField(this, this.rootModel)
-  }
-
-  setValidationResult(response: DryvServerValidationResponse | DryvServerErrors): boolean {
-    const messages: DryvServerErrors =
-      typeof response?.success === 'boolean' ? response.messages : response
-
-    const message = messages?.[this.path!]
-
-    if (message && message.type !== 'success') {
-      this.text = message.text ?? ''
-      this.group = message.group ?? ''
-      this.type = message.type ?? null
-    } else {
-      this.text = null
-      this.group = null
-      this.type = null
-    }
-
-    return this.isSuccess
   }
 }

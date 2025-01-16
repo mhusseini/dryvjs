@@ -135,16 +135,16 @@ export abstract class DryvValidator<
 
   public abstract childValidators(): DryvValidator[]
 
-  get hasError(): boolean {
+  get hasErrors(): boolean {
     return this.type === 'error'
   }
 
-  get hasWarning(): boolean {
+  get hasWarnings(): boolean {
     return this.type === 'warning'
   }
 
   get isSuccess(): boolean {
-    return !this.hasError && !this.hasWarning
+    return !this.hasErrors && !this.hasWarnings
   }
 
   get path(): string {
@@ -220,11 +220,27 @@ export abstract class DryvValidator<
   }
 
   setValidationResult(response: DryvServerValidationResponse | DryvServerErrors): boolean {
+    const messages: DryvServerErrors =
+      typeof response?.success === 'boolean' ? response.messages : response
+
+    const message = messages?.[this.path!]
+
+    if (message && message.type !== 'success') {
+      this.text = message.text ?? ''
+      this.group = message.group ?? ''
+      this.type = message.type ?? null
+    } else {
+      this.text = null
+      this.group = null
+      this.type = null
+    }
+
     return this.childValidators().reduce(
       (acc: boolean, v: DryvValidator) => v.setValidationResult(response) && acc,
-      true
+      this.isSuccess
     )
   }
+
   destroy() {
     this.onDestroy()
     this.childValidators().forEach((v) => v.destroy())
@@ -240,10 +256,13 @@ export abstract class DryvValidator<
       value: this.value,
       path: this.path,
       text: this.text,
-      hasError: this.hasError,
-      hasWarning: this.hasWarning,
+      hasErrors: this.hasErrors,
+      hasWarnings: this.hasWarnings,
       isSuccess: this.isSuccess,
       uniquePath: this.uniquePath,
+      index: this._index,
+      field: !this.field ? undefined : this.field,
+      __dryvValidator: undefined,
       _parent: undefined,
       _path: undefined,
       _rootModel: undefined,
@@ -254,6 +273,7 @@ export abstract class DryvValidator<
       _isReverting: undefined,
       _items: undefined,
       _uniquePath: undefined,
+      _index: undefined,
       rootValidator: undefined,
       rootModel: undefined,
       parent: undefined,

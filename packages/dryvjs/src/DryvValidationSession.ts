@@ -72,12 +72,13 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
 
     try {
       const newValidationChain = this.startValidationChain()
-      const fieldResults: DryvValidationResult[] = await Promise.all(
-        objectValidator.childValidators().map(async (v) => {
+      const fieldResults: DryvValidationResult[] = await Promise.all([
+        this.validateField(objectValidator as DryvValidator<TModel>, objectValidator.rootModel),
+        ...objectValidator.childValidators().map(async (v) => {
           const result = await v.validate()
           return { ...result, path: v.path }
         })
-      )
+      ])
       const result = this.createObjectResults(fieldResults.filter((r) => !!r))
 
       objectValidator.type = result.hasErrors ? 'error' : result.hasWarnings ? 'warning' : 'success'

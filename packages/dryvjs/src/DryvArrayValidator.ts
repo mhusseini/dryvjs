@@ -2,10 +2,10 @@ import { ArrayEvent, createValidator, DryvValidatableArray, DryvValidationResult
 import { DryvOptions } from './'
 import { type DryvValidator } from './DryvValidator'
 import { DryvValidationSession } from './DryvValidationSession'
-import { dryvValidatableArray, observableArrayProxy } from '@/internal'
+import { dryvValidatableArray, observableArrayProxy, SpecialTypeWrapper } from '@/internal'
 import { DryvCompositeValidator } from '@/DryvCompositeValidator'
 
-export class DryvArrayValidator<TModel extends object = any> extends DryvCompositeValidator<
+export class DryvArrayValidator<TModel = any> extends DryvCompositeValidator<
   any,
   DryvValidatableArray<TModel>
 > {
@@ -23,24 +23,34 @@ export class DryvArrayValidator<TModel extends object = any> extends DryvComposi
     super(model, session, parent, options, field)
     this._items = options.reactiveWrapper([])
     this.transparentProxy = dryvValidatableArray<TModel>(this)
-    this.proxy = this.updateArray(model)
+    this.proxy = this.updateArray(model, true)
   }
 
   protected override onParentChanged() {
     this.rootModel = null
   }
 
-  private updateArray(model: TModel[]): TModel[] {
+  private updateArray(model: TModel[], skipModelUpdate = false): TModel[] {
     if (this._unregisterArray) {
       this._unregisterArray()
     }
-    const { proxy, register, unregister } = observableArrayProxy<TModel>(model)
+    const { proxy, register, unregister } = observableArrayProxy<TModel>(
+      SpecialTypeWrapper.wrap(model)
+    )
     this.proxy = proxy
-    this.model = model
     this._items.length = 0
+    if (!skipModelUpdate) {
+      this.model.length = 0
+    }
 
-    for (let i = 0; i < proxy.length; i++) {
-      const validator = this.createValidator(proxy[i])
+    for (let i = 0; i < model.length; i++) {
+      const item = model[i]
+      const validator = this.createValidator(item)
+
+      if (!skipModelUpdate) {
+        this.model.push(item)
+      }
+
       if (validator) {
         validator.index = i
         this._items.push(validator)

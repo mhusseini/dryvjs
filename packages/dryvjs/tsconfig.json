@@ -1,8 +1,8 @@
 {
-  "include": ["env.d.ts", "src/**/*"],
+  "include": ["env.d.ts", "src/**/*", "type-augs.d.ts"],
   "exclude": ["src/**/__tests__/*"],
   "compilerOptions": {
-    "lib": ["ESNext"],
+    "lib": ["ESNext", "DOM"],
     "declaration": true,
     "outDir": "dist",
     "target": "ES2015",

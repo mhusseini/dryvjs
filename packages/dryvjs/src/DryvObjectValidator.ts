@@ -22,7 +22,7 @@ export class DryvObjectValidator<TModel extends object = any> extends DryvCompos
     super(model, session, parent, options, field)
     this.fields = {}
     this.transparentProxy = dryvValidatableObject(this)
-    this.proxy = this.updateModel(model)
+    this.proxy = this.updateModel(this.model)
   }
 
   private updateModel(model: TModel): TModel {
@@ -49,8 +49,10 @@ export class DryvObjectValidator<TModel extends object = any> extends DryvCompos
     const eventId = register((event: FieldEvent<TModel>) => {
       let validator = this.fields[event.field]
 
-      if (validator === undefined ||
-        (validator instanceof DryvCompositeValidator && validator.value !== event.newValue)) {
+      if (
+        validator === undefined ||
+        (validator instanceof DryvCompositeValidator && validator.value !== event.newValue)
+      ) {
         validator?.destroy()
         validator = createValidator(
           this,

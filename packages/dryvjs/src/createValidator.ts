@@ -5,8 +5,9 @@ import { DryvArrayValidator } from '@/DryvArrayValidator'
 import { DryvFieldValidator } from '@/DryvFieldValidator'
 import { DryvObjectValidator } from '@/DryvObjectValidator'
 import { DryvCompositeValidator } from '@/DryvCompositeValidator'
+import { SpecialTypeWrapper } from '@/internal'
 
-export function createValidator<TModel extends object>(
+export function createValidator<TModel>(
   parent: DryvCompositeValidator,
   value: any,
   model: TModel | undefined,
@@ -14,20 +15,41 @@ export function createValidator<TModel extends object>(
   session: DryvValidationSession,
   options: DryvOptions
 ): DryvValidator | null {
+  field ??= '' as keyof TModel
+  model ??= { [field]: value } as any
+
   if (Array.isArray(value)) {
     return new DryvArrayValidator(value, session, parent, options, field)
   }
 
-  const type = typeof value
-  if (type === 'function') {
+  if (typeof value === 'function') {
     return null
+  }
+  if (SpecialTypeWrapper.isSpecialType(value)) {
+    const validator = new DryvFieldValidator(
+      model as object,
+      session,
+      parent,
+      options,
+      field! as keyof object
+    )
+    const rules = session.ruleSet.validators[validator.path ?? '']
+    validator.required = !!rules?.find((rule) => !!rule.annotations?.required)
+
+    return validator
   }
 
   if (value instanceof Object) {
-    return new DryvObjectValidator<TModel>(value, session, parent, options, field)
+    return new DryvObjectValidator(SpecialTypeWrapper.wrap(value), session, parent, options, field)
   }
 
-  const validator = new DryvFieldValidator<TModel>(model!, session, parent, options, field!)
+  const validator = new DryvFieldValidator(
+    model! as object,
+    session,
+    parent,
+    options,
+    field! as keyof object
+  )
   const rules = session.ruleSet.validators[validator.path ?? '']
   validator.required = !!rules?.find((rule) => !!rule.annotations?.required)
 

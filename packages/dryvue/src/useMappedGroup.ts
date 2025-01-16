@@ -7,7 +7,7 @@ export function useMappedGroup<TModel extends object, TParameters, TTo>(
   field: Ref<TTo | undefined>
 ): DryvValidator<any, TTo> {
   return {
-    _isDryvValidator: true,
+    __dryvValidator: true,
     groupShown: false,
     get value(): TTo | undefined {
       return field.value
@@ -21,10 +21,10 @@ export function useMappedGroup<TModel extends object, TParameters, TTo>(
     set parent(_) {
       throw new Error('The method must not be called on this instance.')
     },
-    get hasError(): boolean {
+    get hasErrors(): boolean {
       return session.results.groups[groupName]?.type === 'error'
     },
-    get hasWarning(): boolean {
+    get hasWarnings(): boolean {
       return session.results.groups[groupName]?.type === 'warning'
     },
     get isSuccess(): boolean {
@@ -65,7 +65,7 @@ export function useMappedGroup<TModel extends object, TParameters, TTo>(
       throw new Error('The method must not be called on this instance.')
     },
     toJSON(): any {
-      return { ...this, parent: undefined, _isDryvValidator: undefined, session: undefined }
+      return { ...this, parent: undefined, __dryvValidator: undefined, session: undefined }
     }
   } as any
 }

@@ -18,7 +18,7 @@ export function useMappedField<TModel extends object, TTo>(
   const validatable = model[field] as DryvValidator<any, TTo>
 
   return {
-    _isDryvValidator: true,
+    __dryvValidator: true,
     groupShown: false,
     get value(): TTo | undefined {
       return mappedValue.value
@@ -32,11 +32,11 @@ export function useMappedField<TModel extends object, TTo>(
     set parent(value: DryvValidator | undefined) {
       validatable.parent = value
     },
-    get hasError(): boolean {
-      return validatable.hasError
+    get hasErrors(): boolean {
+      return validatable.hasErrors
     },
-    get hasWarning(): boolean {
-      return validatable.hasWarning
+    get hasWarnings(): boolean {
+      return validatable.hasWarnings
     },
     get isSuccess(): boolean {
       return validatable.isSuccess
@@ -81,7 +81,7 @@ export function useMappedField<TModel extends object, TTo>(
       throw new Error('The method must not be called on this instance.')
     },
     toJSON(): any {
-      return { ...this, parent: undefined, _isDryvValidator: undefined, session: undefined }
+      return { ...this, parent: undefined, __dryvValidator: undefined, session: undefined }
     }
   } as any
 }
