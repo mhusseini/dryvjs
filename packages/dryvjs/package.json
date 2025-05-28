@@ -1,6 +1,6 @@
 {
   "name": "dryvjs",
-  "version": "1.0.0-pre-100",
+  "version": "1.0.0-pre-101",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "license": "MIT",

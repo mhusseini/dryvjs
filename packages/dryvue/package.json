@@ -1,6 +1,6 @@
 {
   "name": "dryvue",
-  "version": "2.0.0-pre-100",
+  "version": "2.0.0-pre-101",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "commonjs",
@@ -9,18 +9,19 @@
     "dist/**/*"
   ],
   "scripts": {
-    "dev": "tsc && (concurrently \"tsc -w\" \"tsc-alias -w\")",
-    "build": "tsc && tsc-alias",
+    "dev": "tsc --skipLibCheck && (concurrently \"tsc --skipLibCheck -w\" \"tsc-alias -w\")",
+    "build": "tsc --skipLibCheck  && tsc-alias",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
     "format": "prettier --write src/"
   },
   "dependencies": {
-    "dryvjs": "workspace:^1.0.0-pre-100"
+    "dryvjs": "^1.0.0-pre-101"
   },
   "peerDependencies": {
-    "vue": "^3.3.4"
+    "vue": "^3.5.15"
   },
   "devDependencies": {
+    "vue": "^3.5.15",
     "@rushstack/eslint-patch": "^1.3.3",
     "@tsconfig/node18": "^18.2.2",
     "@types/node": "^18.18.5",

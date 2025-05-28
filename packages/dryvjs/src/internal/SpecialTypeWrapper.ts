@@ -39,7 +39,7 @@ export class SpecialTypeWrapper {
 const specialTypes = [
   // File and Blob
   File,
-  FileList,
+  //FileList,
   Blob,
 
   // ArrayBuffer and Typed Arrays
@@ -57,10 +57,10 @@ const specialTypes = [
   BigInt64Array,
 
   // DOM Elements
-  HTMLElement,
-  SVGElement,
-  Document,
-  Window,
+  //HTMLElement,
+  // SVGElement,
+  // Document,
+  // Window,
 
   // WebAssembly
   WebAssembly.Module,

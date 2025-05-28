@@ -74,7 +74,7 @@ export interface DryvOptions {
   exceptionHandling?: 'failValidation' | 'succeedValidation'
 
   excludedFields?: RegExp[]
-
+  baseUrl?: string
   reactiveWrapper<TObject>(object: TObject): TObject
 
   callServer?(url: string, method: string, data: any): Promise<DryvServerValidationResponse>
