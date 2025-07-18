@@ -1,7 +1,6 @@
 {
   "files": [],
   "module": "esnext",
-  "target": "ESNext",
   "moduleResolution": "Node",
   "references": [
     {

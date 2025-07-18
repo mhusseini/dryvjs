@@ -1,6 +1,6 @@
 {
   "name": "dryvue",
-  "version": "2.0.0-pre-101",
+  "version": "2.0.0-pre-107",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "commonjs",
@@ -15,7 +15,7 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
-    "dryvjs": "^1.0.0-pre-101"
+    "dryvjs": "^1.0.0-pre-107"
   },
   "peerDependencies": {
     "vue": "^3.5.15"

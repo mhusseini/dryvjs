@@ -16,6 +16,11 @@ class DryvTransparentProxyHandler<TModel extends object> {
   }
 
   get(target: DryvObjectValidator<TModel>, prop: string | symbol) {
+    const propName = prop.toString()
+    if (propName.startsWith('_') || propName.startsWith('$')) {
+      return Reflect.get(target, prop)
+    }
+
     if (prop === '$validator') {
       return target
     }
@@ -24,6 +29,11 @@ class DryvTransparentProxyHandler<TModel extends object> {
   }
 
   set(target: DryvObjectValidator<TModel>, prop: string | symbol, value: any, receiver: any) {
+    const propName = prop.toString()
+    if (propName.startsWith('_') || propName.startsWith('$')) {
+      return Reflect.set(target, prop, value, receiver)
+    }
+
     const validator = target.fields[prop]
     if (!(validator instanceof DryvValidator)) {
       return Reflect.set(target.fields, prop, value, receiver)

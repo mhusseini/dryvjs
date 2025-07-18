@@ -51,17 +51,15 @@ export function useDryv<TModel extends object, TParameters = object>(
   let validator: DryvObjectValidator<TModel>
 
   if (isRef(model)) {
-    const ref = model
-    validator = new DryvObjectValidator<TModel>(
-      model.value ?? ({} as any),
-      session,
-      undefined,
-      options
-    )
-    watch(ref, (newModel) => (validator.value = newModel ?? ({} as any)))
     if (!model.value) {
       throw new Error('The initial value of the model cannot be null or undefined.')
     }
+    validator = new DryvObjectValidator<TModel>(model.value, session, undefined, options)
+    watch(model, (newModel) => {
+      if (newModel) {
+        validator.value = newModel
+      }
+    })
   } else {
     validator = new DryvObjectValidator<TModel>(model, session, undefined, options)
   }

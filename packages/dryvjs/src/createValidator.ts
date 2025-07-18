@@ -34,7 +34,7 @@ export function createValidator<TModel>(
       field! as keyof object
     )
     const rules = session.ruleSet.validators[validator.path ?? '']
-    validator.required = !!rules?.find((rule) => !!rule.annotations?.required)
+    validator.required = !!(rules && rules.find((rule) => !!rule.annotations?.required))
 
     return validator
   }
@@ -51,7 +51,7 @@ export function createValidator<TModel>(
     field! as keyof object
   )
   const rules = session.ruleSet.validators[validator.path ?? '']
-  validator.required = !!rules?.find((rule) => !!rule.annotations?.required)
+  validator.required = !!(rules && rules.find((rule) => !!rule.annotations?.required))
 
   return validator
 }

@@ -20,6 +20,11 @@ class ObservableProxyHandler<TModel extends object> {
   private _nextId = 0
 
   set(target: TModel, prop: string | symbol, value: any, receiver: any) {
+    const propName = prop.toString()
+    if(propName.startsWith('_') || propName.startsWith('$')) {
+      return Reflect.set(target, prop, value, receiver)
+    }
+
     const oldValue = Reflect.get(target, prop, receiver)
     const result = Reflect.set(target, prop, value, receiver)
 
