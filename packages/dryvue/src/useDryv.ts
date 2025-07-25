@@ -45,7 +45,7 @@ export function useDryv<TModel extends object, TParameters = object>(
   options?: DryvOptions
 ): UseDryvResult<TModel, TParameters> {
   const o = dryvOptions(options)
-  options = o?.reactiveWrapper(o) ?? o
+  options = (o?.reactiveWrapper(o) ?? o) as DryvOptions
   const ruleSet = findRuleSet<TModel, TParameters>(ruleSetOrName)
   const session = new DryvValidationSession<TModel, TParameters>(options, ruleSet)
   let validator: DryvObjectValidator<TModel>
@@ -64,11 +64,27 @@ export function useDryv<TModel extends object, TParameters = object>(
     validator = new DryvObjectValidator<TModel>(model, session, undefined, options)
   }
 
+  const parameters = computed<TParameters | undefined>({
+    get: () => ruleSet.parameters,
+    set: (newValue) => {
+      session.ruleSet.parameters = newValue
+    }
+  })
+
+  if (ruleSet.parameters && Object.keys(ruleSet.parameters).length && options?.loadParameters) {
+    options
+      .loadParameters<TParameters>(ruleSet.name)
+      .then((result) => (parameters.value = result))
+      .catch((error) =>
+        console.error(`Failed to load parameters for rule set ${ruleSet.name}`, error)
+      )
+  }
+
   return {
     session,
     options,
     model: validator.proxy,
-    parameters: ruleSet.parameters,
+    parameters,
     validatable: validator.transparentProxy!,
     validate: async () => await validator.validate(),
     valid: computed(() => validator.isSuccess),
@@ -102,8 +118,9 @@ function findRuleSet<TModel extends object, TParameters = object>(
         throw new Error(`Could not find a validation rule set with the name '${ruleSetName}'`)
       }
 
-      return foundRuleSet
+      return { ...foundRuleSet }
     }
+    default:
+      return { ...ruleSet }
   }
-  return ruleSet
 }

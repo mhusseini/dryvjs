@@ -31,6 +31,7 @@ export type DrvvRuleInvocations<TModel extends object> = {
 }
 
 export interface DryvValidationRuleSet<TModel extends object, TParameters = object> {
+  name: string
   validators: DrvvRuleInvocations<TModel>
   disablers?: DrvvRuleInvocations<TModel>
   parameters?: TParameters
@@ -76,6 +77,8 @@ export interface DryvOptions {
   excludedFields?: RegExp[]
   baseUrl?: string
   reactiveWrapper<TObject>(object: TObject): TObject
+
+  loadParameters?<TParameters = object>(validationSetName: string): Promise<TParameters>
 
   callServer?(url: string, method: string, data: any): Promise<DryvServerValidationResponse>
 

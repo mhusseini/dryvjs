@@ -54,6 +54,10 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
     return this._depth > 0
   }
 
+  parameter(key: string): any {
+    return this.ruleSet.parameters?.[key as keyof TParameters]
+  }
+
   async validateObject(objectValidator: DryvCompositeValidator): Promise<DryvValidationResult> {
     if (await this.runDisablers(objectValidator.rootModel, objectValidator.field ?? ('' as any))) {
       objectValidator.clear()
@@ -106,7 +110,7 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
     const fieldResult = await this.validateFieldInternal(model, field)
     const result = this.createFieldValidationResult(fieldResult, field)
 
-    this.results.fields[field.path!] = result.success ? undefined : fieldResult ?? undefined
+    this.results.fields[field.path!] = result.success ? undefined : (fieldResult ?? undefined)
     if (fieldResult?.group) {
       this.results.groups[fieldResult?.group] = result.success ? undefined : fieldResult
     }

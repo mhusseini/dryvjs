@@ -7,6 +7,7 @@ export function dryvRuleSet<TModel extends object, TParameters = object>(
   for (let resolver of defaultDryvRuleSetResolvers) {
     const ruleSet = resolver.resolve(ruleSetName)
     if (ruleSet) {
+      ruleSet.name = ruleSetName
       return ruleSet as DryvValidationRuleSet<TModel, TParameters>
     }
   }
