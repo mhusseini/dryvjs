@@ -2,20 +2,9 @@
   <form>
     <div :class="{ invalid: !valid }">
       <fieldset>
-        <legend>Files</legend>
         <validating-input v-model="validatable.name" label="Name" />
-        <input type="file" multiple @change="validatable.test = ($event.target as any)!.files" />
-        <input type="file" multiple @change="validatable.file = ($event.target as any)!.files[0]" />
-        <input type="file" multiple @change="validatable.files = ($event.target as any)!.files" />
-        <div class="error" v-show="validatable.file?.hasErrors && !validatable.file?.groupShown">
-          {{ validatable.file?.text }}
-        </div>
-        <div v-for="file in validatable.files" :key="file.value.name">
-          <span>{{ file.value.name }}</span>
-        </div>
-        <div class="error">
-          {{ validatable.files.$validator.text }}
-        </div>
+        <validating-files v-model="validatable.items" label="Files" />
+        <pre>{{validatable.items}}</pre>
       </fieldset>
     </div>
     <div class="button-bar">
@@ -42,90 +31,43 @@
 
 <script setup lang="ts">
 import ValidatingInput from '@/components/ValidatingInput.vue'
-import type { Course, Lieferadresse } from '@/models'
+import ValidatingFiles from '@/components/ValidatingFiles.vue'
 import { reactive } from 'vue'
 import { useDryv } from 'dryvue'
-//import { courseValidationRules } from '@/CourseValidationRules'
-import { lieferadresseValidationRules } from '@/LieferadresseValidationRules'
-import ValidationGroup from '@/components/ValidationGroup.vue'
-import type { DryvValidationRuleSet } from 'dryvjs'
 
-// const attendees = reactive(
-//   [1, 2, 3, 4].map((_) => ({
-//     name: null
-//     // email: null,
-//     // phone: null
-//   }))
-// )
-// let data = reactive({
-//   name: null,
-//   people: {
-//     attendees
-//   }
-// }) as any as Course
+interface DataItem {
+  name?: string
+}
 
 interface FormData {
   name?: string
-  file?: File | null
-  files?: File[] | null
-  test?: FileList
+  items?: DataItem[]
 }
 
 const data: FormData = reactive<FormData>({
   name: '',
-  file: null,
-  files: []
+  items: []
 })
-
-const x: FormData;
-x.files?.find(f => f.type)
 
 const { model, validate, validatable, valid, dirty, commit, revert, setValidationResult } = useDryv(
   data,
   {
     validators: {
-      name: [
-        {
-          validate: function ($m: FormData) {
-            return !$m.name
-              ? {
-                  type: 'error',
-                  text: 'Der Name darf nicht leer sein'
-                }
-              : null
-          }
-        }
-      ],
-      file: [
+      items: [
         {
           annotations: {
             required: true
           },
           validate: function ($m: FormData) {
-            return !$m.file
+            return !$m.items?.some(s => s.name?.includes('super'))
               ? {
                   type: 'error',
-                  text: 'Bitte eine Datei auswählen'
+                  text: 'At least on super item is required',
                 }
               : null
           }
         }
       ],
-      files: [
-        {
-          annotations: {
-            required: true
-          },
-          validate: function ($m: FormData) {
-            return $m.files.reduce((acc, cur) => acc + cur.size, 0) > 10
-              ? {
-                  type: 'error',
-                  text: 'Die Dateien sind zu groß'
-                }
-              : null
-          }
-        }
-      ]
     }
   } as DryvValidationRuleSet<FormData>
 )
