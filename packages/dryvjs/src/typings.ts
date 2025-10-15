@@ -50,6 +50,7 @@ export interface DryvValidationResult {
   success: boolean
   hasErrors: boolean
   hasWarnings: boolean
+  hasNewWarnings: boolean | undefined | null
   warningHash: string | undefined | null
   path?: string
 }
