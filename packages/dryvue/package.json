@@ -15,7 +15,7 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
-    "dryvjs": "^1.0.0-pre-114"
+    "dryvjs": "^1.0.0-pre-115"
   },
   "peerDependencies": {
     "vue": "^3.5.15"
