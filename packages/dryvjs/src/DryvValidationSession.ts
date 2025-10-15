@@ -58,6 +58,10 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
         return this.ruleSet.parameters?.[key as keyof TParameters]
     }
 
+    reset() {
+        this._isTriggered = false
+    }
+
     async validateObject(objectValidator: DryvCompositeValidator): Promise<DryvValidationResult> {
         if (await this.runDisablers(objectValidator.rootModel, objectValidator.field ?? ('' as any))) {
             objectValidator.clear()
