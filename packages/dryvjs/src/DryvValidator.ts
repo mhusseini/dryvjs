@@ -136,11 +136,11 @@ export abstract class DryvValidator<
   public abstract childValidators(): DryvValidator[]
 
   get hasErrors(): boolean {
-    return this.type === 'error'
+    return this.type?.toLowerCase() === 'error'
   }
 
   get hasWarnings(): boolean {
-    return this.type === 'warning'
+    return this.type?.toLowerCase() === 'warning'
   }
 
   get isSuccess(): boolean {

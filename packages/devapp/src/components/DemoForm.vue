@@ -1,10 +1,10 @@
 <template>
   <form>
-    <div :class="{ invalid: !valid }">
+    <div :class="{ error: validatable.name?.hasErrors, warning: validatable.name?.hasWarnings }">
       <fieldset>
         <validating-input v-model="validatable.name" label="Name" />
         <validating-files v-model="validatable.items" label="Files" />
-        <pre>{{validatable.items}}</pre>
+        <pre>{{ validatable.items }}</pre>
       </fieldset>
     </div>
     <div class="button-bar">
@@ -33,7 +33,7 @@
 import ValidatingInput from '@/components/ValidatingInput.vue'
 import ValidatingFiles from '@/components/ValidatingFiles.vue'
 import { reactive } from 'vue'
-import { useDryv } from 'dryvue'
+import { type DryvValidationRuleSet, useDryv } from 'dryvue'
 
 interface DataItem {
   name?: string
@@ -53,21 +53,20 @@ const { model, validate, validatable, valid, dirty, commit, revert, setValidatio
   data,
   {
     validators: {
-      items: [
+      name: [
         {
           annotations: {
             required: true
           },
           validate: function ($m: FormData) {
-            return !$m.items?.some(s => s.name?.includes('super'))
-              ? {
-                  type: 'error',
-                  text: 'At least on super item is required',
+            return !$m.name ? {
+                  type: 'Warning',
+                  text: 'At least on super item is required'
                 }
               : null
           }
         }
-      ],
+      ]
     }
   } as DryvValidationRuleSet<FormData>
 )
@@ -111,8 +110,12 @@ setValidationResult('')
 </script>
 
 <style lang="scss">
-.invalid {
+.error {
   background-color: #ff000022;
+}
+
+.warning {
+  background-color: #ffff0022;
 }
 
 .button-bar {
