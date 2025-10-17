@@ -307,7 +307,7 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
       results: fieldResults,
       hasErrors: hasErrors,
       hasWarnings: hasWarnings,
-      hasNewWarnings: warningHash !== this.previousWarningHash,
+      hasNewWarnings: hasWarnings && warningHash !== this.previousWarningHash,
       warningHash: warningHash,
       success: !hasErrors && !hasWarnings
     }
