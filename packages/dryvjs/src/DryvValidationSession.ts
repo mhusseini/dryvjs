@@ -294,6 +294,10 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
       .filter(Boolean)
       .flatMap((r) => r.results.map((r2) => ({ ...r2, path: r.path })))
 
+      for (const r of fieldResults) {
+          r.type = r.type?.toLowerCase()
+      }
+
     const hasWarnings = fieldResults.some((r) => r.text && r.type && /warning/i.test(r.type))
     const hasErrors = fieldResults.some((r) => r.text && r.type && /error/i.test(r.type))
     const warningHash = this.hashCode(
