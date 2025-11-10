@@ -171,8 +171,8 @@ export const personalDataValidationRules: DryvValidationRuleSet<PersonalData> = 
       {
         validate: function ($m, session) {
           return $m.geburtsdatum &&
-            session.dryv.valueOfDate($m.geburtsdatum, 'de-DE', 'DD.MM.YYYY HH:mm:ss') >
-              session.dryv.valueOfDate('28.11.2005 00:00:00', 'de-DE', 'DD.MM.YYYY HH:mm:ss')
+            session.dryv.parseDate($m.geburtsdatum, 'de-DE', 'DD.MM.YYYY HH:mm:ss') >
+              session.dryv.parseDate('28.11.2005 00:00:00', 'de-DE', 'DD.MM.YYYY HH:mm:ss')
             ? {
                 type: 'error',
                 text: 'Achso, du bist noch nicht volljährig? Dann darfst du hier im Internet leider keinen Vertrag mit uns abschließen. Aber ruf uns doch unter 0221–27 11 7777 an. Dann können wir besprechen, welche Möglichkeiten es gibt.',
@@ -184,8 +184,8 @@ export const personalDataValidationRules: DryvValidationRuleSet<PersonalData> = 
       {
         validate: function ($m, session) {
           return $m.geburtsdatum &&
-            session.dryv.valueOfDate($m.geburtsdatum, 'de-DE', 'DD.MM.YYYY HH:mm:ss') <
-              session.dryv.valueOfDate('28.11.1903 00:00:00', 'de-DE', 'DD.MM.YYYY HH:mm:ss')
+            session.dryv.parseDate($m.geburtsdatum, 'de-DE', 'DD.MM.YYYY HH:mm:ss') <
+              session.dryv.parseDate('28.11.1903 00:00:00', 'de-DE', 'DD.MM.YYYY HH:mm:ss')
             ? {
                 type: 'error',
                 text: 'Check bitte nochmal dein Geburtsdatum.',

@@ -13,7 +13,7 @@ import {
     DryvValidationSession,
     DryvValidator
 } from 'dryvjs'
-import {computed, isRef, watch, type Ref} from 'vue'
+import {computed, isRef, watch, ref, type Ref} from 'vue'
 import {useMappedField} from './useMappedField'
 import {useMappedGroup} from './useMappedGroup'
 
@@ -21,7 +21,7 @@ export interface UseDryvResult<TModel extends object, TParameters = object> {
     session: DryvValidationSession<TModel>
     model: TModel
     options: DryvOptions
-    parameters?: TParameters
+    parameters?: Ref<TParameters>
     validatable: DryvValidatableObject<TModel>
     valid: Ref<boolean>
     dirty: Ref<boolean>
@@ -44,9 +44,16 @@ export function useDryv<TModel extends object, TParameters = object>(
     model: TModel | Ref<TModel | undefined>,
     ruleSetOrName: string | DryvValidationRuleSet<TModel, TParameters>,
     options?: DryvOptions
-): UseDryvResult<TModel, TParameters> {
+): UseDryvResult<TModel, TParameters> & Promise<UseDryvResult<TModel, TParameters>> {
     const o = dryvOptions(options)
+    if (o.setup) {
+        const localOptions = o.setup()
+        if (localOptions) {
+            Object.assign(o, localOptions)
+        }
+    }
     options = (o?.reactiveWrapper(o) ?? o) as DryvOptions
+
     const ruleSet = findRuleSet<TModel, TParameters>(ruleSetOrName)
     const session = new DryvValidationSession<TModel, TParameters>(options, ruleSet)
     let validator: DryvObjectValidator<TModel>
@@ -65,23 +72,16 @@ export function useDryv<TModel extends object, TParameters = object>(
         validator = new DryvObjectValidator<TModel>(model, session, undefined, options)
     }
 
-    const parameters = computed<TParameters | undefined>({
-        get: () => ruleSet.parameters,
+    const _parameters = ref<TParameters | undefined>(session.ruleSet.parameters as TParameters)
+    const parameters = computed<TParameters>({
+        get: () => _parameters.value,
         set: (newValue) => {
+            _parameters.value = newValue
             session.ruleSet.parameters = newValue
         }
     })
 
-    if (ruleSet.parameters && Object.keys(ruleSet.parameters).length && options?.loadParameters) {
-        options
-            .loadParameters<TParameters>(ruleSet.name)
-            .then((result) => (parameters.value = result))
-            .catch((error) =>
-                console.error(`Failed to load parameters for rule set ${ruleSet.name}`, error)
-            )
-    }
-
-    return {
+    const result: UseDryvResult<TModel, TParameters> = {
         session,
         options,
         model: validator.proxy,
@@ -100,11 +100,20 @@ export function useDryv<TModel extends object, TParameters = object>(
         // updateModel: (newValues: TModel) => (validator.value = newValues),
         useMappedField: (field: any, mappedValue: any) =>
             useMappedField<any, any>(session, field, mappedValue),
-        useMappedGroup: (groupName: string, field: Ref<unknown>) =>
+        useMappedGroup: <TTo>(groupName: string, field: Ref<TTo | undefined>) =>
             useMappedGroup(session, groupName, field),
         setValidationResult: (result: DryvServerValidationResponse | DryvServerErrors) =>
             validator.setValidationResult(result)
-    } as any
+    };
+
+    const promise = ruleSet.parameters && Object.keys(ruleSet.parameters).length && options?.loadParameters ? options
+        .loadParameters<TParameters>(ruleSet.name)
+        .then((result) => (parameters.value = result))
+        .then(() => result) : Promise.resolve(result);
+
+    Object.assign(promise, result);
+
+    return promise as UseDryvResult<TModel, TParameters> & Promise<UseDryvResult<TModel, TParameters>>
 }
 
 function findRuleSet<TModel extends object, TParameters = object>(

@@ -32,7 +32,8 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
       result: any
     ): Promise<any>
 
-    valueOfDate(date: string, locale: string, format: string): number
+    parseDate(date: string, locale: string, format: string): number
+    format(data: any, type: string, pattern?: string): string
   }
 
   constructor(
@@ -42,7 +43,8 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
     this.dryv = {
       callServer: options.callServer!,
       handleResult: options.handleResult!,
-      valueOfDate: options.valueOfDate!
+      parseDate: options.parseDate!,
+      format: options.format!
     }
 
     this.results = options.reactiveWrapper!({
@@ -294,9 +296,9 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
       .filter(Boolean)
       .flatMap((r) => r.results.map((r2) => ({ ...r2, path: r.path })))
 
-      for (const r of fieldResults) {
-          r.type = r.type?.toLowerCase()
-      }
+    for (const r of fieldResults) {
+      r.type = r.type?.toLowerCase()
+    }
 
     const hasWarnings = fieldResults.some((r) => r.text && r.type && /warning/i.test(r.type))
     const hasErrors = fieldResults.some((r) => r.text && r.type && /error/i.test(r.type))
@@ -331,14 +333,14 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
       return type === 'success'
         ? this.success(field.path!)
         : {
-            results: [result],
-            hasErrors: type === 'error',
-            hasWarnings: type === 'warning',
-            warningHash: type === 'warning' ? result.text : null,
-            hasNewWarnings: undefined,
-            success: type === 'success' || !type,
-            path: String(field.path)
-          }
+          results: [result],
+          hasErrors: type === 'error',
+          hasWarnings: type === 'warning',
+          warningHash: type === 'warning' ? result.text : null,
+          hasNewWarnings: undefined,
+          success: type === 'success' || !type,
+          path: String(field.path)
+        }
     } else {
       field.type = 'success'
       field.text = null
