@@ -63,6 +63,7 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
 
   reset() {
     this._isTriggered = false
+    this.previousWarningHash = undefined
   }
 
   async validateObject(objectValidator: DryvCompositeValidator): Promise<DryvValidationResult> {
