@@ -16,7 +16,7 @@
 
 DryvJS provides a powerful, framework-agnostic validation engine that operates directly on your data models. It supports synchronous and asynchronous validation rules, nested object and array validation, field-level and form-level validation, grouped validation messages, server-side validation integration, and dirty tracking with commit/revert semantics.
 
-The name "Dryv" stands for **D**ynamic **R**eactive **Y**ielding **V**alidation.
+The name "Dryv" stands for **D**on't **R**epeat **Y**ourself **V**alidation.
 
 ## Relationship to Dryv (C#/.NET)
 
