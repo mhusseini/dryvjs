@@ -1,6 +1,18 @@
-# DryvJS
+<p align="center">
+  <img src="https://raw.githubusercontent.com/mhusseini/dryv/master/logo_slogan_light.svg" title="Dryv" width="300">
+</p>
 
-**A model-based, reactive validation framework for JavaScript and TypeScript.**
+<p align="center">
+  <a href="https://www.npmjs.com/package/dryvjs"><img src="https://img.shields.io/npm/v/dryvjs.svg" alt="npm dryvjs"></a>
+  <a href="https://www.npmjs.com/package/dryvue"><img src="https://img.shields.io/npm/v/dryvue.svg?label=dryvue" alt="npm dryvue"></a>
+  <a href="https://github.com/mhusseini/dryvjs/blob/develop/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
+</p>
+
+<p align="center">
+  <strong>A model-based, reactive validation framework for JavaScript and TypeScript.</strong>
+</p>
+
+---
 
 DryvJS provides a powerful, framework-agnostic validation engine that operates directly on your data models. It supports synchronous and asynchronous validation rules, nested object and array validation, field-level and form-level validation, grouped validation messages, server-side validation integration, and dirty tracking with commit/revert semantics.
 
