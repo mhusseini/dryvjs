@@ -302,9 +302,66 @@ const { validatable, validate, valid } = useDryv(data, addressValidationRules)
 </script>
 ```
 
-#### 2. Runtime Loading via API
+#### 2. Server-Rendered (Razor / Tag Helper)
 
-Fetch validation rules from a Dryv API endpoint at runtime:
+For server-rendered pages, the Dryv Tag Helper renders an inline `<script>` that assigns rule sets to `window.dryv.v`:
+
+```html
+@addTagHelper *, Dryv.AspNetCore
+<dryv-client-rules for="typeof(Address)" name="address" />
+```
+
+This renders a `<script>` tag like:
+
+```html
+<script>
+(function(dryv) {
+  if (!dryv.v) { dryv.v = {}; }
+  dryv.v["address"] = {
+    name: "address",
+    validators: {
+      "city": [{ validate: function ($m, $ctx) { /* ... */ } }],
+      "zipCode": [{ validate: function ($m, $ctx) { /* ... */ } }]
+    },
+    disablers: {},
+    parameters: {}
+  }
+})(window.dryv || (window.dryv = {}));
+</script>
+```
+
+In your Vue app, pass the rule sets from `window.dryv.v` to `DryvStaticRuleSets`:
+
+```typescript
+import { createApp } from 'vue'
+import { Dryv, DryvStaticRuleSets } from 'dryvue'
+import App from './App.vue'
+
+// Pass all Dryv-rendered rule sets to the plugin
+createApp(App)
+  .use(Dryv)
+  .use(DryvStaticRuleSets, window.dryv.v)
+  .mount('#app')
+```
+
+Then reference rule sets by name in your components:
+
+```vue
+<script setup lang="ts">
+import { reactive } from 'vue'
+import { useDryv } from 'dryvue'
+
+const data = reactive({ city: '', zipCode: '' })
+// Resolves from the registered static rule sets by name
+const { validatable, validate } = useDryv(data, 'address')
+</script>
+```
+
+#### 3. Runtime Loading via API (Advanced — Not Recommended)
+
+> **Note:** This approach is shown for completeness and understanding only. Dryv's output contains executable JavaScript functions (not JSON), so loading rules at runtime requires the use of `eval()` or `new Function()`, which is generally discouraged for security and CSP reasons. **Prefer build-time code generation (option 1) or server-rendered scripts (option 2) instead.**
+
+If you have a backend endpoint that returns the raw Dryv-generated JavaScript, you can evaluate it at runtime:
 
 ```typescript
 // api/validation.ts
@@ -314,13 +371,15 @@ export async function loadValidationRules<T extends object>(
   modelName: string
 ): Promise<DryvValidationRuleSet<T>> {
   const response = await fetch(`/api/validation/rules/${modelName}`)
-  return response.json()
+  const script = await response.text()
+  // ⚠️ eval() is required because Dryv output contains JS functions, not JSON
+  return eval(`(${script})`) as DryvValidationRuleSet<T>
 }
 ```
 
 ```vue
 <script setup lang="ts">
-import { reactive, onMounted } from 'vue'
+import { reactive } from 'vue'
 import { useDryv } from 'dryvue'
 import { loadValidationRules } from '@/api/validation'
 
@@ -332,29 +391,6 @@ interface AddressForm {
 const data = reactive<AddressForm>({ city: '', zipCode: '' })
 const ruleSet = await loadValidationRules<AddressForm>('Address')
 const { validatable, validate } = useDryv(data, ruleSet)
-</script>
-```
-
-#### 3. Server-Rendered (Razor / Tag Helper)
-
-For traditional MVC apps with embedded Vue components, render rules inline:
-
-```html
-@addTagHelper *, Dryv.AspNetCore
-<dryv-client-rules for="typeof(Address)" name="addressRules" />
-
-<div id="app"></div>
-
-<script type="module">
-import { createApp } from 'vue'
-import { Dryv, DryvStaticRuleSets } from 'dryvue'
-import App from './App.vue'
-
-// `addressRules` is a global variable rendered by the Tag Helper
-createApp(App)
-  .use(Dryv)
-  .use(DryvStaticRuleSets, { Address: addressRules })
-  .mount('#app')
 </script>
 ```
 

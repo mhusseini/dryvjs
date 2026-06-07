@@ -36,10 +36,10 @@ Dryvue is designed as the **Vue 3 client-side runtime** for validation rules gen
 - [Exports](#exports)
 - [Using with Dryv (C#/.NET)](#using-with-dryv-cnet)
   - [Build-Time Code Generation](#build-time-code-generation)
-  - [Runtime Loading via API](#runtime-loading-via-api)
   - [Server-Rendered Pages (Razor + Vue)](#server-rendered-pages-razor--vue)
   - [Async Rules (Dynamic Controllers)](#async-rules-dynamic-controllers)
   - [Loading Parameters at Runtime](#loading-parameters-at-runtime)
+  - [Runtime Loading via API (Advanced)](#runtime-loading-via-api-advanced--not-recommended)
   - [Full-Stack Example](#full-stack-example)
 - [License](#license)
 
@@ -676,49 +676,58 @@ const { validatable, validate, valid, dirty } = useDryv(data, addressValidationR
 </script>
 ```
 
-### Runtime Loading via API
-
-Fetch rules dynamically from your Dryv-powered ASP.NET Core backend:
-
-```vue
-<script setup lang="ts">
-import { reactive } from 'vue'
-import { useDryv, type DryvValidationRuleSet } from 'dryvue'
-
-interface AddressForm {
-  city: string
-  zipCode: string
-}
-
-const data = reactive<AddressForm>({ city: '', zipCode: '' })
-
-const response = await fetch('/api/validation/rules/Address')
-const ruleSet: DryvValidationRuleSet<AddressForm> = await response.json()
-
-const { validatable, validate } = useDryv(data, ruleSet)
-</script>
-```
-
 ### Server-Rendered Pages (Razor + Vue)
 
-When using Dryv's Tag Helper in a Razor view with an embedded Vue app:
+The Dryv Tag Helper renders an inline `<script>` that assigns rule sets to `window.dryv.v`:
 
 ```html
 @addTagHelper *, Dryv.AspNetCore
-<dryv-client-rules for="typeof(Address)" name="addressRules" />
+<dryv-client-rules for="typeof(Address)" name="address" />
+```
 
-<div id="app"></div>
+This renders a `<script>` tag like:
 
-<script type="module">
+```html
+<script>
+(function(dryv) {
+  if (!dryv.v) { dryv.v = {}; }
+  dryv.v["address"] = {
+    name: "address",
+    validators: {
+      "city": [{ validate: function ($m, $ctx) { /* ... */ } }],
+      "zipCode": [{ validate: function ($m, $ctx) { /* ... */ } }]
+    },
+    disablers: {},
+    parameters: {}
+  }
+})(window.dryv || (window.dryv = {}));
+</script>
+```
+
+In your Vue app, pass the rule sets from `window.dryv.v` to `DryvStaticRuleSets`:
+
+```typescript
 import { createApp } from 'vue'
 import { Dryv, DryvStaticRuleSets } from 'dryvue'
 import App from './App.vue'
 
-// `addressRules` is rendered inline by the Tag Helper
+// Pass all Dryv-rendered rule sets to the plugin
 createApp(App)
   .use(Dryv)
-  .use(DryvStaticRuleSets, { Address: window.addressRules })
+  .use(DryvStaticRuleSets, window.dryv.v)
   .mount('#app')
+```
+
+Then reference rule sets by name in your components:
+
+```vue
+<script setup lang="ts">
+import { reactive } from 'vue'
+import { useDryv } from 'dryvue'
+
+const data = reactive({ city: '', zipCode: '' })
+// Resolves from the registered static rule sets by name
+const { validatable, validate } = useDryv(data, 'address')
 </script>
 ```
 
@@ -768,6 +777,33 @@ const { validatable, validate, parameters } = useDryv(data, addressValidationRul
     return response.json()
   }
 })
+</script>
+```
+
+### Runtime Loading via API (Advanced — Not Recommended)
+
+> **Note:** This approach is shown for completeness and understanding only. Dryv's output contains executable JavaScript functions (not JSON), so loading rules at runtime requires the use of `eval()` or `new Function()`, which is generally discouraged for security and CSP reasons. **Prefer build-time code generation or server-rendered scripts instead.**
+
+If you have a backend endpoint that returns the raw Dryv-generated JavaScript, you can evaluate it at runtime:
+
+```vue
+<script setup lang="ts">
+import { reactive } from 'vue'
+import { useDryv, type DryvValidationRuleSet } from 'dryvue'
+
+interface AddressForm {
+  city: string
+  zipCode: string
+}
+
+const data = reactive<AddressForm>({ city: '', zipCode: '' })
+
+const response = await fetch('/api/validation/rules/Address')
+const script = await response.text()
+// ⚠️ eval() is required because Dryv output contains JS functions, not JSON
+const ruleSet = eval(`(${script})`) as DryvValidationRuleSet<AddressForm>
+
+const { validatable, validate } = useDryv(data, ruleSet)
 </script>
 ```
 
