@@ -1,0 +1,8 @@
+{
+  "name": "dryvjs-workspace",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "packageManager": "yarn@4.16.0"
+}

@@ -26,6 +26,9 @@
   "scripts": {
     "dev": "tsup --watch",
     "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
     "format": "prettier --write src/"
   },
@@ -36,6 +39,7 @@
     "eslint": "^8.49.0",
     "prettier": "^3.0.3",
     "tsup": "^8.4.0",
-    "typescript": "~5.2.0"
+    "typescript": "~5.2.0",
+    "vitest": "^3.2.1"
   }
 }
