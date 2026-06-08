@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { DryvArrayValidator, DryvObjectValidator, DryvValidationSession, dryvOptions, DryvValidationRuleSet } from '@/.'
+import { DryvObjectValidator, DryvValidationSession, dryvOptions, DryvValidationRuleSet, DryvOptions } from '@/.'
 
 describe('Array Validation', () => {
   interface ItemModel {
@@ -13,7 +13,7 @@ describe('Array Validation', () => {
 
   function createSetup(
     ruleSetPartial: Partial<DryvValidationRuleSet<ParentModel>> = {},
-    optionOverrides?: Partial<typeof import('@/typings').DryvOptions>
+    optionOverrides?: Partial<DryvOptions>
   ) {
     const options = dryvOptions(optionOverrides as any)
     const ruleSet: DryvValidationRuleSet<ParentModel> = {
