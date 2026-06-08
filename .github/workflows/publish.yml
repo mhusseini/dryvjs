@@ -67,7 +67,7 @@ jobs:
         working-directory: packages/nuxt-dryv
         run: |
           npm install
-          npm run dev:prepare
+          npx nuxi prepare playground
           npm run build
 
       - name: Publish nuxt-dryv
