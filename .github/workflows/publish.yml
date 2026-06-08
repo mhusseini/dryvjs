@@ -5,9 +5,6 @@ on:
     branches: [develop, main]
   workflow_dispatch:
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
@@ -42,7 +39,7 @@ jobs:
           if npm view @softwareproduction/dryvjs@$VERSION version 2>/dev/null; then
             echo "@softwareproduction/dryvjs@$VERSION already published, skipping."
           else
-            npm publish --access public --provenance
+            npm publish --access public
           fi
 
       - name: Install & build dryvue
@@ -60,7 +57,7 @@ jobs:
           if npm view @softwareproduction/dryvue@$VERSION version 2>/dev/null; then
             echo "@softwareproduction/dryvue@$VERSION already published, skipping."
           else
-            npm publish --access public --provenance
+            npm publish --access public
           fi
 
       - name: Install & build nuxt-dryv
@@ -80,5 +77,5 @@ jobs:
           if npm view @softwareproduction/nuxt-dryv@$VERSION version 2>/dev/null; then
             echo "@softwareproduction/nuxt-dryv@$VERSION already published, skipping."
           else
-            npm publish --access public --provenance
+            npm publish --access public
           fi
