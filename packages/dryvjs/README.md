@@ -226,10 +226,10 @@ validator.revert() // Discard changes, reverting back to the last committed stat
 
 Choose when validation executes by setting `validationTrigger` in the options:
 
-- `'immediate'`: Validate strictly on every modification.
-- `'auto'`: The default behavior.
-- `'manual'`: Only run validation when `validate()` is invoked.
-- `'autoAfterManual'`: Wait for the first manual submission, then validate on subsequent changes.
+- `'immediate'`: Validate immediately, including before the user has made any changes.
+- `'auto'`: Validate automatically on field changes, but not during initialization.
+- `'manual'`: Only validate when `validate()` is explicitly called.
+- `'autoAfterManual'`: The default. Only validates during explicit `validate()` calls initially; after the first `validate()` call, also validates automatically on field changes.
 
 ### Customizing Options
 
