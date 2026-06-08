@@ -14,8 +14,8 @@
 
 <script lang="ts">
 import { toNative, Component, Vue, Prop } from 'vue-facing-decorator'
-import { dryvValidatableMixin, type DryvValidatableMixin } from 'dryvue'
-import type { DryvValidatable } from 'dryvjs'
+import { dryvValidatableMixin, type DryvValidatableMixin } from '@softwareproduction/dryvue'
+import type { DryvValidatable } from '@softwareproduction/dryvjs'
 
 @Component({
   mixins: [dryvValidatableMixin<string>()]

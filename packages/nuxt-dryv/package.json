@@ -41,7 +41,7 @@
   "devDependencies": {
     "@nuxt/module-builder": "^0.8.0",
     "@nuxt/schema": "^3.16.0",
-    "@softwareproduction/dryvue": "^2.0.1-pre.0",
+    "@softwareproduction/dryvue": "^2.0.1",
     "nuxt": "^3.16.0",
     "typescript": "~5.2.0"
   }

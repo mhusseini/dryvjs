@@ -8,6 +8,6 @@
     "build": "nuxi build"
   },
   "dependencies": {
-    "@softwareproduction/dryvue": "^2.0.1-pre.0"
+    "@softwareproduction/dryvue": "^2.0.1"
   }
 }
