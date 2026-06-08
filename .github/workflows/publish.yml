@@ -70,7 +70,7 @@ jobs:
       - name: Install & build nuxt-dryv
         working-directory: packages/nuxt-dryv
         run: |
-          npm install
+          npm install --install-links ../dryvue
           mkdir -p .nuxt
           echo '{"compilerOptions":{"module":"ESNext","moduleResolution":"Bundler","target":"ESNext","lib":["ESNext"],"strict":true,"esModuleInterop":true,"skipLibCheck":true}}' > .nuxt/tsconfig.json
           npm run build
