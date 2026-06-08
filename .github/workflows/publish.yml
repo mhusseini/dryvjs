@@ -30,6 +30,13 @@ jobs:
           npm install
           npm run build
 
+      - name: Verify npm auth
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm whoami
+          echo "Token length: ${#NODE_AUTH_TOKEN}"
+
       - name: Publish dryvjs
         working-directory: packages/dryvjs
         env:
