@@ -34,7 +34,7 @@ export interface ModuleOptions {
 
 export default defineNuxtModule<ModuleOptions>({
   meta: {
-    name: 'nuxt-dryv',
+    name: '@softwareproduction/nuxt-dryv',
     configKey: 'dryv',
     compatibility: {
       nuxt: '>=3.0.0',

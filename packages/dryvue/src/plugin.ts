@@ -1,8 +1,8 @@
 import type { App } from 'vue'
 import type { Plugin } from '@vue/runtime-core'
 import { reactive } from 'vue'
-import type { DryvOptions, DryvValidationRuleSet } from 'dryvjs'
-import { defaultDryvOptions, defaultDryvRuleSetResolvers } from 'dryvjs'
+import type { DryvOptions, DryvValidationRuleSet } from '@softwareproduction/dryvjs'
+import { defaultDryvOptions, defaultDryvRuleSetResolvers } from '@softwareproduction/dryvjs'
 
 export { DryvOptions, DryvValidationRuleSet }
 export const Dryv: Plugin<[]> = {

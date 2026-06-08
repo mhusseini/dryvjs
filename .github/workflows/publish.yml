@@ -1,0 +1,79 @@
+name: Build & Publish to NPM
+
+on:
+  push:
+    branches: [develop, main]
+  workflow_dispatch:
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Install & build dryvjs
+        working-directory: packages/dryvjs
+        run: |
+          npm install
+          npm run build
+
+      - name: Publish dryvjs
+        working-directory: packages/dryvjs
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view @softwareproduction/dryvjs@$VERSION version 2>/dev/null; then
+            echo "@softwareproduction/dryvjs@$VERSION already published, skipping."
+          else
+            npm publish --access public --provenance
+          fi
+
+      - name: Install & build dryvue
+        working-directory: packages/dryvue
+        run: |
+          npm install
+          npm run build
+
+      - name: Publish dryvue
+        working-directory: packages/dryvue
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view @softwareproduction/dryvue@$VERSION version 2>/dev/null; then
+            echo "@softwareproduction/dryvue@$VERSION already published, skipping."
+          else
+            npm publish --access public --provenance
+          fi
+
+      - name: Install & build nuxt-dryv
+        working-directory: packages/nuxt-dryv
+        run: |
+          npm install
+          npm run build
+
+      - name: Publish nuxt-dryv
+        working-directory: packages/nuxt-dryv
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view @softwareproduction/nuxt-dryv@$VERSION version 2>/dev/null; then
+            echo "@softwareproduction/nuxt-dryv@$VERSION already published, skipping."
+          else
+            npm publish --access public --provenance
+          fi

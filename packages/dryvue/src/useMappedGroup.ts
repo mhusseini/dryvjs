@@ -1,4 +1,4 @@
-import { DryvValidationResult, DryvValidationSession, DryvValidator } from 'dryvjs'
+import { DryvValidationResult, DryvValidationSession, DryvValidator } from '@softwareproduction/dryvjs'
 import { Ref } from '@vue/reactivity'
 
 export function useMappedGroup<TModel extends object, TParameters, TTo>(

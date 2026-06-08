@@ -1,5 +1,5 @@
 import type { Course } from '@/models'
-import type { DryvValidationRuleSet } from 'dryvue'
+import type { DryvValidationRuleSet } from '@softwareproduction/dryvue'
 import type { Attendee } from '@/models/Course'
 
 export const courseValidationRules: DryvValidationRuleSet<Course> = {

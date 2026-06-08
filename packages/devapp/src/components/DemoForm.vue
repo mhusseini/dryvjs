@@ -33,7 +33,7 @@
 import ValidatingInput from '@/components/ValidatingInput.vue'
 import ValidatingFiles from '@/components/ValidatingFiles.vue'
 import { reactive } from 'vue'
-import { type DryvValidationRuleSet, useDryv } from 'dryvue'
+import { type DryvValidationRuleSet, useDryv } from '@softwareproduction/dryvue'
 
 interface DataItem {
   name?: string

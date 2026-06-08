@@ -1,5 +1,6 @@
 {
   "private": true,
+  "author": "Munir Husseini (https://github.com/mhusseini)",
   "name": "nuxt-dryv-playground",
   "type": "module",
   "scripts": {
@@ -7,6 +8,6 @@
     "build": "nuxi build"
   },
   "dependencies": {
-    "dryvue": "^2.0.1-pre.0"
+    "@softwareproduction/dryvue": "^2.0.1-pre.0"
   }
 }

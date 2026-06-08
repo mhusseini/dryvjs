@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/dryvjs"><img src="https://img.shields.io/npm/v/dryvjs.svg" alt="npm"></a>
+  <a href="https://www.npmjs.com/package/@softwareproduction/dryvjs"><img src="https://img.shields.io/npm/v/@softwareproduction/dryvjs.svg" alt="npm"></a>
   <a href="https://github.com/mhusseini/dryvjs/blob/develop/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
 </p>
 
@@ -43,7 +43,7 @@ DryvJS can be used **standalone** using rule sets defined directly in TypeScript
 ## Installation
 
 ```bash
-npm install dryvjs
+npm install @softwareproduction/dryvjs
 ```
 
 ## Why DryvJS?

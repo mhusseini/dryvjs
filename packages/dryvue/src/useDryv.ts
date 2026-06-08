@@ -5,14 +5,14 @@ import type {
     DryvValidationRuleSet,
     DryvServerErrors,
     DryvServerValidationResponse
-} from 'dryvjs'
+} from '@softwareproduction/dryvjs'
 import {
     dryvOptions,
     dryvRuleSet,
     DryvObjectValidator,
     DryvValidationSession,
     DryvValidator
-} from 'dryvjs'
+} from '@softwareproduction/dryvjs'
 import {computed, isRef, watch, ref, type Ref} from 'vue'
 import {useMappedField} from './useMappedField'
 import {useMappedGroup} from './useMappedGroup'

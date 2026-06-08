@@ -4,8 +4,8 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/nuxt-dryv"><img src="https://img.shields.io/npm/v/nuxt-dryv.svg" alt="npm"></a>
-  <a href="https://www.npmjs.com/package/dryvue"><img src="https://img.shields.io/npm/v/dryvue.svg?label=dryvue" alt="dryvue"></a>
+  <a href="https://www.npmjs.com/package/@softwareproduction/nuxt-dryv"><img src="https://img.shields.io/npm/v/@softwareproduction/nuxt-dryv.svg" alt="npm"></a>
+  <a href="https://www.npmjs.com/package/@softwareproduction/dryvue"><img src="https://img.shields.io/npm/v/@softwareproduction/dryvue.svg?label=@softwareproduction/dryvue" alt="dryvue"></a>
   <a href="https://github.com/mhusseini/dryvjs/blob/develop/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
 </p>
 
@@ -40,7 +40,7 @@ Like the other Dryv packages, nuxt-dryv works as a standalone validation solutio
 
 ## Features
 
-- **Zero-config Vue plugin registration** — Automatically installs the `dryvue` plugin with a Vue `reactive()` wrapper
+- **Zero-config Vue plugin registration** — Automatically installs the `@softwareproduction/dryvue` plugin with a Vue `reactive()` wrapper
 - **Nuxt-native server communication** — Uses Nuxt's built-in `$fetch` for validation API calls (supports SSR, proxying, and per-environment URL configuration)
 - **Import alias for generated rule sets** — Optional `#dryv` alias that maps to your project's generated validation rule sets
 - **Warning deduplication** — Built-in handler that suppresses repeated identical warnings on subsequent validations (opt-out via config)
@@ -54,16 +54,16 @@ Like the other Dryv packages, nuxt-dryv works as a standalone validation solutio
 
 ```bash
 # npm
-npm install nuxt-dryv dryvue
+npm install @softwareproduction/nuxt-dryv @softwareproduction/dryvue
 
 # yarn
-yarn add nuxt-dryv dryvue
+yarn add @softwareproduction/nuxt-dryv @softwareproduction/dryvue
 
 # pnpm
-pnpm add nuxt-dryv dryvue
+pnpm add @softwareproduction/nuxt-dryv @softwareproduction/dryvue
 ```
 
-> **Peer dependency:** `dryvue >= 2.0.0` must be installed in your project.
+> **Peer dependency:** `@softwareproduction/dryvue >= 2.0.0` must be installed in your project.
 
 ---
 
@@ -72,7 +72,7 @@ pnpm add nuxt-dryv dryvue
 ```ts
 // nuxt.config.ts
 export default defineNuxtConfig({
-  modules: ['nuxt-dryv'],
+  modules: ['@softwareproduction/nuxt-dryv'],
 
   dryv: {
     serverBaseUrl: 'http://localhost:5000/api/validation',
@@ -80,7 +80,7 @@ export default defineNuxtConfig({
 })
 ```
 
-That's it — the `dryvue` plugin is now registered globally and you can start using `useDryv` in any component.
+That's it — the `@softwareproduction/dryvue` plugin is now registered globally and you can start using `useDryv` in any component.
 
 ---
 
@@ -90,7 +90,7 @@ All options are specified under the `dryv` key in `nuxt.config.ts`:
 
 ```ts
 export default defineNuxtConfig({
-  modules: ['nuxt-dryv'],
+  modules: ['@softwareproduction/nuxt-dryv'],
 
   dryv: {
     // Base URL for server-side (SSR) validation calls.
@@ -131,7 +131,7 @@ All options are exposed at runtime via `useRuntimeConfig().public.dryv`.
 
 ```vue
 <script setup lang="ts">
-import { useDryv } from 'dryvue'
+import { useDryv } from '@softwareproduction/dryvue'
 import { ContactFormValidationSet } from '#dryv'
 
 interface ContactForm {
@@ -195,7 +195,7 @@ Extract validation logic into a reusable composable:
 
 ```ts
 // composables/useContactForm.ts
-import { useDryv } from 'dryvue'
+import { useDryv } from '@softwareproduction/dryvue'
 import { ContactFormValidationSet } from '#dryv'
 
 interface ContactForm {
@@ -232,7 +232,7 @@ export function useContactForm() {
 If you don't use generated rule sets or prefer explicit imports, simply omit `validationPath` and pass rule sets directly:
 
 ```ts
-import { useDryv } from 'dryvue'
+import { useDryv } from '@softwareproduction/dryvue'
 import { myRuleSet } from '~/validation/myRuleSet'
 
 const { validatable, model, validate } = useDryv(form, myRuleSet)
@@ -314,7 +314,7 @@ dryv: {
 
 1. **Module registration** (`src/module.ts`) — Called at build time via `@nuxt/kit`. Registers the runtime plugin, sets up auto-imports, and optionally configures the `#dryv` alias.
 
-2. **Runtime plugin** (`src/runtime/plugins/dryv.ts`) — Runs at app startup (both SSR and client). Configures `dryvue` with:
+2. **Runtime plugin** (`src/runtime/plugins/dryv.ts`) — Runs at app startup (both SSR and client). Configures `@softwareproduction/dryvue` with:
    - `callServer` — Uses `$fetch` with the configured `serverBaseUrl` / `clientBaseUrl`
    - `reactiveWrapper` — Wraps internal objects with Vue's `reactive()`
    - `handleResult` — Delegates to the result handler registry
@@ -351,7 +351,7 @@ In most setups, only `serverBaseUrl` is needed — client-side calls stay relati
 The module ships with full type declarations. The `ModuleOptions` interface is exported for programmatic use:
 
 ```ts
-import type { ModuleOptions } from 'nuxt-dryv'
+import type { ModuleOptions } from '@softwareproduction/nuxt-dryv'
 ```
 
 If you use the `#dryv` alias, ensure your generated rule set files export typed `DryvValidationRuleSet` objects for full type inference in `useDryv<T>()`.
@@ -364,8 +364,8 @@ If you use the `#dryv` alias, ensure your generated rule set files export typed 
 
 If you previously used a local `modules/dryv` directory:
 
-1. Install the package: `npm install nuxt-dryv dryvue`
-2. Replace `'./modules/dryv'` with `'nuxt-dryv'` in your `modules` array
+1. Install the package: `npm install @softwareproduction/nuxt-dryv @softwareproduction/dryvue`
+2. Replace `'./modules/dryv'` with `'@softwareproduction/nuxt-dryv'` in your `modules` array
 3. Move your `baseUrl` to the `dryv` config key
 4. Update the `validationPath` if your alias target differs from the default
 5. Remove the local `modules/dryv` directory

@@ -1,6 +1,6 @@
 import type { Ref } from 'vue'
 import { ref, watchEffect } from 'vue'
-import { DryvValidatable, DryvValidator, getDryvValidator } from 'dryvjs'
+import { DryvValidatable, DryvValidator, getDryvValidator } from '@softwareproduction/dryvjs'
 
 export function useDryvValueProp<TValue = object>(
   emit: (event: any, ...args: any[]) => void,

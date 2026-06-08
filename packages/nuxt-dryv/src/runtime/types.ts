@@ -1,4 +1,4 @@
-import type { DryvOptions } from 'dryvue'
+import type { DryvOptions } from '@softwareproduction/dryvue'
 
 declare module '#app' {
   interface RuntimeNuxtHooks {

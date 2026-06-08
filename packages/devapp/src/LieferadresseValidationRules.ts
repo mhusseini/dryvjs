@@ -1,4 +1,4 @@
-import type { DryvValidationRuleSet } from 'dryvjs'
+import type { DryvValidationRuleSet } from '@softwareproduction/dryvjs'
 import type { Lieferadresse, PersonalData } from '@/models'
 
 export const lieferadresseValidationRules: DryvValidationRuleSet<Lieferadresse> = {

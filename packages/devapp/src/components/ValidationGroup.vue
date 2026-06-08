@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { useDryvGroupSlot } from 'dryvue'
+import { useDryvGroupSlot } from '@softwareproduction/dryvue'
 
 const props = defineProps<{ groups?: string[] }>()
 const groups = useDryvGroupSlot(props.groups!)

@@ -4,8 +4,8 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/dryvjs"><img src="https://img.shields.io/npm/v/dryvjs.svg" alt="npm dryvjs"></a>
-  <a href="https://www.npmjs.com/package/dryvue"><img src="https://img.shields.io/npm/v/dryvue.svg?label=dryvue" alt="npm dryvue"></a>
+  <a href="https://www.npmjs.com/package/@softwareproduction/dryvjs"><img src="https://img.shields.io/npm/v/@softwareproduction/dryvjs.svg" alt="npm dryvjs"></a>
+  <a href="https://www.npmjs.com/package/@softwareproduction/dryvue"><img src="https://img.shields.io/npm/v/@softwareproduction/dryvue.svg?label=@softwareproduction/dryvue" alt="npm dryvue"></a>
   <a href="https://github.com/mhusseini/dryvjs/blob/develop/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
 </p>
 
@@ -42,8 +42,8 @@ The DryvJS ecosystem is split into targeted packages:
 
 | Package | Description | Version |
 |---------|-------------|---------|
-| [`dryvjs`](./packages/dryvjs) | Core validation engine — framework-agnostic | `1.0.1-pre.0` |
-| [`dryvue`](./packages/dryvue) | Vue 3 integration for DryvJS | `2.0.1-pre.0` |
+| [`@softwareproduction/dryvjs`](./packages/dryvjs) | Core validation engine — framework-agnostic | `1.0.1-pre.0` |
+| [`@softwareproduction/dryvue`](./packages/dryvue) | Vue 3 integration for DryvJS | `2.0.1-pre.0` |
 
 ## Project Structure
 
@@ -61,17 +61,17 @@ dryvjs/
 
 ```bash
 # Core package (framework-agnostic)
-npm install dryvjs
+npm install @softwareproduction/dryvjs
 
 # Vue 3 integration
-npm install dryvue
+npm install @softwareproduction/dryvue
 ```
 
 ### Basic Example (Vue 3)
 
 ```typescript
 import { createApp } from 'vue'
-import { Dryv } from 'dryvue'
+import { Dryv } from '@softwareproduction/dryvue'
 import App from './App.vue'
 
 createApp(App).use(Dryv).mount('#app')
@@ -92,7 +92,7 @@ createApp(App).use(Dryv).mount('#app')
 
 <script setup lang="ts">
 import { reactive } from 'vue'
-import { useDryv, type DryvValidationRuleSet } from 'dryvue'
+import { useDryv, type DryvValidationRuleSet } from '@softwareproduction/dryvue'
 
 interface UserForm {
   name: string
@@ -192,7 +192,7 @@ Generate typed TypeScript files from Dryv during development:
 
 ```typescript
 // generated/validation/Address.ts (auto-generated)
-import type { DryvValidationRuleSet } from 'dryvjs'
+import type { DryvValidationRuleSet } from '@softwareproduction/dryvjs'
 
 export const addressValidationRules: DryvValidationRuleSet<AddressInput> = {
   name: "Address",
@@ -207,7 +207,7 @@ Then use it seamlessly in Vue:
 ```vue
 <script setup lang="ts">
 import { reactive } from 'vue'
-import { useDryv } from 'dryvue'
+import { useDryv } from '@softwareproduction/dryvue'
 import { addressValidationRules } from '@/generated/validation/Address'
 
 const data = reactive({ city: '', zipCode: '' })
@@ -228,7 +228,7 @@ This creates a `<script>` tag that attaches the rules to `window.dryv.v`. In you
 
 ```typescript
 import { createApp } from 'vue'
-import { Dryv, DryvStaticRuleSets } from 'dryvue'
+import { Dryv, DryvStaticRuleSets } from '@softwareproduction/dryvue'
 import App from './App.vue'
 
 createApp(App)
@@ -241,7 +241,7 @@ And reference them by name in your components:
 
 ```vue
 <script setup lang="ts">
-import { useDryv } from 'dryvue'
+import { useDryv } from '@softwareproduction/dryvue'
 
 const { validatable, validate } = useDryv(data, 'address')
 </script>

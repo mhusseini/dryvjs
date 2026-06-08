@@ -1,8 +1,14 @@
 {
-  "name": "nuxt-dryv",
+  "name": "@softwareproduction/nuxt-dryv",
   "version": "0.1.0",
-  "description": "Nuxt module for integrating the Dryv validation library (dryvue)",
+  "description": "Nuxt module for integrating the Dryv validation library (@softwareproduction/dryvue)",
   "license": "MIT",
+  "author": "Munir Husseini (https://github.com/mhusseini)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mhusseini/dryvjs",
+    "directory": "packages/nuxt-dryv"
+  },
   "type": "module",
   "exports": {
     ".": {
@@ -29,13 +35,13 @@
     "defu": "^6.1.4"
   },
   "peerDependencies": {
-    "dryvue": "^2.0.0",
+    "@softwareproduction/dryvue": "^2.0.0",
     "nuxt": "^3.0.0"
   },
   "devDependencies": {
     "@nuxt/module-builder": "^0.8.0",
     "@nuxt/schema": "^3.16.0",
-    "dryvue": "^2.0.1-pre.0",
+    "@softwareproduction/dryvue": "^2.0.1-pre.0",
     "nuxt": "^3.16.0",
     "typescript": "~5.2.0"
   }

@@ -1,5 +1,5 @@
 import type { PersonalData } from '@/models'
-import type { DryvValidationRuleSet } from 'dryvue'
+import type { DryvValidationRuleSet } from '@softwareproduction/dryvue'
 
 export const personalDataValidationRules: DryvValidationRuleSet<PersonalData> = {
   validators: {

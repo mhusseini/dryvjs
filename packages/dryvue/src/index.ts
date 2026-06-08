@@ -1,4 +1,4 @@
-export * from 'dryvjs'
+export * from '@softwareproduction/dryvjs'
 export * from './plugin'
 export * from './useDryv'
 export * from './useDryvGroupSlot'

@@ -4,8 +4,8 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/dryvue"><img src="https://img.shields.io/npm/v/dryvue.svg" alt="npm"></a>
-  <a href="https://www.npmjs.com/package/dryvjs"><img src="https://img.shields.io/npm/v/dryvjs.svg?label=dryvjs" alt="dryvjs"></a>
+  <a href="https://www.npmjs.com/package/@softwareproduction/dryvue"><img src="https://img.shields.io/npm/v/@softwareproduction/dryvue.svg" alt="npm"></a>
+  <a href="https://www.npmjs.com/package/@softwareproduction/dryvjs"><img src="https://img.shields.io/npm/v/@softwareproduction/dryvjs.svg?label=@softwareproduction/dryvjs" alt="dryvjs"></a>
   <a href="https://github.com/mhusseini/dryvjs/blob/develop/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
 </p>
 
@@ -37,10 +37,10 @@ Like the core package, Dryvue works wonderfully as a standalone validation solut
 ## Installation
 
 ```bash
-npm install dryvue
+npm install @softwareproduction/dryvue
 ```
 
-*(Requires `dryvjs` and `vue` ^3.5)*
+*(Requires `@softwareproduction/dryvjs` and `vue` ^3.5)*
 
 ## Why Dryvue?
 
@@ -56,7 +56,7 @@ Register the `Dryv` plugin to bootstrap Vue-specific reactivity (`Vue.reactive()
 
 ```typescript
 import { createApp } from 'vue'
-import { Dryv } from 'dryvue'
+import { Dryv } from '@softwareproduction/dryvue'
 import App from './App.vue'
 
 createApp(App).use(Dryv).mount('#app')
@@ -67,7 +67,7 @@ createApp(App).use(Dryv).mount('#app')
 You can register static rule sets globally, making them accessible by name across all your components:
 
 ```typescript
-import { DryvStaticRuleSets } from 'dryvue'
+import { DryvStaticRuleSets } from '@softwareproduction/dryvue'
 import { personalDataRules } from './rules/personalData'
 
 app.use(DryvStaticRuleSets, {
@@ -96,7 +96,7 @@ The main workhorse. It attaches a validation session to your reactive model and 
 
 <script setup lang="ts">
 import { reactive } from 'vue'
-import { useDryv } from 'dryvue'
+import { useDryv } from '@softwareproduction/dryvue'
 
 const data = reactive({ name: '', email: '' })
 
@@ -131,7 +131,7 @@ Easily build customized input components that intelligently sync with Dryvue val
 </template>
 
 <script setup lang="ts">
-import { type DryvValidatable, useDryvValueProp } from 'dryvue'
+import { type DryvValidatable, useDryvValueProp } from '@softwareproduction/dryvue'
 
 const props = defineProps<{
   modelValue: string | DryvValidatable<any> | undefined
@@ -167,7 +167,7 @@ Aggregates related validation messages declared inside a child slot. Perfect for
 </template>
 
 <script setup lang="ts">
-import { useDryvGroupSlot } from 'dryvue'
+import { useDryvGroupSlot } from '@softwareproduction/dryvue'
 const props = defineProps<{ groups: string[] }>()
 const groups = useDryvGroupSlot(props.groups)
 </script>
@@ -190,7 +190,7 @@ const birthDateValidator = useMappedField('birthDate', datePickerValue)
 For classic Vue architecture, or class-based components (`vue-facing-decorator`), import `dryvValidatableMixin`:
 
 ```ts
-import { dryvValidatableMixin } from 'dryvue'
+import { dryvValidatableMixin } from '@softwareproduction/dryvue'
 
 export default {
   mixins: [dryvValidatableMixin<string>()],
@@ -219,7 +219,7 @@ export default {
 
 <script setup lang="ts">
 import { reactive } from 'vue'
-import { useDryv } from 'dryvue'
+import { useDryv } from '@softwareproduction/dryvue'
 
 const data = reactive({ firstName: '', email: '', phone: '' })
 const { validatable, validate, valid, dirty, revert, setValidationResult } =

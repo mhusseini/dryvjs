@@ -9,7 +9,7 @@
 </template>
 
 <script setup lang="ts">
-import { type DryvValidatableArray, useDryvValueProp } from 'dryvue'
+import { type DryvValidatableArray, useDryvValueProp } from '@softwareproduction/dryvue'
 
 const props = defineProps<{
   modelValue: string | DryvValidatableArray | undefined

@@ -1,5 +1,5 @@
 import { defineComponent } from 'vue'
-import { DryvValidator } from 'dryvjs'
+import { DryvValidator } from '@softwareproduction/dryvjs'
 
 type Emit = (...args: any[]) => any
 

@@ -4,7 +4,7 @@ import {
   type DryvValidationResult,
   type DryvValidationRule,
   DryvValidationSession,
-} from 'dryvue'
+} from '@softwareproduction/dryvue'
 import { invokeResultHandlers, addResultHandler } from '../composables/useResultHandlers'
 import { defineNuxtPlugin, useRuntimeConfig, useState, reactive } from '#imports'
 

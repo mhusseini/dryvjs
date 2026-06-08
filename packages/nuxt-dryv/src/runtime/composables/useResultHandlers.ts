@@ -1,4 +1,4 @@
-import type { DryvValidationSession, DryvValidationRule, DryvValidationResult } from 'dryvue'
+import type { DryvValidationSession, DryvValidationRule, DryvValidationResult } from '@softwareproduction/dryvue'
 import { useNuxtApp } from '#imports'
 
 export type ResultHandler = <TModel extends object>(

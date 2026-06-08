@@ -3,7 +3,7 @@ import {
   DryvServerValidationResponse,
   DryvValidationResult,
   DryvValidator
-} from 'dryvjs'
+} from '@softwareproduction/dryvjs'
 import { Ref } from '@vue/reactivity'
 
 export function useMappedField<TModel extends object, TTo>(

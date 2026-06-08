@@ -1,6 +1,7 @@
 {
   "name": "devapp",
   "private": true,
+  "author": "Munir Husseini (https://github.com/mhusseini)",
   "scripts": {
     "dev": "vite",
     "build": "run-p type-check \"build-only {@}\" --",
@@ -11,7 +12,7 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
-    "dryvue": "workspace:^2.0.1-pre.0",
+    "@softwareproduction/dryvue": "workspace:^2.0.1-pre.0",
     "vue": "^3.3.4"
   },
   "devDependencies": {
