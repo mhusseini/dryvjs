@@ -67,7 +67,8 @@ jobs:
         working-directory: packages/nuxt-dryv
         run: |
           npm install
-          npx nuxi prepare playground
+          mkdir -p .nuxt
+          echo '{"compilerOptions":{"module":"ESNext","moduleResolution":"Bundler","target":"ESNext","lib":["ESNext"],"strict":true,"esModuleInterop":true,"skipLibCheck":true}}' > .nuxt/tsconfig.json
           npm run build
 
       - name: Publish nuxt-dryv
