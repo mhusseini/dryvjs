@@ -1,8 +1,18 @@
 {
   "name": "@softwareproduction/dryvjs",
   "version": "1.0.1-pre.0",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "sideEffects": false,
   "license": "MIT",
   "author": "Munir Husseini (https://github.com/mhusseini)",
   "repository": {
@@ -14,8 +24,8 @@
     "dist/**/*"
   ],
   "scripts": {
-    "dev": "tsc && (concurrently \"tsc -w\" \"tsc-alias -w\")",
-    "build": "tsc && tsc-alias",
+    "dev": "tsup --watch",
+    "build": "tsup",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
     "format": "prettier --write src/"
   },
@@ -23,11 +33,9 @@
     "@rushstack/eslint-patch": "^1.3.3",
     "@tsconfig/node18": "^18.2.2",
     "@types/node": "^18.18.5",
-    "concurrently": "^8.2.2",
     "eslint": "^8.49.0",
-    "npm-run-all2": "^6.1.1",
     "prettier": "^3.0.3",
-    "tsc-alias": "^1.8.8",
+    "tsup": "^8.4.0",
     "typescript": "~5.2.0"
   }
 }

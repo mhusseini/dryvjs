@@ -1,6 +1,6 @@
 import type { DryvValidationResult, DryvValidationSession } from './index'
 import {  DryvValidator } from './DryvValidator'
-import type { DryvOptions } from '/typings'
+import type { DryvOptions } from './typings'
 import { DryvCompositeValidator } from './DryvCompositeValidator'
 
 export class DryvFieldValidator<TModel extends object, TParameters = any> extends DryvValidator<

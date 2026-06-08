@@ -11,8 +11,7 @@
     "esModuleInterop": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "*": ["./src/*"]
+      "@/*": ["./src/*"]
     },
     "preserveSymlinks": true,
     "strict": true,
