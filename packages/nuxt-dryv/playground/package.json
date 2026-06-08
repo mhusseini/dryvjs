@@ -1,0 +1,12 @@
+{
+  "private": true,
+  "name": "nuxt-dryv-playground",
+  "type": "module",
+  "scripts": {
+    "dev": "nuxi dev",
+    "build": "nuxi build"
+  },
+  "dependencies": {
+    "dryvue": "^2.0.1-pre.0"
+  }
+}

@@ -1,0 +1,428 @@
+# nuxt-dryv
+
+A [Nuxt 3](https://nuxt.com) module that integrates the [Dryv](https://github.com/mhusseini/dryvjs) validation library into your application, providing seamless server-side and client-side validation with a type-safe, reactive API.
+
+## Features
+
+- **Zero-config Vue plugin registration** — Automatically installs the `dryvue` plugin with a Vue `reactive()` wrapper
+- **Nuxt-native server communication** — Uses Nuxt's built-in `$fetch` for validation API calls (supports SSR, proxying, and per-environment URL configuration)
+- **Import alias for generated rule sets** — Optional `#dryv` alias that maps to your project's generated validation rule sets
+- **Warning deduplication** — Built-in handler that suppresses repeated identical warnings on subsequent validations (opt-out via config)
+- **Extensible result handler registry** — Register and unregister custom handlers to intercept, transform, or enrich validation results
+- **Auto-imported composables** — `addResultHandler` and `removeResultHandler` are available without explicit imports
+- **Full SSR support** — Works on both server and client; `serverBaseUrl` targets your backend in SSR, client requests stay relative by default
+
+---
+
+## Installation
+
+```bash
+# npm
+npm install nuxt-dryv dryvue
+
+# yarn
+yarn add nuxt-dryv dryvue
+
+# pnpm
+pnpm add nuxt-dryv dryvue
+```
+
+> **Peer dependency:** `dryvue >= 2.0.0` must be installed in your project.
+
+---
+
+## Quick Start
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['nuxt-dryv'],
+
+  dryv: {
+    serverBaseUrl: 'http://localhost:5000/api/validation',
+  },
+})
+```
+
+That's it — the `dryvue` plugin is now registered globally and you can start using `useDryv` in any component.
+
+---
+
+## Configuration
+
+All options are specified under the `dryv` key in `nuxt.config.ts`:
+
+```ts
+export default defineNuxtConfig({
+  modules: ['nuxt-dryv'],
+
+  dryv: {
+    // Base URL for server-side (SSR) validation calls.
+    // Points to your backend service directly.
+    serverBaseUrl: 'http://internal-backend:5000/api/validation',
+
+    // Base URL for client-side validation calls.
+    // When omitted, requests use relative paths (current application URL).
+    clientBaseUrl: '/api/validation',
+
+    // Path (relative to your project root) to the generated validation rule sets.
+    // When set, the module registers a `#dryv` import alias pointing to this path.
+    validationPath: 'types/generated/validation/index',
+
+    // Whether to register the built-in warning deduplication handler.
+    // Default: true
+    handleWarnings: true,
+  },
+})
+```
+
+### Options Reference
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `serverBaseUrl` | `string \| undefined` | `undefined` | URL prefix for server-side (SSR) validation calls. Typically an internal backend URL. |
+| `clientBaseUrl` | `string \| undefined` | `undefined` | URL prefix for client-side validation calls. When omitted, requests use relative paths. |
+| `validationPath` | `string \| undefined` | `undefined` | Relative path to generated validation rule sets. Registers the `#dryv` import alias when set. |
+| `handleWarnings` | `boolean` | `true` | Enables the built-in warning deduplication handler. Set to `false` if you handle warnings yourself. |
+
+All options are exposed at runtime via `useRuntimeConfig().public.dryv`.
+
+---
+
+## Usage
+
+### Basic Form Validation
+
+```vue
+<script setup lang="ts">
+import { useDryv } from 'dryvue'
+import { ContactFormValidationSet } from '#dryv'
+
+interface ContactForm {
+  name: string
+  email: string
+  message: string
+}
+
+const form = reactive<ContactForm>({
+  name: '',
+  email: '',
+  message: '',
+})
+
+const { validatable, model, validate } = useDryv<ContactForm>(
+  form,
+  ContactFormValidationSet,
+)
+
+async function submit() {
+  const result = await validate()
+  if (result.hasErrors) return
+  // Form is valid — proceed with submission
+}
+</script>
+
+<template>
+  <form @submit.prevent="submit">
+    <div>
+      <label>Name</label>
+      <input v-model="model.name" />
+      <span v-if="validatable.name.text" class="error">
+        {{ validatable.name.text }}
+      </span>
+    </div>
+
+    <div>
+      <label>Email</label>
+      <input v-model="model.email" type="email" />
+      <span v-if="validatable.email.text" class="error">
+        {{ validatable.email.text }}
+      </span>
+    </div>
+
+    <div>
+      <label>Message</label>
+      <textarea v-model="model.message" />
+      <span v-if="validatable.message.text" class="error">
+        {{ validatable.message.text }}
+      </span>
+    </div>
+
+    <button type="submit">Send</button>
+  </form>
+</template>
+```
+
+### Composable Pattern
+
+Extract validation logic into a reusable composable:
+
+```ts
+// composables/useContactForm.ts
+import { useDryv } from 'dryvue'
+import { ContactFormValidationSet } from '#dryv'
+
+interface ContactForm {
+  name: string
+  email: string
+  message: string
+}
+
+export function useContactForm() {
+  const form = reactive<ContactForm>({
+    name: '',
+    email: '',
+    message: '',
+  })
+
+  const { validatable, model, validate } = useDryv<ContactForm>(
+    form,
+    ContactFormValidationSet,
+  )
+
+  async function submit() {
+    const result = await validate()
+    if (result.hasErrors) return false
+    // Call your API here
+    return true
+  }
+
+  return { model, validatable, submit }
+}
+```
+
+### Without the `#dryv` Alias
+
+If you don't use generated rule sets or prefer explicit imports, simply omit `validationPath` and pass rule sets directly:
+
+```ts
+import { useDryv } from 'dryvue'
+import { myRuleSet } from '~/validation/myRuleSet'
+
+const { validatable, model, validate } = useDryv(form, myRuleSet)
+```
+
+---
+
+## Custom Result Handlers
+
+The module provides an extensible pipeline for intercepting validation results. Handlers are called in registration order; the first handler that returns a non-`undefined` value wins.
+
+### Registering a Handler
+
+```ts
+// In a plugin, composable, or component setup
+const key = addResultHandler(async (session, model, path, rule, result) => {
+  // Example: replace a backend error code with a user-friendly message
+  if (rule.name === 'zipCodeLookup' && result.results?.[0]?.text === 'ZIP_NOT_FOUND') {
+    return {
+      ...result,
+      results: [{ ...result.results[0], text: 'We could not find this ZIP code.' }],
+    }
+  }
+
+  // Return undefined to pass through to the next handler
+  return undefined
+})
+```
+
+### Removing a Handler
+
+```ts
+removeResultHandler(key)
+```
+
+### Handler Signature
+
+```ts
+type ResultHandler = <TModel extends object>(
+  session: DryvValidationSession<TModel>,
+  model: TModel,
+  path: string,
+  rule: DryvValidationRule<TModel>,
+  result: DryvValidationResult,
+) => Promise<DryvValidationResult | undefined>
+```
+
+- **`session`** — The current validation session (contains the rule set name and state)
+- **`model`** — The reactive model being validated
+- **`path`** — The field path (e.g. `"email"`)
+- **`rule`** — The validation rule that produced this result
+- **`result`** — The raw validation result from the rule
+
+Return a `DryvValidationResult` to override, or `undefined` to let the next handler (or default behaviour) process it.
+
+---
+
+## Built-in Warning Deduplication
+
+When `handleWarnings` is enabled (default), the module tracks warning hashes per field per rule set. On subsequent validations:
+
+1. **New warning** — displayed normally and its hash is stored
+2. **Same warning repeated** — suppressed (treated as success) so the user isn't blocked twice
+3. **Warning changed** — the new warning is displayed and the stored hash is updated
+
+This is useful for "soft" validations where you want to warn the user once but allow them to proceed if they confirm.
+
+Disable this behaviour if you implement your own warning strategy:
+
+```ts
+dryv: {
+  handleWarnings: false,
+}
+```
+
+---
+
+## How It Works
+
+1. **Module registration** (`src/module.ts`) — Called at build time via `@nuxt/kit`. Registers the runtime plugin, sets up auto-imports, and optionally configures the `#dryv` alias.
+
+2. **Runtime plugin** (`src/runtime/plugins/dryv.ts`) — Runs at app startup (both SSR and client). Configures `dryvue` with:
+   - `callServer` — Uses `$fetch` with the configured `serverBaseUrl` / `clientBaseUrl`
+   - `reactiveWrapper` — Wraps internal objects with Vue's `reactive()`
+   - `handleResult` — Delegates to the result handler registry
+
+3. **Result handler registry** (`src/runtime/composables/useResultHandlers.ts`) — A per-app-instance registry stored on the Nuxt app context. Handlers are invoked sequentially until one returns a result.
+
+---
+
+## Server-Side Validation Flow
+
+```
+Browser                          Nuxt Server                      Backend
+   │                                 │                               │
+   │  validate() called              │                               │
+   │──── $fetch('/endpoint') ────────│                               │
+   │                                 │── $fetch(serverBaseUrl+'/ep')──│
+   │                                 │                               │
+   │                                 │◄──── validation result ───────│
+   │◄──── validation result ─────────│                               │
+   │                                 │                               │
+```
+
+The URL prefix used for validation calls is resolved per environment:
+
+- **Server (SSR):** uses `serverBaseUrl` to reach your backend directly (e.g. `http://backend:5000/api/validation`)
+- **Client:** uses `clientBaseUrl` if set, otherwise requests use relative paths
+
+In most setups, only `serverBaseUrl` is needed — client-side calls stay relative and reach the backend through Nuxt's proxy or the same origin.
+
+---
+
+## TypeScript Support
+
+The module ships with full type declarations. The `ModuleOptions` interface is exported for programmatic use:
+
+```ts
+import type { ModuleOptions } from 'nuxt-dryv'
+```
+
+If you use the `#dryv` alias, ensure your generated rule set files export typed `DryvValidationRuleSet` objects for full type inference in `useDryv<T>()`.
+
+---
+
+## Integration with Existing Projects
+
+### Migrating from a local module
+
+If you previously used a local `modules/dryv` directory:
+
+1. Install the package: `npm install nuxt-dryv dryvue`
+2. Replace `'./modules/dryv'` with `'nuxt-dryv'` in your `modules` array
+3. Move your `baseUrl` to the `dryv` config key
+4. Update the `validationPath` if your alias target differs from the default
+5. Remove the local `modules/dryv` directory
+
+### Configuring `setup`, `parseDate`, `format`, and `loadParameters`
+
+The module sets up `callServer`, `reactiveWrapper`, and `handleResult` automatically. For additional `DryvOptions` (e.g., `setup`, `format`, `parseDate`, `loadParameters`), use the `dryv:options` hook in a plugin:
+
+```ts
+// plugins/dryv-extend.ts
+export default defineNuxtPlugin((nuxtApp) => {
+  nuxtApp.hook('dryv:options', (options) => {
+    // Per-composable setup (called each time useDryv() is invoked)
+    options.setup = () => ({
+      format: useMyFormatter(),
+      loadParameters: useMyParameterLoader(),
+    })
+
+    // Custom date parsing
+    options.parseDate = (date, locale, format) => {
+      // your parsing logic
+      return new Date(date).valueOf()
+    }
+
+    // Custom formatting
+    options.format = (data, type, pattern) => {
+      // your formatting logic
+      return String(data)
+    }
+
+    // Custom parameter loading
+    options.loadParameters = async (validationSetName) => {
+      return await $fetch(`/api/validation/parameters/${validationSetName}`)
+    }
+  })
+})
+```
+
+The `dryv:options` hook fires after the module has configured the base options but before the plugin is installed, so you can override or extend any property on the `DryvOptions` object.
+
+---
+
+## Development
+
+```bash
+# Install dependencies
+npm install
+
+# Generate type stubs and prepare the dev environment
+npm run dev:prepare
+
+# Start the playground dev server
+npm run dev
+
+# Build the module for publishing
+npm run build
+
+# Build the playground for production
+npm run dev:build
+```
+
+### Project Structure
+
+```
+packages/nuxt-dryv/
+├── src/
+│   ├── module.ts                          # Nuxt module definition
+│   └── runtime/
+│       ├── composables/
+│       │   └── useResultHandlers.ts       # Result handler registry (auto-imported)
+│       └── plugins/
+│           └── dryv.ts                    # Runtime plugin
+├── playground/
+│   ├── app.vue                            # Playground app
+│   ├── nuxt.config.ts                     # Playground config
+│   └── package.json
+├── package.json
+├── tsconfig.json
+└── README.md
+```
+
+---
+
+## Contributing
+
+1. Fork this repository
+2. Create a feature branch
+3. Make your changes
+4. Run `npm run dev:prepare` and `npm run dev` to test in the playground
+5. Submit a pull request
+
+---
+
+## License
+
+[MIT](./LICENSE)

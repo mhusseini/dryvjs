@@ -1,4 +1,7 @@
-# dryvue3
+<p align="center">
+  <img src="../dryvue/public/logo.svg" title="Dryv" width="300"><br>
+  <span style="font-size: 24px; font-weight: bold;">DRY Validation for Distributed Apps</span>
+</p>
 
 This template should help get you started developing with Vue 3 in Vite.
 
