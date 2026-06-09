@@ -8,13 +8,15 @@ import type {
 } from '@/types'
 import { runValidationRules } from './runValidationRules'
 import { runDisablerRules } from './runDisablerRules'
-import { successResult, aggregateFieldResults, applyFieldResult } from './validationResults'
+import { successResult, aggregateFieldResults, buildFieldResult } from './validationResults'
+import { DryvRuleContext } from './DryvRuleContext'
 
 export class DryvValidationSession<TModel extends object = any, TParameters = any> {
   private _depth = 0
   private _isTriggered = false
   private _processedFields: { [field: string | symbol]: boolean } | undefined = undefined
   private previousWarningHash: string | null | undefined
+  readonly ruleContext: DryvRuleContext<TModel, TParameters>
 
   readonly results: {
     fields: Record<string, DryvFieldValidationResult | undefined>
@@ -29,13 +31,11 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
       fields: {},
       groups: {}
     })
+    this.ruleContext = new DryvRuleContext(options, ruleSet)
   }
 
   callServer(url: string, method: string, data: any): Promise<any> {
-    if (!this.options.callServer) {
-      throw new Error('DryvValidationSession: callServer option is not configured.')
-    }
-    return this.options.callServer(url, method, data)
+    return this.ruleContext.callServer(url, method, data)
   }
 
   handleResult(
@@ -49,11 +49,11 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
   }
 
   parseDate(date: string, locale: string, format: string): number {
-    return this.options.parseDate!(date, locale, format)
+    return this.ruleContext.parseDate(date, locale, format)
   }
 
   format(data: any, type: string, pattern?: string): string {
-    return this.options.format!(data, type, pattern)
+    return this.ruleContext.format(data, type, pattern)
   }
 
   get isValidating() {
@@ -61,7 +61,7 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
   }
 
   parameter(key: string): any {
-    return this.ruleSet.parameters?.[key as keyof TParameters]
+    return this.ruleContext.parameter(key)
   }
 
   reset() {
@@ -116,7 +116,12 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
 
     const newValidationChain = this.startValidationChain()
     const fieldResult = await this.validateFieldInternal(model!, field)
-    const result = applyFieldResult(fieldResult, field)
+
+    field.type = fieldResult?.type ?? 'success'
+    field.text = fieldResult?.text ?? null
+    field.group = fieldResult?.group ?? null
+
+    const result = buildFieldResult(fieldResult, field.path!)
 
     this.results.fields[field.path!] = result.success ? undefined : (fieldResult ?? undefined)
     if (fieldResult?.group) {

@@ -1,382 +1,486 @@
-# DryvJS — Refactoring Proposal
+# dryvjs — Refactoring Proposal
 
 ## Current State
 
-The codebase is well-structured with clear layering (proxy → validators → session) and a good `ARCHITECTURE.md`. The folder layout (`types/`, `validators/`, `session/`, `config/`, `internal/`) already reflects domain boundaries. The suggestions below target remaining opportunities for clarity, type safety, and reduced cognitive load.
+The codebase has a clean layered architecture (observable proxies → validators → session → facade). Previous refactoring rounds have already introduced `ProxyEventEmitter`, `ValidatorState`, `childValidatorManager`, `walkTree`, and the strategy pattern in `createValidator`. This proposal targets the **remaining** opportunities for clarity, reduced indirection, and better type safety.
 
-**Total source ~1,100 LOC across ~20 files (excluding tests).**
+**Total source ~1,200 LOC across ~25 files (excluding tests).**
 
 ---
 
-## 1. Extract Reactive State from `DryvValidator`
+## 1. Flatten the Double-Delegation for Reactive State
 
 ### Problem
 
-`DryvValidator` is ~296 lines with ~20 getters/setters that all delegate to `_reactive`. This boilerplate obscures the actual validation/lifecycle logic.
+`DryvValidator` has 8 getter/setter pairs (lines 51–97) that delegate to `ValidatorState`, which in turn delegates to the `DryvReactiveState` object. This creates a three-layer read/write chain:
 
-### Suggestion
+```
+DryvValidator.text → ValidatorState.text → _state.text
+```
 
-Extract reactive state management into a small dedicated class:
+`ValidatorState` adds no logic beyond a `reset()` helper. Both `DryvValidator` and `ValidatorState` contain pure pass-through getters/setters that inflate the class surface without adding meaning.
+
+### Proposal
+
+**Eliminate `ValidatorState`** as a separate class. Move `reset()` into `DryvValidator` as a private method and hold the reactive state object directly:
 
 ```ts
-// validators/ValidatorState.ts
-export class ValidatorState {
-  constructor(private _state: DryvReactiveState) {}
+// Before (3 hops)
+get text() { return this.state.text }      // DryvValidator
+get text() { return this._state.text }     // ValidatorState
 
-  get text() { return this._state.text }
-  set text(v: string | null) { this._state.text = v }
+// After (1 hop)
+get text() { return this._reactive.text }  // DryvValidator only
+```
 
-  get type() { return this._state.type }
-  set type(v: DryvValidationResultType | null) { this._state.type = v }
+### Affected files
 
-  // ... remaining fields ...
+- `src/validators/ValidatorState.ts` — delete
+- `src/validators/DryvValidator.ts` — inline state access + `reset()` method
 
-  reset(includeDirty: boolean) {
-    this.type = null
-    this.text = null
-    this.group = null
-    this.groupShown = false
-    if (includeDirty) this.isDirty = false
-  }
+### Impact
+
+- **High clarity** — removes an entire unnecessary abstraction layer.
+- **Low risk** — no external API change; the `state` field is not part of the public contract.
+
+---
+
+## 2. Extract Session Utility Methods into a Rule Context
+
+### Problem
+
+`DryvValidationSession` serves two distinct roles:
+1. **Orchestration** — validation chains, trigger logic, field processing.
+2. **Utility bag** — `callServer()`, `handleResult()`, `parseDate()`, `format()` are one-liner delegates to `options.*`.
+
+Rule functions receive the entire `session` object just to access these utilities. This over-couples rule execution to the session class.
+
+### Proposal
+
+Extract a **`DryvRuleContext`** object containing only what rules need:
+
+```ts
+// src/session/DryvRuleContext.ts
+export class DryvRuleContext<TModel extends object> {
+  constructor(private options: DryvOptions, private ruleSet: DryvValidationRuleSet<TModel>) {}
+
+  callServer(url: string, method: string, data: any) { return this.options.callServer!(url, method, data) }
+  parseDate(date: string, locale: string, format: string) { return this.options.parseDate!(date, locale, format) }
+  format(data: any, type: string, pattern?: string) { return this.options.format!(data, type, pattern) }
+  parameter(key: string) { return this.ruleSet.parameters?.[key] }
 }
 ```
 
-`DryvValidator` would hold a `readonly state: ValidatorState` and expose only the properties it actually needs at the validator level. This reduces the base class to ~150 lines focused on tree structure and lifecycle.
+The session creates one `DryvRuleContext` instance and passes it to rule `validate()` calls. The session itself shrinks to pure orchestration.
+
+> **Breaking change note:** The `validate` signature in `DryvValidationRule` would change from `session` to `context`. Gate behind a major version or provide a backward-compatible adapter.
+
+### Affected files
+
+- `src/session/DryvValidationSession.ts` — remove utility methods, create context
+- `src/types/rules.ts` — update `validate` parameter type
+- New file: `src/session/DryvRuleContext.ts`
 
 ### Impact
 
-- **High** — base class becomes scannable; each concern lives in one place.
+- **High** — Single Responsibility for the session; rules get a minimal, stable interface.
+- **Risk: High** — breaking change for rule authors.
 
 ---
 
-## 2. Unify the Observable Proxy Event Emitter
+## 3. Unify Observable Proxy Factory Naming
 
 ### Problem
 
-`ObservableProxyHandler` (observableProxy.ts) and `ObservableArrayProxyHandler` (observableArrayProxy.ts) both implement the same subscription mechanism:
-- `Map<number, handler>`
-- `register()` / `unregister()` / `fire()`
+The two Layer 1 factory functions have inconsistent naming:
+- `createObservableProxy` (for objects — uses `create` prefix)
+- `observableArrayProxy` (for arrays — no `create` prefix)
 
-This is duplicated across ~20 lines in each file.
+### Proposal
 
-### Suggestion
+Rename `observableArrayProxy` → `createObservableArrayProxy`.
 
-Extract a generic event emitter:
+### Affected files
+
+- `src/internal/observableArrayProxy.ts` — rename exported function
+- `src/validators/DryvArrayValidator.ts` — update import/call
+- `src/internal/index.ts` — update re-export
+
+### Impact
+
+- **Consistency** — trivial effort, no behavioral change.
+
+---
+
+## 4. Extract Shared Lifecycle Pattern into a Composite Base
+
+### Problem
+
+`DryvObjectValidator` and `DryvArrayValidator` duplicate the same structural pattern:
+1. Store a `_lifecycle?: ProxyLifecycle<...>` field.
+2. An `updateModel`/`updateArray` method that destroys old lifecycle → creates new proxy/lifecycle → assigns `this.proxy` → registers handler.
+3. Override `onDestroy()` to call `this._lifecycle?.destroy()`.
+
+### Proposal
+
+Introduce a thin **`DryvCompositeValidator`** abstract class between `DryvValidator` and the two composites:
 
 ```ts
-// internal/ProxyEventEmitter.ts
-export class ProxyEventEmitter<TEvent> {
-  private readonly handlers = new Map<number, (e: TEvent) => void>()
-  private nextId = 0
+// src/validators/DryvCompositeValidator.ts
+export abstract class DryvCompositeValidator<TModel extends object, TProxy, TEvent>
+  extends DryvValidator<TModel, TProxy> {
 
-  register(handler: (e: TEvent) => void): number {
-    this.handlers.set(++this.nextId, handler)
-    return this.nextId
+  protected lifecycle?: ProxyLifecycle<TProxy, TEvent>
+  proxy!: TProxy
+
+  protected replaceProxy(
+    factory: () => ProxyLifecycle<TProxy, TEvent>,
+    handler: (e: TEvent) => void
+  ): TProxy {
+    this.lifecycle?.destroy()
+    this.lifecycle = factory()
+    this.proxy = this.lifecycle.proxy
+    this.lifecycle.register(handler)
+    return this.proxy
   }
 
-  unregister(id: number): void {
-    this.handlers.delete(id)
-  }
-
-  protected fire(event: TEvent): void {
-    for (const handler of this.handlers.values()) {
-      handler(event)
-    }
-  }
+  override onDestroy() { this.lifecycle?.destroy() }
 }
 ```
 
-Both proxy handlers extend it, inheriting consistent behavior.
+`DryvObjectValidator` and `DryvArrayValidator` then only supply the factory function and handler, removing ~15 lines of structural duplication each.
+
+### Affected files
+
+- New: `src/validators/DryvCompositeValidator.ts`
+- `src/validators/DryvObjectValidator.ts` — extend new base
+- `src/validators/DryvArrayValidator.ts` — extend new base
 
 ### Impact
 
-- **Medium** — DRY, consistent behavior, easier to add features (e.g., once-listeners) later.
+- **Medium** — DRY, centralizes lifecycle ownership.
+- **Low risk** — internal class hierarchy change; no public API surface change.
 
 ---
 
-## 3. Narrow `any` Types in Key Interfaces
+## 5. Remove the Strategy Array in `createValidator`
 
 ### Problem
 
-Several locations weaken type safety:
-
-| Location | Issue |
-|----------|-------|
-| `types/results.ts:21` | `DryvServerValidationResponse = \| any \| { ... }` — the `any` makes the structured branch unreachable for the type checker |
-| `createValidator.ts` | `value: any`, fallback `{[field]: value} as any` |
-| `DryvValidationSession.callServer` | Forwards to `options.callServer!` with non-null assertion — crashes if option not set |
-| `getDryvValidator.ts` | Double `as any` casts |
-
-### Suggestion
-
-- Replace `DryvServerValidationResponse` with `unknown` + a type guard, or a proper discriminated union:
-  ```ts
-  export type DryvServerValidationResponse =
-    | { success: boolean; messages: DryvServerErrors }
-    | Record<string, DryvFieldValidationResult>
-  ```
-- In `createValidator`, provide explicit overloads or use conditional types to avoid the `as any` fallback.
-- Guard optional callbacks: `if (!this.options.callServer) throw new DryvConfigError(...)` instead of `!` assertions.
-
-### Impact
-
-- **High** — prevents runtime crashes, catches misuse at compile time.
-
----
-
-## 4. Remove Deprecated `dryv` Getter
-
-### Problem
-
-`DryvValidationSession` line 27 has:
-```ts
-/** @deprecated */
-get dryv(): this { return this }
-```
-
-This is a compatibility shim that returns `this`. It adds confusion — newcomers wonder "what is `dryv` and how is it different from the session?"
-
-### Suggestion
-
-Delete it. If external consumers still reference it, add a one-line migration note in the changelog.
-
-### Impact
-
-- **Trivial effort, low risk** — pure cleanup.
-
----
-
-## 5. Make `createValidator` a Strategy/Registry
-
-### Problem
-
-The factory uses nested ternaries with mixed checks:
-
-```ts
-const validator = Array.isArray(value)
-  ? createFieldValidator()
-  : SpecialTypeWrapper.isSpecialType(value)
-    ? createFieldValidator()
-    : value instanceof Object
-      ? new DryvObjectValidator(...)
-      : createFieldValidator()
-```
-
-This is hard to extend and hard to read at a glance.
-
-### Suggestion
-
-Replace with an ordered strategy list:
+`createValidator.ts` uses a `ValidatorStrategy[]` array + `find()` for what is a 4-branch decision:
 
 ```ts
 const strategies: ValidatorStrategy[] = [
-  { matches: (v) => typeof v === 'function',         create: () => null },
-  { matches: Array.isArray,                          create: createFieldValidator },
-  { matches: SpecialTypeWrapper.isSpecialType,       create: createFieldValidator },
-  { matches: (v) => v instanceof Object,            create: createObjectValidator },
+  { matches: (v) => typeof v === 'function',             create: 'skip' },
+  { matches: (v) => Array.isArray(v),                    create: 'field' },
+  { matches: (v) => SpecialTypeWrapper.isSpecialType(v), create: 'field' },
+  { matches: (v) => v instanceof Object,                 create: 'object' },
 ]
-
-// Default fallback: createFieldValidator
 ```
 
-Each strategy is self-documenting. Adding a new type (e.g., `Map`) requires only adding one entry.
+This is never extended at runtime, never configured by users, and never iterated generically. It adds indirection (a private interface, an array, a `find()` call, a string-to-action map) for no extensibility benefit.
 
-### Impact
+### Proposal
 
-- **Medium** — extensibility, readability, easier to test individual strategies.
-
----
-
-## 6. Clarify Array Validator Factory Path
-
-### Problem
-
-`createValidator` returns a `DryvFieldValidator` for arrays — but actual array tracking is done by `DryvArrayValidator` constructed separately inside `DryvObjectValidator.updateModel`. A reader expects the single factory to be the source of truth for all validator types.
-
-### Suggestion
-
-Either:
-1. **Have `createValidator` return `DryvArrayValidator` for arrays directly**, consolidating the factory logic, OR
-2. **Rename the function** to `createChildValidator` and add a doc comment explaining that arrays have a different construction path at the parent level.
-
-Option 1 is cleaner long-term; option 2 is lower effort.
-
-### Impact
-
-- **Medium** — removes a major source of confusion for newcomers.
-
----
-
-## 7. Decouple Child Validator Orchestration from `DryvObjectValidator`
-
-### Problem
-
-`DryvObjectValidator.updateModel` handles three distinct concerns in one method:
-1. Proxy lifecycle management (destroy old, create new)
-2. Child validator creation for each field
-3. Event handler registration + re-creation logic on mutation
-
-### Suggestion
-
-Extract the child-management logic into a standalone function or small class:
+Replace with a direct `if/else` chain:
 
 ```ts
-// validators/childValidatorManager.ts
-export function manageChildValidators(
-  parent: DryvObjectValidator,
-  lifecycle: ProxyLifecycle<...>,
-  session: DryvValidationSession,
-  options: DryvOptions
-): Record<string, DryvValidator | null> { ... }
-```
-
-`DryvObjectValidator` then delegates to this, keeping itself focused on being a composite tree node.
-
-### Impact
-
-- **Medium** — SRP improvement, testability of child management in isolation.
-
----
-
-## 8. Fix Typo in `createObjectFacade.ts`
-
-### Problem
-
-Line 72:
-```ts
-const decriptor = Reflect.getOwnPropertyDescriptor(target.fields, key)
-```
-
-`decriptor` → `descriptor`.
-
-### Impact
-
-- **Trivial** — code correctness / searchability.
-
----
-
-## 9. Consolidate Tree-Walking in `DryvValidator`
-
-### Problem
-
-`revert()`, `commit()`, and `clear()` all follow the same pattern:
-1. Reset own state
-2. Iterate `childValidators()` and call the same method recursively
-
-This pattern is repeated three times with minor variations.
-
-### Suggestion
-
-Introduce a tree-traversal helper:
-
-```ts
-private walkTree(action: (v: DryvValidator) => void) {
-  action(this)
-  for (const child of this.childValidators()) {
-    child?.walkTree(action)
+export function createChildValidator<TModel>(...): DryvValidator | null {
+  if (typeof value === 'function') return null
+  if (Array.isArray(value) || SpecialTypeWrapper.isSpecialType(value)) {
+    return new DryvFieldValidator(...)
   }
+  if (value instanceof Object) {
+    return new DryvObjectValidator(...)
+  }
+  return new DryvFieldValidator(...)
 }
 ```
 
-Then:
-```ts
-revert() {
-  this._isReverting = true
-  try { this.walkTree(v => v.resetState(true)) }
-  finally { this._isReverting = false }
-}
+Fewer allocations, immediately scannable, trivially debuggable.
 
-commit() { this.walkTree(v => v.resetState(true)) }
-clear()  { this.walkTree(v => v.resetState(false)) }
-```
+### Affected files
+
+- `src/validators/createValidator.ts`
 
 ### Impact
 
-- **Low–Medium** — DRY, easier to add new tree-wide operations.
+- **High clarity** — removes unnecessary abstraction.
+- **No risk** — same runtime behavior.
 
 ---
 
-## 10. Make `canValidateFields` Exhaustive
+## 6. Move `DryvReactiveState` to `src/types/`
 
 ### Problem
 
-The switch statement handles `'auto'` with a no-op `break`, doesn't handle `'immediate'` (declared in the type union), and relies on fall-through to `return true`.
+`DryvReactiveState` is defined inside `DryvValidator.ts` (line 14) but describes a public data shape that framework integrations need to know about (e.g., Vue `reactive()` wrapper must match this shape). Defining it inside a class file makes it hard to discover.
 
-```ts
-switch (this.options.validationTrigger) {
-  case 'auto':
-    break  // does nothing
-  case 'manual':
-    if (!this.isValidating) return false
-    break
-  case 'autoAfterManual':
-    if (!this._isTriggered && !this.isValidating) return false
-    break
-  // 'immediate' — not handled
-}
-return true
-```
+### Proposal
 
-### Suggestion
+Move to `src/types/reactiveState.ts` and re-export from the types barrel.
 
-Make the intent explicit:
+### Affected files
 
-```ts
-private canValidateFields(): boolean {
-  switch (this.options.validationTrigger) {
-    case 'immediate':
-    case 'auto':
-      return true
-    case 'manual':
-      return this.isValidating
-    case 'autoAfterManual':
-      return this._isTriggered || this.isValidating
-    default:
-      return true
-  }
-}
-```
+- `src/validators/DryvValidator.ts` — remove interface, import from types
+- New: `src/types/reactiveState.ts`
+- `src/types/index.ts` — re-export
 
 ### Impact
 
-- **Trivial effort** — prevents future bugs when new trigger modes are added.
+- **Discoverability** — trivial effort.
 
 ---
 
-## Summary
+## 7. Reduce `any` Usage in Core Classes
 
-| # | Refactoring | Effort | Impact | Risk |
-|---|-------------|--------|--------|------|
-| 1 | Extract reactive state class | Medium | High | Low |
-| 2 | Unify event emitter pattern | Low | Medium | Low |
-| 3 | Narrow `any` types | Low–Medium | High | Low |
-| 4 | Remove deprecated `dryv` getter | Trivial | Low | None |
-| 5 | Strategy pattern in `createValidator` | Low | Medium | Low |
-| 6 | Clarify array validator factory path | Low | Medium | Low |
-| 7 | Extract child validator management | Medium | Medium | Low |
-| 8 | Fix typo `decriptor` | Trivial | Trivial | None |
-| 9 | Tree-walk helper for revert/commit/clear | Low | Low–Medium | None |
-| 10 | Exhaustive switch in `canValidateFields` | Trivial | Low | None |
+### Problem
+
+| Location | Field/Param | Issue |
+|----------|-------------|-------|
+| `DryvValidator._facadeProxy` | `?: any` | Could be typed as a generic or known union |
+| `DryvValidator._rootModel` | `: any` | Should be `TModel` — already on the class generic |
+| `DryvValidator.setValidationResult` | `(response as any)?.success` | Unsafe cast; use type guard |
+| `DryvArrayValidator` constructor | `field?: keyof any` | Confusing; means `PropertyKey` |
+| `createObjectFacade` return | `as unknown as` | Acceptable at proxy boundary |
+| `defaultDryvOptions.handleResult` | 4 unused params as `_` | Use `_p1, _p2` or typed callback |
+
+### Proposal
+
+- Replace `_rootModel: any` → `_rootModel: TModel`.
+- Type `_facadeProxy` as `DryvValidatableObject<TModel> | DryvValidatableArray<any> | undefined`.
+- Replace `keyof any` → `PropertyKey`.
+- Add a type guard for `DryvServerValidationResponse`:
+
+```ts
+function isStructuredResponse(r: any): r is { success: boolean; messages: DryvServerErrors } {
+  return typeof r?.success === 'boolean'
+}
+```
+
+### Affected files
+
+- `src/validators/DryvValidator.ts`
+- `src/validators/DryvArrayValidator.ts`
+- `src/types/results.ts` — add type guard
+
+### Impact
+
+- **Type safety** — catches misuse at compile time.
+- **Low risk** — no runtime behavior change.
+
+---
+
+## 8. Consolidate the "Special Types" Lists
+
+### Problem
+
+The set of special types exists in two places that must stay in sync:
+1. `src/internal/SpecialTypeWrapper.ts` — runtime `specialTypes` array (used for `instanceof`).
+2. `src/types/validatable.ts` — compile-time `SpecialType` union (used in type mapping).
+
+They already **differ**: the type union includes `HTMLElement`, `SVGElement`, `Document`, `Window` which the runtime list omits.
+
+### Proposal
+
+- Synchronize both lists immediately.
+- Add a cross-reference comment in each file pointing to the other.
+- Long-term: consider exporting a `SPECIAL_TYPE_CONSTRUCTORS` array from `SpecialTypeWrapper.ts` and using `InstanceType<typeof SPECIAL_TYPE_CONSTRUCTORS[number]>` to derive the type union (requires a build step or manual type assertion).
+
+### Affected files
+
+- `src/internal/SpecialTypeWrapper.ts` — add missing types or doc
+- `src/types/validatable.ts` — sync + cross-reference comment
+
+### Impact
+
+- **Maintainability** — prevents silent divergence.
+
+---
+
+## 9. Make `applyFieldResult` a Pure Function
+
+### Problem
+
+`applyFieldResult` in `validationResults.ts` **mutates** the passed `field` validator (`field.type = ...`, `field.text = ...`). This side-effect is hidden inside a file named "validationResults" — a reader expects result construction logic, not validator mutation.
+
+### Proposal
+
+Split into two:
+1. **`buildFieldResult(result, path)`** — pure function returning `DryvValidationResult`.
+2. **Caller in `DryvValidationSession.validateField()`** — performs the mutation explicitly:
+
+```ts
+const result = buildFieldResult(fieldResult, field.path!)
+field.type = fieldResult?.type ?? 'success'
+field.text = fieldResult?.text ?? null
+field.group = fieldResult?.group ?? null
+```
+
+The data flow is now visible at the call site.
+
+### Affected files
+
+- `src/session/validationResults.ts` — remove mutation from `applyFieldResult`
+- `src/session/DryvValidationSession.ts` — inline mutation at call site
+
+### Impact
+
+- **Clarity** — side-effects are explicit, pure helpers stay pure.
+- **Low risk** — same behavior, just relocated.
+
+---
+
+## 10. Replace Global Mutable `defaultDryvRuleSetResolvers`
+
+### Problem
+
+`defaultDryvRuleSetResolvers` is a module-level mutable array (`export const ... = []`). External code mutates it via `.push()`. This is global state that:
+- Makes testing difficult (shared between test runs without cleanup).
+- Creates ordering dependencies.
+- Is invisible in the constructor chain.
+
+### Proposal
+
+Move resolvers into `DryvOptions`:
+
+```ts
+// In DryvOptions:
+ruleSetResolvers?: DryvValidationRuleSetResolver[]
+```
+
+The `dryvRuleSet()` function then accepts resolvers as a parameter (or reads from options) instead of a global array. Remove the exported mutable array.
+
+### Affected files
+
+- `src/config/defaultDryvOptions.ts` — remove `defaultDryvRuleSetResolvers`
+- `src/config/dryvRuleSet.ts` — accept resolvers as argument
+- `src/types/options.ts` — add `ruleSetResolvers` field
+
+### Impact
+
+- **Testability** — no global state leakage.
+- **Medium risk** — breaking for code that pushes to the array.
+
+---
+
+## 11. Simplify the `parent` Setter Side-Effects
+
+### Problem
+
+Setting `parent` on a `DryvValidator` triggers `updateHierarchy()` and `onParentChanged()` as a side-effect. This means construction order matters — assigning `parent` before other fields are ready causes cascading path recomputations with potentially incomplete data.
+
+```ts
+set parent(parent) {
+  this._parent = parent
+  this.updateHierarchy()    // recomputes paths for self + children
+  this.onParentChanged()    // hook for subclass (DryvArrayValidator nulls rootModel)
+}
+```
+
+### Proposal
+
+- Make `parent` assignment inert (store reference only).
+- Introduce an explicit **`attachToTree(parent)`** method that performs hierarchy setup.
+- Call `attachToTree()` once in the factory (`createChildValidator`) after the validator is fully constructed.
+
+```ts
+set parent(value) { this._parent = value }  // no side effects
+
+attachToTree(parent?: DryvValidator) {
+  this._parent = parent
+  this.updateHierarchy()
+  this.onParentChanged()
+}
+```
+
+### Affected files
+
+- `src/validators/DryvValidator.ts` — split setter from `attachToTree`
+- `src/validators/createValidator.ts` — call `attachToTree` after construction
+- `src/validators/childValidatorManager.ts` — update attachment point
+
+### Impact
+
+- **Predictability** — construction and tree-linking are separate phases.
+- **Medium risk** — subtle ordering changes; needs thorough test coverage.
+
+---
+
+## 12. Give Facade Proxy Handlers a Shared Utility
+
+### Problem
+
+`DryvTransparentProxyHandler` (object facade) and `DryvTransparentArrayProxyHandler` (array facade) both implement:
+- `$validator` escape-hatch logic.
+- Child resolution: `value instanceof DryvObjectValidator ? value.facadeProxy : value`.
+
+These are copy-pasted with minor variations. If the `$validator` key ever changes or the resolution logic needs updating, both files must be touched.
+
+### Proposal
+
+Extract shared helpers:
+
+```ts
+// src/internal/facadeUtils.ts
+export const VALIDATOR_KEY = '$validator'
+
+export function resolveFacade(value: unknown): unknown {
+  return value instanceof DryvObjectValidator ? value.facadeProxy : value
+}
+```
+
+Both handlers import and use these, keeping them in sync by construction.
+
+### Affected files
+
+- New: `src/internal/facadeUtils.ts`
+- `src/internal/createObjectFacade.ts` — use shared helpers
+- `src/internal/createArrayFacade.ts` — use shared helpers
+
+### Impact
+
+- **Consistency** — one place to change.
+- **No risk** — pure extraction.
+
+---
+
+## Summary — Priority Matrix
+
+| # | Refactoring | Effort | Clarity | Safety | Risk |
+|---|-------------|--------|---------|--------|------|
+| 5 | Remove strategy over-engineering | Low | High | — | None |
+| 3 | Unify factory naming | Trivial | Medium | — | None |
+| 6 | Move `DryvReactiveState` to types | Trivial | Medium | — | None |
+| 8 | Consolidate special types lists | Low | Medium | — | None |
+| 9 | Make `applyFieldResult` pure | Low | High | — | Low |
+| 12 | Shared facade utilities | Low | Medium | — | None |
+| 7 | Reduce `any` usage | Medium | Medium | High | Low |
+| 1 | Flatten state delegation | Medium | High | — | Low |
+| 4 | Extract composite validator base | Medium | Medium | — | Low |
+| 11 | Simplify parent setter | Medium | High | — | Medium |
+| 10 | Remove global mutable resolvers | Medium | Medium | High | Medium |
+| 2 | Extract rule context from session | High | High | — | High |
 
 ---
 
 ## Recommended Execution Order
 
-**Phase 1 — Quick wins (trivial risk):**
-- Items 4, 8, 10
+**Phase 1 — Quick wins (no risk, high clarity payoff):**
+- Items 5, 3, 6, 8, 12
 
-**Phase 2 — Type safety & clarity:**
-- Items 3, 5, 6
+**Phase 2 — Structural improvements (low risk):**
+- Items 9, 7, 1, 4
 
-**Phase 3 — Structural improvements:**
-- Items 1, 2, 7, 9
+**Phase 3 — Behavioral changes (require major version or migration path):**
+- Items 11, 10, 2
 
 ---
 
 ## Guiding Principles
 
-- **Single Responsibility:** Each class/function should have one reason to change.
-- **Type Everything:** `any` is only acceptable at framework boundaries (e.g., JSON parsing).
-- **Favor Composition:** Extract helpers/strategies over adding more to base classes.
-- **Name for Newcomers:** Choose names that communicate *purpose*, not *mechanism*.
-- **Minimal Inheritance:** Prefer flat hierarchies + delegation over deep class chains.
+- **Eliminate indirection that doesn't earn its keep** — abstractions should save more complexity than they introduce.
+- **Type everything** — `any` is only acceptable at proxy/serialization boundaries.
+- **Side effects must be visible at the call site** — don't hide mutation in "helper" functions.
+- **Name for newcomers** — choose names that communicate *purpose* over *mechanism*.
+- **Prefer flat structures** — one level of delegation is almost always enough.

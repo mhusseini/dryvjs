@@ -28,10 +28,10 @@ export const defaultDryvOptions: DryvOptions = {
         return await response.json()
     },
     handleResult<TModel extends object>(
-        _: DryvValidationSession<TModel>,
-        __: TModel,
-        ___: keyof TModel,
-        ____: DryvValidationRule<TModel>,
+        _session: DryvValidationSession<TModel>,
+        _model: TModel,
+        _field: keyof TModel,
+        _rule: DryvValidationRule<TModel>,
         result: any
     ): Promise<any> {
         return Promise.resolve(result)

@@ -25,3 +25,7 @@ export type DryvServerValidationResponse =
 export interface DryvServerErrors {
     [field: string]: DryvFieldValidationResult
 }
+
+export function isStructuredResponse(r: unknown): r is { success: boolean; messages: DryvServerErrors } {
+    return typeof (r as any)?.success === 'boolean'
+}

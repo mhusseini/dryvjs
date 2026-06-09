@@ -1,4 +1,4 @@
-import type { DryvFieldValidationResult, DryvValidationResult, IValidator } from '@/types'
+import type { DryvFieldValidationResult, DryvValidationResult } from '@/types'
 
 /**
  * Creates a successful (empty) validation result for a given path.
@@ -58,22 +58,18 @@ export function aggregateFieldResults(
 }
 
 /**
- * Applies a field validation result to a validator (side-effect) and returns
- * a structured `DryvValidationResult`.
+ * Builds a structured `DryvValidationResult` from a field result.
+ * Pure function — does not mutate any validator state.
  */
-export function applyFieldResult(
+export function buildFieldResult(
     result: DryvFieldValidationResult | null,
-    field: IValidator
+    path: string
 ): DryvValidationResult {
     if (result) {
-        field.type = result.type ?? 'success'
-        field.text = result.text ?? null
-        field.group = result.group ?? null
-
         const type = result.type?.toLowerCase()
 
         return type === 'success'
-            ? successResult(field.path!)
+            ? successResult(path)
             : {
                 results: [result],
                 hasErrors: type === 'error',
@@ -81,14 +77,10 @@ export function applyFieldResult(
                 warningHash: type === 'warning' ? result.text : null,
                 hasNewWarnings: undefined,
                 success: type === 'success' || !type,
-                path: String(field.path)
+                path
             }
     } else {
-        field.type = 'success'
-        field.text = null
-        field.group = null
-
-        return successResult(field.path!)
+        return successResult(path)
     }
 }
 

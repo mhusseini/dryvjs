@@ -46,6 +46,14 @@ export type DryvValidatableObject<TModel extends object> = {
     $validator: DryvObjectValidator<TModel>
 }
 
+/**
+ * Compile-time union of types whose instances should be treated as opaque
+ * values (not recursively proxied).
+ *
+ * IMPORTANT: Keep in sync with the runtime `specialTypes` array in
+ * `src/internal/SpecialTypeWrapper.ts`. When adding entries here, also add
+ * the corresponding constructor to that array.
+ */
 type SpecialType =
 // File and Blob
     | File

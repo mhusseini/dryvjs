@@ -13,7 +13,7 @@ export async function runDisablerRules<TModel extends object>(
 ): Promise<boolean> {
     if (disablers && disablers.length > 0) {
         for (const rule of disablers) {
-            if (await rule.validate(model, session)) {
+            if (await rule.validate(model, session.ruleContext)) {
                 return true;
             }
         }

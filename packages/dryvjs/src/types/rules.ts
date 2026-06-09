@@ -1,4 +1,4 @@
-import type { DryvValidationSession } from '@/session/DryvValidationSession'
+import type { DryvRuleContext } from '@/session/DryvRuleContext'
 
 export type DryvValidateFunctionResult =
     | DryvFieldValidationResult
@@ -18,7 +18,7 @@ export interface DryvValidationRule<TModel extends object> {
     group?: string
     validate: <TInput = TModel>(
         $m: TInput,
-        session: DryvValidationSession<TModel>
+        context: DryvRuleContext<TModel>
     ) => DryvValidateFunctionResult
 }
 

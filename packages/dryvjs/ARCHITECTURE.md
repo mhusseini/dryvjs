@@ -56,8 +56,9 @@ Types like `File`, `ArrayBuffer`, `Promise`, `Error`, typed arrays, and WebAssem
 ```
 DryvValidator<TModel, TValue>          (abstract base)
 ├── DryvFieldValidator<TModel>         (leaf — scalar fields)
-├── DryvObjectValidator<TModel>        (composite — nested objects)
-└── DryvArrayValidator<TModel>         (composite — arrays)
+└── DryvCompositeValidator<TModel, TProxy, TEvent>  (shared lifecycle base)
+    ├── DryvObjectValidator<TModel>    (composite — nested objects)
+    └── DryvArrayValidator<TModel>     (composite — arrays)
 ```
 
 ### `DryvValidator<TModel, TValue>` — Abstract Base
@@ -65,12 +66,23 @@ DryvValidator<TModel, TValue>          (abstract base)
 **Location:** `src/validators/DryvValidator.ts`
 
 Provides:
-- **Reactive state**: `text`, `type`, `group`, `required`, `isDirty`, `groupShown` — wrapped via `options.reactiveWrapper` for framework integration (e.g. Vue `reactive()`).
+- **Reactive state** (`_reactive: DryvReactiveState`): `text`, `type`, `group`, `required`, `isDirty`, `groupShown` — wrapped via `options.reactiveWrapper` for framework integration (e.g. Vue `reactive()`). The reactive state is held directly (no intermediate class).
 - **Tree traversal**: `parent`, `childValidators()`, `rootModel`, `rootValidator`.
+- **Tree attachment**: `attachToTree(parent)` — performs hierarchy setup (path computation, `onParentChanged`). The `parent` setter is inert (stores reference only).
 - **Path computation**: `path` and `uniquePath` (dot-notation addressing used for rule lookup).
 - **Lifecycle**: `destroy()`, `revert()`, `commit()`, `clear()`.
 - **Facade accessor**: `facadeProxy` — set by subclasses to their Layer 2 proxy.
-- **Server result mapping**: `setValidationResult(response)`.
+- **Server result mapping**: `setValidationResult(response)` — uses a type guard (`isStructuredResponse`) instead of unsafe casts.
+
+### `DryvCompositeValidator<TModel, TProxy, TEvent>` — Shared Lifecycle Base
+
+**Location:** `src/validators/DryvCompositeValidator.ts`
+
+Abstract base for validators that own a `ProxyLifecycle`. Provides:
+- `lifecycle?: ProxyLifecycle<TProxy, TEvent>` — the current lifecycle instance.
+- `proxy: TProxy` — the current observable proxy.
+- `replaceProxy(factory)` — destroys the old lifecycle, creates a new one, assigns `proxy`.
+- `onDestroy()` — calls `lifecycle?.destroy()`.
 
 ### `DryvFieldValidator<TModel>` — Leaf Validator
 
@@ -85,7 +97,8 @@ Provides:
 
 **Location:** `src/validators/DryvObjectValidator.ts`
 
-- Creates a Layer 1 observable proxy for the model (`createObservableProxy`).
+- Extends `DryvCompositeValidator`.
+- Creates a Layer 1 observable proxy for the model (`createObservableProxy`) via `replaceProxy()`.
 - Creates a Layer 2 facade proxy (`createObjectFacade`).
 - Maintains `fields: Record<string, DryvValidator>` — one child validator per model property.
 - On model mutation (Layer 1 event), re-creates the child validator for the changed field and triggers `refreshDirty()` + `validate()`.
@@ -95,24 +108,39 @@ Provides:
 
 **Location:** `src/validators/DryvArrayValidator.ts`
 
-- Creates a Layer 1 observable array proxy (`observableArrayProxy`), with `SpecialTypeWrapper.wrap()` applied.
+- Extends `DryvCompositeValidator`.
+- Creates a Layer 1 observable array proxy (`createObservableArrayProxy`), with `SpecialTypeWrapper.wrap()` applied, via `replaceProxy()`.
 - Creates a Layer 2 facade proxy (`createArrayFacade`).
 - Maintains `_items: DryvValidator[]` — one child validator per array element.
 - Handles `ArrayEvent`s (`append`, `insert`, `remove`, `replace`) to add/remove child validators.
 
 ---
 
-## Validation Session
+## Validation Session & Rule Context
+
+### `DryvValidationSession`
 
 **Location:** `src/session/DryvValidationSession.ts`
 
 The session is the orchestrator:
 
 - Holds the `DryvValidationRuleSet` (rules + disablers per field path).
+- Creates a `DryvRuleContext` instance passed to rule `validate()` calls.
 - `validateObject()` — validates the object validator itself + all children in parallel.
-- `validateField()` — runs disablers first, then validators for a single field.
+- `validateField()` — runs disablers first, then validators for a single field. Mutations (`field.type`, `field.text`, `field.group`) are performed explicitly at the call site.
 - Tracks `_processedFields` to avoid duplicate validation within a single chain.
 - Supports `validationTrigger` modes: `auto`, `manual`, `autoAfterManual`.
+
+### `DryvRuleContext`
+
+**Location:** `src/session/DryvRuleContext.ts`
+
+A minimal interface passed to rule `validate` functions. Decouples rules from the session:
+
+- `callServer(url, method, data)` — delegates to `options.callServer`.
+- `parseDate(date, locale, format)` — delegates to `options.parseDate`.
+- `format(data, type, pattern?)` — delegates to `options.format`.
+- `parameter(key)` — reads from `ruleSet.parameters`.
 
 ---
 
@@ -120,13 +148,12 @@ The session is the orchestrator:
 
 **Location:** `src/validators/createValidator.ts`
 
-`createValidator(parent, value, model, field, session, options)` decides which validator to instantiate:
+`createChildValidator(parent, value, model, field, session, options)` decides which validator to instantiate using a direct `if/else` chain:
 
 | Value type | Validator created |
 |------------|-------------------|
-| `function` | `null` (skipped) |
-| `Array` | `DryvFieldValidator` (array handling is via `DryvArrayValidator` at the parent level) |
-| Special type (`File`, `Blob`, etc.) | `DryvFieldValidator` |
+| `function` | `null` (skipped — early return) |
+| `Array` or special type (`File`, `Blob`, etc.) | `DryvFieldValidator` (array handling is via `DryvArrayValidator` at the parent level) |
 | Plain `object` | `DryvObjectValidator` (recursive) |
 | Primitive | `DryvFieldValidator` |
 
@@ -159,11 +186,15 @@ Layer 2: Facade Proxy exposes updated state to consumer
 
 ```
 src/
-├── config/              # DryvOptions defaults and builder
-├── internal/            # Proxy layers (Layers 1–3), path computation, helpers
-├── session/             # Validation session, rule runners, result aggregation
+├── config/              # DryvOptions defaults, builder, rule set resolution
+├── internal/            # Proxy layers (Layers 1–3), path computation, facade utilities
+│   └── facadeUtils.ts   # Shared VALIDATOR_KEY constant and resolveFacade() helper
+├── session/             # Validation session, rule context, rule runners, result aggregation
+│   └── DryvRuleContext.ts  # Minimal context passed to rule validate() functions
 ├── types/               # Public TypeScript interfaces and type maps
+│   └── reactiveState.ts # DryvReactiveState interface (public shape for framework integrations)
 ├── validators/          # Validator class hierarchy and factory
+│   └── DryvCompositeValidator.ts  # Shared lifecycle base for Object/Array validators
 ├── getDryvModel.ts      # Utility: extract raw model from facade
 ├── getDryvValidator.ts  # Utility: extract validator from facade
 └── index.ts             # Public re-exports

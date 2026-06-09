@@ -36,7 +36,7 @@ export async function runValidationRules<TModel extends object>(
                 }
                 validateRelatedField(field, model)
             })
-            const r = await rule.validate(model, session)
+            const r = await rule.validate(model, session.ruleContext)
             if (!r || r === true) {
                 // rule passed — continue to next
             } else if (typeof r === 'string') {

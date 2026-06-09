@@ -2,12 +2,11 @@ import type { DryvOptions, DryvValidatableObject, DryvValidationResult, FieldEve
 import { DryvValidator } from './DryvValidator'
 import { DryvValidationSession } from '@/session/DryvValidationSession'
 import { manageChildValidators } from './childValidatorManager'
-import { createObjectFacade, createObservableProxy, createProxyLifecycle, type ProxyLifecycle } from '@/internal'
+import { createObjectFacade, createObservableProxy, createProxyLifecycle } from '@/internal'
+import { DryvCompositeValidator } from './DryvCompositeValidator'
 
-export class DryvObjectValidator<TModel extends object = any> extends DryvValidator<TModel, TModel> {
-  private _lifecycle?: ProxyLifecycle<TModel, FieldEvent<TModel>>
+export class DryvObjectValidator<TModel extends object = any> extends DryvCompositeValidator<TModel, TModel, FieldEvent<TModel>> {
   readonly fields: { [field: string | symbol | number]: DryvValidator | null }
-  proxy: TModel
 
   constructor(
     model: TModel,
@@ -23,14 +22,10 @@ export class DryvObjectValidator<TModel extends object = any> extends DryvValida
   }
 
   private updateModel(model: TModel): TModel {
-    this._lifecycle?.destroy()
-
-    const lifecycle = createProxyLifecycle<TModel, FieldEvent<TModel>>(createObservableProxy(model))
-    this._lifecycle = lifecycle
-    this.proxy = lifecycle.proxy
+    this.replaceProxy(() => createProxyLifecycle<TModel, FieldEvent<TModel>>(createObservableProxy(model)))
     this.model = model
 
-    manageChildValidators(this, lifecycle, this.session, this.options, this.fields)
+    manageChildValidators(this, this.lifecycle!, this.session, this.options, this.fields)
 
     return this.proxy
   }
@@ -49,9 +44,5 @@ export class DryvObjectValidator<TModel extends object = any> extends DryvValida
 
   async validate(): Promise<DryvValidationResult> {
     return this.session.validateObject(this)
-  }
-
-  override onDestroy() {
-    this._lifecycle?.destroy()
   }
 }

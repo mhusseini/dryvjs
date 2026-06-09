@@ -51,11 +51,19 @@ export class SpecialTypeWrapper {
   }
 }
 
-const specialTypes = [
+/**
+ * Runtime list of constructors considered "special types" — values of these
+ * types are wrapped to prevent proxy interference with their internals.
+ *
+ * IMPORTANT: Keep in sync with the compile-time `SpecialType` union in
+ * `src/types/validatable.ts`. When adding entries here, also add the
+ * corresponding type to that union.
+ */
+const specialTypes: Function[] = [
   // File and Blob
-  File,
-  //FileList,
-  Blob,
+  ...(typeof File !== 'undefined' ? [File] : []),
+  ...(typeof FileList !== 'undefined' ? [FileList] : []),
+  ...(typeof Blob !== 'undefined' ? [Blob] : []),
 
   // ArrayBuffer and Typed Arrays
   ArrayBuffer,
@@ -70,6 +78,12 @@ const specialTypes = [
   Float64Array,
   BigUint64Array,
   BigInt64Array,
+
+  // DOM Elements (only available in browser environments)
+  ...(typeof HTMLElement !== 'undefined' ? [HTMLElement] : []),
+  ...(typeof SVGElement !== 'undefined' ? [SVGElement] : []),
+  ...(typeof Document !== 'undefined' ? [Document] : []),
+  ...(typeof Window !== 'undefined' ? [Window] : []),
 
   // WebAssembly
   WebAssembly.Module,

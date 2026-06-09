@@ -1,6 +1,7 @@
 import type { DryvValidatableObject } from '@/types'
 import { DryvValidator } from '@/validators/DryvValidator'
 import { DryvObjectValidator } from '@/validators/DryvObjectValidator'
+import { VALIDATOR_KEY, resolveFacade } from './facadeUtils'
 
 /**
  * **Proxy Layer 2 — Developer-Facing Facade (Object)**
@@ -40,11 +41,11 @@ class DryvTransparentProxyHandler<TModel extends object> {
       return Reflect.get(target, prop)
     }
 
-    if (prop === '$validator') {
+    if (prop === VALIDATOR_KEY) {
       return target
     }
     const innerValue = target.fields[prop]
-    return innerValue instanceof DryvObjectValidator ? innerValue.facadeProxy : innerValue
+    return resolveFacade(innerValue)
   }
 
   set(target: DryvObjectValidator<TModel>, prop: string | symbol, value: any, receiver: any) {
@@ -72,7 +73,7 @@ class DryvTransparentProxyHandler<TModel extends object> {
     const descriptor = Reflect.getOwnPropertyDescriptor(target.fields, key)
     return value
       ? {
-          value: value instanceof DryvObjectValidator ? value.facadeProxy : value,
+          value: resolveFacade(value),
           writable: value instanceof DryvObjectValidator ? false : descriptor?.writable,
           enumerable: descriptor?.enumerable,
           configurable: descriptor?.configurable

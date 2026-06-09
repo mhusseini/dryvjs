@@ -5,6 +5,7 @@ import { createProxyLifecycle } from '@/internal/proxyLifecycle'
 import { DryvObjectValidator } from '@/validators/DryvObjectValidator'
 import { DryvArrayValidator } from '@/validators/DryvArrayValidator'
 import { DryvValidator } from '@/validators/DryvValidator'
+import { DryvCompositeValidator } from '@/validators/DryvCompositeValidator'
 import { createObjectValidator, createRuleSet, SimpleModel } from './helpers'
 
 describe('serializeValidator (6.1 extraction)', () => {
@@ -194,13 +195,15 @@ describe('DryvValidationSession direct method access (6.2)', () => {
   })
 })
 
-describe('DryvContainerValidator elimination (6.3)', () => {
-  it('DryvObjectValidator should extend DryvValidator directly', () => {
-    expect(Object.getPrototypeOf(DryvObjectValidator.prototype)).toBe(DryvValidator.prototype)
+describe('DryvCompositeValidator hierarchy (6.3)', () => {
+  it('DryvObjectValidator should extend DryvCompositeValidator', () => {
+    expect(Object.getPrototypeOf(DryvObjectValidator.prototype)).toBe(DryvCompositeValidator.prototype)
+    expect(Object.getPrototypeOf(DryvCompositeValidator.prototype)).toBe(DryvValidator.prototype)
   })
 
-  it('DryvArrayValidator should extend DryvValidator directly', () => {
-    expect(Object.getPrototypeOf(DryvArrayValidator.prototype)).toBe(DryvValidator.prototype)
+  it('DryvArrayValidator should extend DryvCompositeValidator', () => {
+    expect(Object.getPrototypeOf(DryvArrayValidator.prototype)).toBe(DryvCompositeValidator.prototype)
+    expect(Object.getPrototypeOf(DryvCompositeValidator.prototype)).toBe(DryvValidator.prototype)
   })
 })
 

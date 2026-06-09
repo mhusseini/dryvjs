@@ -1,7 +1,7 @@
 import type { DryvValidatableArray } from '@/types'
 import type { DryvValidator } from '@/validators/DryvValidator'
 import { DryvArrayValidator } from '@/validators/DryvArrayValidator'
-import { DryvObjectValidator } from '@/validators/DryvObjectValidator'
+import { VALIDATOR_KEY, resolveFacade } from './facadeUtils'
 
 /**
  * **Proxy Layer 2 — Developer-Facing Facade (Array)**
@@ -28,7 +28,7 @@ class DryvTransparentArrayProxyHandler<TModel = any> {
   constructor(private validator: DryvArrayValidator<TModel>) {}
 
   get(target: DryvValidator[], prop: string | symbol) {
-    if (prop === '$validator') {
+    if (prop === VALIDATOR_KEY) {
       return this.validator
     }
     if (!/^\d+$/.test(String(prop))) {
@@ -38,7 +38,7 @@ class DryvTransparentArrayProxyHandler<TModel = any> {
       }
     }
     const value = (target as any)[prop]
-    return value instanceof DryvObjectValidator ? value.facadeProxy : value
+    return resolveFacade(value)
   }
 
   apply(target: DryvValidator[], thisArg: any, argArray: any) {

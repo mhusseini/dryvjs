@@ -1,5 +1,5 @@
 import type { DryvValidationSession } from '@/session/DryvValidationSession'
-import type { DryvValidationRule } from './rules'
+import type { DryvValidationRule, DryvValidationRuleSetResolver } from './rules'
 import type { DryvServerValidationResponse } from './results'
 
 export interface DryvOptions {
@@ -27,6 +27,8 @@ export interface DryvOptions {
     format?(data: any, type: string, pattern?: string): string
 
     validationTrigger?: 'immediate' | 'auto' | 'manual' | 'autoAfterManual'
+
+    ruleSetResolvers?: DryvValidationRuleSetResolver[]
 
     setup?(): Partial<DryvOptions> | undefined | null
 }

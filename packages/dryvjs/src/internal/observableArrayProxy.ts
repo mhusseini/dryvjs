@@ -18,7 +18,7 @@ export interface ArrayEventHandler<TModel> {
  * @see createObservableProxy     — analogous layer for object mutations
  * @see createArrayFacade   — Layer 2 (developer-facing facade for arrays)
  */
-export function observableArrayProxy<TModel>(model: TModel[]) {
+export function createObservableArrayProxy<TModel>(model: TModel[]) {
   const proxyHandler = new ObservableArrayProxyHandler<TModel>(model)
   const proxy = new Proxy(model, proxyHandler)
 

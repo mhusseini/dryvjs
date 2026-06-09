@@ -2,19 +2,18 @@ import type { ArrayEvent, DryvValidatableArray, DryvValidationResult, DryvOption
 import { DryvValidator } from './DryvValidator'
 import { DryvValidationSession } from '@/session/DryvValidationSession'
 import { createChildValidator } from './createValidator'
-import { createArrayFacade, observableArrayProxy, SpecialTypeWrapper, createProxyLifecycle, type ProxyLifecycle } from '@/internal'
+import { createArrayFacade, createObservableArrayProxy, SpecialTypeWrapper, createProxyLifecycle } from '@/internal'
+import { DryvCompositeValidator } from './DryvCompositeValidator'
 
-export class DryvArrayValidator<TModel = any> extends DryvValidator<any, TModel[]> {
-  private _lifecycle?: ProxyLifecycle<TModel[], ArrayEvent<TModel>>
+export class DryvArrayValidator<TModel = any> extends DryvCompositeValidator<any, TModel[], ArrayEvent<TModel>> {
   private readonly _items: DryvValidator[]
-  proxy: TModel[]
 
   constructor(
     model: TModel[],
     session: DryvValidationSession,
     parent: DryvValidator | undefined,
     options: DryvOptions,
-    field?: keyof any
+    field?: PropertyKey
   ) {
     super(model, session, parent, options, field)
     this._items = options.reactiveWrapper([])
@@ -23,17 +22,13 @@ export class DryvArrayValidator<TModel = any> extends DryvValidator<any, TModel[
   }
 
   protected override onParentChanged() {
-    this.rootModel = null
+    this.rootModel = null as unknown as any
   }
 
   private updateArray(model: TModel[], skipModelUpdate = false): TModel[] {
-    this._lifecycle?.destroy()
-
-    const lifecycle = createProxyLifecycle<TModel[], ArrayEvent<TModel>>(
-      observableArrayProxy<TModel>(SpecialTypeWrapper.wrap(model))
-    )
-    this._lifecycle = lifecycle
-    this.proxy = lifecycle.proxy
+    this.replaceProxy(() => createProxyLifecycle<TModel[], ArrayEvent<TModel>>(
+      createObservableArrayProxy<TModel>(SpecialTypeWrapper.wrap(model))
+    ))
     this._items.length = 0
     if (!skipModelUpdate) {
       this.model.length = 0
@@ -53,7 +48,7 @@ export class DryvArrayValidator<TModel = any> extends DryvValidator<any, TModel[
       }
     }
 
-    lifecycle.register((event: ArrayEvent<TModel>) => this.onArrayEvent(event))
+    this.lifecycle!.register((event: ArrayEvent<TModel>) => this.onArrayEvent(event))
 
     return this.proxy
   }
@@ -126,10 +121,6 @@ export class DryvArrayValidator<TModel = any> extends DryvValidator<any, TModel[
 
   async validate(): Promise<DryvValidationResult> {
     return this.session.validateObject(this)
-  }
-
-  override onDestroy() {
-    this._lifecycle?.destroy()
   }
 
   private createValidator(item: TModel) {

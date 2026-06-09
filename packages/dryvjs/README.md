@@ -152,10 +152,9 @@ Mark rules as `async: true` and delegate complex logic to the server. DryvJS han
 email: [
   {
     async: true,
-    validate: ($m, session) => {
-      return session.dryv
-        .callServer('/api/validate-email', 'POST', { email: $m.email })
-        .then(($r) => session.dryv.handleResult(session, $m, 'email', null, $r))
+    validate: async ($m, context) => {
+      const result = await context.callServer('/api/validate-email', 'POST', { email: $m.email })
+      return result.success ? null : 'Email already exists'
     }
   }
 ]
@@ -263,10 +262,18 @@ DryvValidator (abstract base)
 
 ## API Reference
 
+### `DryvRuleContext`
+
+The context object passed to rule `validate` functions. Provides only the utilities rules need:
+- `callServer(url, method, data)`: Perform a server validation request.
+- `parseDate(date, locale, format)`: Parse a date string.
+- `format(data, type, pattern?)`: Format a value.
+- `parameter(key)`: Retrieve an injected parameter.
+
 ### `DryvValidationSession`
 - `validateObject(validator)`: Validates the full object tree.
 - `validateField(field, model?)`: Validates a specific field.
-- `parameter(key)`: Retrieve an injected parameter.
+- `ruleContext`: The `DryvRuleContext` instance used by rules.
 - `reset()`: Clears validation triggered states.
 - `results.fields` & `results.groups`: Dictionaries holding validation results.
 

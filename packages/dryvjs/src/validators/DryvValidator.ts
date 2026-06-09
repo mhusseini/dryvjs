@@ -1,40 +1,30 @@
 import type {
   DryvOptions,
+  DryvReactiveState,
   DryvServerErrors,
   DryvServerValidationResponse,
   DryvValidationResult,
   DryvValidationResultType,
   IValidator
 } from '@/types'
+import { isStructuredResponse } from '@/types'
 import type { DryvValidationSession } from '@/session/DryvValidationSession'
 import { serializeValidator } from './serializeValidator'
 import { computeValidatorPaths } from '@/internal/computeValidatorPaths'
-import { ValidatorState } from './ValidatorState'
-
-export interface DryvReactiveState {
-  path: string | null
-  uniquePath: string | null
-  text: string | null
-  group: string | null
-  required: boolean | null
-  groupShown: boolean
-  type: DryvValidationResultType | null
-  isDirty: boolean
-}
 
 export abstract class DryvValidator<
   TModel extends object = any,
   TValue = any
 > implements IValidator<TModel> {
   public readonly __dryvValidator = true
-  public readonly state: ValidatorState
+  public readonly _reactive: DryvReactiveState
 
   private _parent?: DryvValidator | null
   private _index?: number
-  private _rootModel: any
+  private _rootModel: TModel
   private _rootValidator: DryvValidator<TModel>
   private _isReverting = false
-  private _facadeProxy?: any
+  private _facadeProxy?: unknown
 
   get index(): number | undefined {
     return this._index
@@ -49,51 +39,51 @@ export abstract class DryvValidator<
   }
 
   get isDirty(): boolean {
-    return this.state.isDirty
+    return this._reactive.isDirty
   }
 
   protected set isDirty(value: boolean) {
-    this.state.isDirty = value
+    this._reactive.isDirty = value
   }
 
   get text(): string | null {
-    return this.state.text
+    return this._reactive.text
   }
 
   set text(value: string | null) {
-    this.state.text = value
+    this._reactive.text = value
   }
 
   get group(): string | null {
-    return this.state.group
+    return this._reactive.group
   }
 
   set group(value: string | null) {
-    this.state.group = value
+    this._reactive.group = value
   }
 
   get required(): boolean | null {
-    return this.state.required
+    return this._reactive.required
   }
 
   set required(value: boolean | null) {
-    this.state.required = value
+    this._reactive.required = value
   }
 
   get groupShown(): boolean {
-    return this.state.groupShown
+    return this._reactive.groupShown
   }
 
   set groupShown(value: boolean) {
-    this.state.groupShown = value
+    this._reactive.groupShown = value
   }
 
   get type(): DryvValidationResultType | null {
-    return this.state.type
+    return this._reactive.type
   }
 
   set type(value: DryvValidationResultType | null) {
-    this.state.type = value
+    this._reactive.type = value
   }
 
   protected constructor(
@@ -105,7 +95,7 @@ export abstract class DryvValidator<
   ) {
     this._rootModel = model
     this._rootValidator = this
-    this.state = new ValidatorState(options.reactiveWrapper<DryvReactiveState>({
+    this._reactive = options.reactiveWrapper<DryvReactiveState>({
       path: null,
       uniquePath: null,
       text: null,
@@ -114,8 +104,8 @@ export abstract class DryvValidator<
       groupShown: false,
       type: null,
       isDirty: false
-    }))
-    this.parent = parent
+    })
+    this.attachToTree(parent)
   }
 
   abstract get value(): TValue
@@ -158,11 +148,11 @@ export abstract class DryvValidator<
   }
 
   protected performRevert() {
-    this.state.reset(true)
+    this.resetState(true)
   }
 
   protected performCommit() {
-    this.state.reset(true)
+    this.resetState(true)
   }
 
   public abstract childValidators(): DryvValidator[]
@@ -180,26 +170,26 @@ export abstract class DryvValidator<
   }
 
   get path(): string {
-    return this.state.path ?? ''
+    return this._reactive.path ?? ''
   }
 
   private set path(value: string) {
-    this.state.path = value
+    this._reactive.path = value
   }
 
   get uniquePath(): string {
-    return this.state.uniquePath ?? ''
+    return this._reactive.uniquePath ?? ''
   }
 
   private set uniquePath(value: string) {
-    this.state.uniquePath = value
+    this._reactive.uniquePath = value
   }
 
   public get rootModel() {
     return this._rootModel
   }
 
-  protected set rootModel(value: any) {
+  protected set rootModel(value: TModel) {
     this._rootModel = value
   }
 
@@ -211,10 +201,13 @@ export abstract class DryvValidator<
     return this._parent
   }
 
-  set parent(parent: DryvValidator | undefined | null) {
+  set parent(value: DryvValidator | undefined | null) {
+    this._parent = value
+  }
+
+  attachToTree(parent?: DryvValidator | null) {
     this._parent = parent
     this.updateHierarchy()
-
     this.onParentChanged()
   }
 
@@ -243,7 +236,15 @@ export abstract class DryvValidator<
   }
 
   clear(): void {
-    this.walkTree((v) => v.state.reset(false))
+    this.walkTree((v) => v.resetState(false))
+  }
+
+  private resetState(includeDirty: boolean) {
+    this._reactive.type = null
+    this._reactive.text = null
+    this._reactive.group = null
+    this._reactive.groupShown = false
+    if (includeDirty) this._reactive.isDirty = false
   }
 
   private walkTree(action: (v: DryvValidator) => void) {
@@ -255,7 +256,7 @@ export abstract class DryvValidator<
 
   setValidationResult(response: DryvServerValidationResponse | DryvServerErrors): boolean {
     const messages =
-      typeof (response as any)?.success === 'boolean' ? (response as any).messages : response
+      isStructuredResponse(response) ? response.messages : response
 
     const message = messages?.[this.path!]
 
