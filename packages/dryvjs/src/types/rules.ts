@@ -1,4 +1,4 @@
-import { DryvValidationSession } from '../session/DryvValidationSession'
+import type { DryvValidationSession } from '@/session/DryvValidationSession'
 
 export type DryvValidateFunctionResult =
     | DryvFieldValidationResult
@@ -44,7 +44,7 @@ export interface DryvValidationRuleSetResolver {
 }
 
 export interface DryvFieldValidationResult {
-    path?: string
+    path?: string | null
     type?: DryvValidationResultType
     text?: string | null
     group?: string | null

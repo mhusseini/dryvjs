@@ -1,5 +1,5 @@
-import type { DryvValidationRuleSet } from '@/.'
-import { defaultDryvRuleSetResolvers } from '@/.'
+import type { DryvValidationRuleSet } from '@/types'
+import { defaultDryvRuleSetResolvers } from './defaultDryvOptions'
 
 export function dryvRuleSet<TModel extends object, TParameters = object>(
   ruleSetName: string

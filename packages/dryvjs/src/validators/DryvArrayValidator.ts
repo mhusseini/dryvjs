@@ -1,28 +1,24 @@
-import { ArrayEvent, createValidator, DryvValidatableArray, DryvValidationResult } from './'
-import { DryvOptions } from './'
-import { type DryvValidator } from './DryvValidator'
-import { DryvValidationSession } from './DryvValidationSession'
-import { dryvValidatableArray, observableArrayProxy, SpecialTypeWrapper } from '@/internal'
-import { DryvCompositeValidator } from '@/DryvCompositeValidator'
+import type { ArrayEvent, DryvValidatableArray, DryvValidationResult, DryvOptions } from '@/types'
+import { DryvValidator } from './DryvValidator'
+import { DryvValidationSession } from '@/session/DryvValidationSession'
+import { createValidator } from './createValidator'
+import { createArrayFacade, observableArrayProxy, SpecialTypeWrapper, createProxyLifecycle, type ProxyLifecycle } from '@/internal'
 
-export class DryvArrayValidator<TModel = any> extends DryvCompositeValidator<
-  any,
-  DryvValidatableArray<TModel>
-> {
-  private _unregisterArray?: () => void
+export class DryvArrayValidator<TModel = any> extends DryvValidator<any, TModel[]> {
+  private _lifecycle?: ProxyLifecycle<TModel[], ArrayEvent<TModel>>
   private readonly _items: DryvValidator[]
   proxy: TModel[]
 
   constructor(
     model: TModel[],
     session: DryvValidationSession,
-    parent: DryvCompositeValidator | undefined,
+    parent: DryvValidator | undefined,
     options: DryvOptions,
     field?: keyof any
   ) {
     super(model, session, parent, options, field)
     this._items = options.reactiveWrapper([])
-    this.transparentProxy = dryvValidatableArray<TModel>(this)
+    this.facadeProxy = createArrayFacade<TModel>(this) as DryvValidatableArray<TModel>
     this.proxy = this.updateArray(model, true)
   }
 
@@ -31,13 +27,13 @@ export class DryvArrayValidator<TModel = any> extends DryvCompositeValidator<
   }
 
   private updateArray(model: TModel[], skipModelUpdate = false): TModel[] {
-    if (this._unregisterArray) {
-      this._unregisterArray()
-    }
-    const { proxy, register, unregister } = observableArrayProxy<TModel>(
-      SpecialTypeWrapper.wrap(model)
+    this._lifecycle?.destroy()
+
+    const lifecycle = createProxyLifecycle<TModel[], ArrayEvent<TModel>>(
+      observableArrayProxy<TModel>(SpecialTypeWrapper.wrap(model))
     )
-    this.proxy = proxy
+    this._lifecycle = lifecycle
+    this.proxy = lifecycle.proxy
     this._items.length = 0
     if (!skipModelUpdate) {
       this.model.length = 0
@@ -57,8 +53,7 @@ export class DryvArrayValidator<TModel = any> extends DryvCompositeValidator<
       }
     }
 
-    const eventId = register((event: ArrayEvent<TModel>) => this.onArrayEvent(event))
-    this._unregisterArray = () => unregister(eventId)
+    lifecycle.register((event: ArrayEvent<TModel>) => this.onArrayEvent(event))
 
     return this.proxy
   }
@@ -134,9 +129,7 @@ export class DryvArrayValidator<TModel = any> extends DryvCompositeValidator<
   }
 
   override onDestroy() {
-    if (this._unregisterArray) {
-      this._unregisterArray()
-    }
+    this._lifecycle?.destroy()
   }
 
   private createValidator(item: TModel) {

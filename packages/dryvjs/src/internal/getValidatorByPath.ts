@@ -1,11 +1,10 @@
-import { DryvValidator } from '@/DryvValidator'
-import { DryvFieldValidator } from '@/DryvFieldValidator'
-import { DryvObjectValidator } from '@/DryvObjectValidator'
+import type { IValidator } from '@/types'
+import { DryvObjectValidator } from '@/validators/DryvObjectValidator'
 
 export function getValidatorByPath<TModel extends object>(
-  obj: DryvValidator<TModel>,
+  obj: IValidator<TModel>,
   path: string
-): DryvFieldValidator<TModel> | null {
+): IValidator<TModel> | null {
   if (!path) {
     return null
   }

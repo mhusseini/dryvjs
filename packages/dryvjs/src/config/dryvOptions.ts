@@ -1,4 +1,4 @@
-import type { DryvOptions } from './typings'
+import type { DryvOptions } from '@/types'
 import { defaultDryvOptions } from './defaultDryvOptions'
 
 export function dryvOptions(...options: (DryvOptions | undefined)[]): DryvOptions {

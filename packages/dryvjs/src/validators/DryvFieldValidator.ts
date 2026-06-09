@@ -1,19 +1,17 @@
-import type { DryvValidationResult, DryvValidationSession } from './index'
-import {  DryvValidator } from './DryvValidator'
-import type { DryvOptions } from './typings'
-import { DryvCompositeValidator } from './DryvCompositeValidator'
+import type { DryvOptions, DryvValidationResult } from '@/types'
+import type { DryvValidationSession } from '@/session/DryvValidationSession'
+import { DryvValidator } from './DryvValidator'
 
-export class DryvFieldValidator<TModel extends object, TParameters = any> extends DryvValidator<
+export class DryvFieldValidator<TModel extends object> extends DryvValidator<
   TModel,
-  TParameters,
-  DryvCompositeValidator
+  TModel[keyof TModel]
 > {
   private _initialValue: TModel[keyof TModel]
 
   constructor(
     model: TModel,
     session: DryvValidationSession,
-    parent: DryvCompositeValidator,
+    parent: DryvValidator,
     options: DryvOptions,
     field: keyof TModel
   ) {

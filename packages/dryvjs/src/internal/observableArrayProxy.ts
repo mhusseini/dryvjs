@@ -1,9 +1,22 @@
-import { ArrayEvent } from '@/typings'
+import type { ArrayEvent } from '@/types'
 
 export interface ArrayEventHandler<TModel> {
   (event: ArrayEvent<TModel>): void
 }
 
+/**
+ * **Proxy Layer 1 — Change Detection (Observable Array Proxy)**
+ *
+ * Wraps a model array in a Proxy that intercepts mutating methods
+ * (`push`, `splice`, `unshift`, index assignment) and emits `ArrayEvent`s
+ * to registered handlers.
+ *
+ * Consumed by `DryvArrayValidator` to detect array mutations, triggering
+ * child validator creation/destruction and re-validation.
+ *
+ * @see createObservableProxy     — analogous layer for object mutations
+ * @see createArrayFacade   — Layer 2 (developer-facing facade for arrays)
+ */
 export function observableArrayProxy<TModel>(model: TModel[]) {
   const proxyHandler = new ObservableArrayProxyHandler<TModel>(model)
   const proxy = new Proxy(model, proxyHandler)

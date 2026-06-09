@@ -1,4 +1,4 @@
-import { DryvValidator } from '@/DryvValidator'
+import { DryvValidator } from '@/validators/DryvValidator'
 
 export function getDryvValidator<TModel extends object>(
   obj: any

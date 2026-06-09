@@ -1,7 +1,26 @@
-import { DryvObjectValidator, DryvValidatableObject, DryvValidator } from '@/.'
-import { DryvCompositeValidator } from '@/DryvCompositeValidator'
+import type { DryvValidatableObject } from '@/types'
+import { DryvValidator } from '@/validators/DryvValidator'
+import { DryvObjectValidator } from '@/validators/DryvObjectValidator'
 
-export function dryvValidatableObject<TModel extends object>(
+/**
+ * **Proxy Layer 2 — Developer-Facing Facade (Object)**
+ *
+ * Creates a Proxy over a `DryvObjectValidator` that exposes a
+ * `DryvValidatableObject<TModel>` interface to consumers. Property access
+ * on this proxy is transparently routed to the appropriate child validator's
+ * own facade (for nested objects) or the validator itself (for fields).
+ *
+ * This is the primary API surface developers interact with:
+ * ```ts
+ * const v = createObjectValidator(model, ruleSet)
+ * v.facadeProxy.name  // → DryvFieldValidator for `name`
+ * v.facadeProxy.address  // → nested DryvValidatableObject
+ * ```
+ *
+ * @see createObservableProxy        — Layer 1 (change detection, internal)
+ * @see SpecialTypeWrapper     — Layer 3 (edge-case type wrapping)
+ */
+export function createObjectFacade<TModel extends object>(
   validator: DryvObjectValidator<TModel>
 ): DryvValidatableObject<TModel> {
   return new Proxy(
@@ -25,7 +44,7 @@ class DryvTransparentProxyHandler<TModel extends object> {
       return target
     }
     const innerValue = target.fields[prop]
-    return innerValue instanceof DryvCompositeValidator ? innerValue.transparentProxy : innerValue
+    return innerValue instanceof DryvObjectValidator ? innerValue.facadeProxy : innerValue
   }
 
   set(target: DryvObjectValidator<TModel>, prop: string | symbol, value: any, receiver: any) {
@@ -53,7 +72,7 @@ class DryvTransparentProxyHandler<TModel extends object> {
     const decriptor = Reflect.getOwnPropertyDescriptor(target.fields, key)
     return value
       ? {
-          value: value instanceof DryvObjectValidator ? value.transparentProxy : value,
+          value: value instanceof DryvObjectValidator ? value.facadeProxy : value,
           writable: value instanceof DryvObjectValidator ? false : decriptor?.writable,
           enumerable: decriptor?.enumerable,
           configurable: decriptor?.configurable

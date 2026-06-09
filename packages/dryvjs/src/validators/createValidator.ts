@@ -1,14 +1,12 @@
-import type {DryvValidationSession} from '@/DryvValidationSession'
-import {DryvOptions} from '@/typings'
-import {DryvValidator} from '@/DryvValidator'
-import {DryvArrayValidator} from '@/DryvArrayValidator'
-import {DryvFieldValidator} from '@/DryvFieldValidator'
-import {DryvObjectValidator} from '@/DryvObjectValidator'
-import {DryvCompositeValidator} from '@/DryvCompositeValidator'
+import type {DryvValidationSession} from '@/session/DryvValidationSession'
+import type {DryvOptions} from '@/types'
+import {DryvValidator} from './DryvValidator'
+import {DryvFieldValidator} from './DryvFieldValidator'
+import {DryvObjectValidator} from './DryvObjectValidator'
 import {SpecialTypeWrapper} from '@/internal'
 
 export function createValidator<TModel>(
-    parent: DryvCompositeValidator,
+    parent: DryvValidator,
     value: any,
     model: TModel | undefined,
     field: keyof TModel | undefined,
@@ -23,7 +21,6 @@ export function createValidator<TModel>(
     }
 
     const validator: DryvValidator = Array.isArray(value)
-        //? new DryvArrayValidator(value, session, parent, options, field)
         ? createFieldValidator()
         : SpecialTypeWrapper.isSpecialType(value)
             ? createFieldValidator()

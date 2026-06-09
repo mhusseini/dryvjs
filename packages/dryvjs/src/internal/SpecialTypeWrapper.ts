@@ -1,3 +1,18 @@
+/**
+ * **Proxy Layer 3 — Edge-Case Type Wrapping**
+ *
+ * Certain JavaScript built-in types (File, ArrayBuffer, Promise, DOM elements,
+ * WebAssembly objects, etc.) throw errors or behave unexpectedly when accessed
+ * through a Proxy's get/set traps. `SpecialTypeWrapper` detects these types and
+ * wraps them in a plain object that delegates property access explicitly,
+ * preventing the observable proxy (Layer 1) from interfering with their internals.
+ *
+ * This layer is transparent to the rest of the system — it only activates when
+ * a value of a "special" type is encountered during array proxy creation.
+ *
+ * @see createObservableProxy       — Layer 1 (change detection)
+ * @see createObjectFacade    — Layer 2 (developer-facing facade)
+ */
 export class SpecialTypeWrapper {
   private constructor(private readonly item: any) {}
 
@@ -55,12 +70,6 @@ const specialTypes = [
   Float64Array,
   BigUint64Array,
   BigInt64Array,
-
-  // DOM Elements
-  //HTMLElement,
-  // SVGElement,
-  // Document,
-  // Window,
 
   // WebAssembly
   WebAssembly.Module,

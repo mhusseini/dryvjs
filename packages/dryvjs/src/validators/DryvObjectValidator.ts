@@ -1,36 +1,33 @@
-import { createValidator, DryvValidationResult, DryvValidationSession, FieldEvent } from './'
-import { DryvOptions, DryvValidatableObject } from './'
+import type { DryvOptions, DryvValidatableObject, DryvValidationResult, FieldEvent } from '@/types'
 import { DryvValidator } from './DryvValidator'
-import { dryvValidatableObject, observableProxy } from '@/internal'
-import { DryvCompositeValidator } from '@/DryvCompositeValidator'
+import { DryvValidationSession } from '@/session/DryvValidationSession'
+import { createValidator } from './createValidator'
+import { createObjectFacade, createObservableProxy, createProxyLifecycle, type ProxyLifecycle } from '@/internal'
 
-export class DryvObjectValidator<TModel extends object = any> extends DryvCompositeValidator<
-  TModel,
-  DryvValidatableObject<TModel>
-> {
-  private _unregister?: () => void
+export class DryvObjectValidator<TModel extends object = any> extends DryvValidator<TModel, TModel> {
+  private _lifecycle?: ProxyLifecycle<TModel, FieldEvent<TModel>>
   readonly fields: { [field: string | symbol | number]: DryvValidator | null }
   proxy: TModel
 
   constructor(
     model: TModel,
     session: DryvValidationSession<TModel>,
-    parent: DryvCompositeValidator | undefined,
+    parent: DryvValidator | undefined,
     options: DryvOptions,
     field?: keyof TModel
   ) {
     super(model, session, parent, options, field)
     this.fields = {}
-    this.transparentProxy = dryvValidatableObject(this)
+    this.facadeProxy = createObjectFacade(this) as DryvValidatableObject<TModel>
     this.proxy = this.updateModel(this.model)
   }
 
   private updateModel(model: TModel): TModel {
-    if (this._unregister) {
-      this._unregister()
-    }
-    const { proxy, register, unregister } = observableProxy(model)
-    this.proxy = proxy
+    this._lifecycle?.destroy()
+
+    const lifecycle = createProxyLifecycle<TModel, FieldEvent<TModel>>(createObservableProxy(model))
+    this._lifecycle = lifecycle
+    this.proxy = lifecycle.proxy
     this.model = model
 
     Object.values(this.fields).forEach((field) => field?.destroy())
@@ -38,26 +35,26 @@ export class DryvObjectValidator<TModel extends object = any> extends DryvCompos
     for (const field in model) {
       this.fields[field] = createValidator(
         this,
-        proxy[field],
-        proxy,
+        lifecycle.proxy[field],
+        lifecycle.proxy,
         field,
         this.session,
         this.options
       )
     }
 
-    const eventId = register((event: FieldEvent<TModel>) => {
+    lifecycle.register((event: FieldEvent<TModel>) => {
       let validator = this.fields[event.field]
 
       if (
         validator === undefined ||
-        (validator instanceof DryvCompositeValidator && validator.value !== event.newValue)
+        (validator instanceof DryvObjectValidator && validator.value !== event.newValue)
       ) {
         validator?.destroy()
         validator = createValidator(
           this,
           event.newValue,
-          proxy,
+          lifecycle.proxy,
           event.field,
           this.session,
           this.options
@@ -72,9 +69,6 @@ export class DryvObjectValidator<TModel extends object = any> extends DryvCompos
       validator?.refreshDirty()
       validator?.validate()
     })
-
-    this._unregister = () => unregister(eventId)
-    //annotateValidator(this, this.session.ruleSet)
 
     return this.proxy
   }
@@ -96,8 +90,6 @@ export class DryvObjectValidator<TModel extends object = any> extends DryvCompos
   }
 
   override onDestroy() {
-    if (this._unregister) {
-      this._unregister()
-    }
+    this._lifecycle?.destroy()
   }
 }

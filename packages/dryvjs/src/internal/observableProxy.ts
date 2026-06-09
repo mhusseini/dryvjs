@@ -1,10 +1,25 @@
-import { FieldEvent } from '@/.'
+import type { FieldEvent } from '@/types'
 
 export interface FieldEventHandler<TModel extends object> {
   (event: FieldEvent<TModel>): void
 }
 
-export function observableProxy<TModel extends object>(model: TModel) {
+/**
+ * **Proxy Layer 1 — Change Detection (Observable Proxy)**
+ *
+ * Wraps a plain model object in a Proxy that intercepts property assignments
+ * (`set` trap) and emits `FieldEvent`s to registered handlers.
+ *
+ * This layer is consumed exclusively by `DryvObjectValidator` to detect when
+ * the user mutates a model field, triggering dirty-tracking and re-validation.
+ *
+ * Consumers never see this proxy directly — it is an internal implementation
+ * detail hidden behind the validator's `proxy` property.
+ *
+ * @see observableArrayProxy — analogous layer for array mutations
+ * @see createObjectFacade   — Layer 2 (developer-facing facade)
+ */
+export function createObservableProxy<TModel extends object>(model: TModel) {
   const proxyHandler = new ObservableProxyHandler<TModel>()
   const proxy = new Proxy(model, proxyHandler)
 

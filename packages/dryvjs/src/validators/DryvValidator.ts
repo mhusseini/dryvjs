@@ -1,19 +1,32 @@
-import {
+import type {
   DryvOptions,
   DryvServerErrors,
   DryvServerValidationResponse,
   DryvValidationResult,
   DryvValidationResultType,
-  DryvValidationSession
-} from './'
+  IValidator
+} from '@/types'
+import type { DryvValidationSession } from '@/session/DryvValidationSession'
+import { serializeValidator } from './serializeValidator'
+import { computeValidatorPaths } from '@/internal/computeValidatorPaths'
+
+export interface DryvReactiveState {
+  path: string | null
+  uniquePath: string | null
+  text: string | null
+  group: string | null
+  required: boolean | null
+  groupShown: boolean
+  type: DryvValidationResultType | null
+  isDirty: boolean
+}
 
 export abstract class DryvValidator<
   TModel extends object = any,
-  TValue = any,
-  TParent extends DryvValidator = any
-> {
+  TValue = any
+> implements IValidator<TModel> {
   public readonly __dryvValidator = true
-  private _parent?: TParent | null
+  private _parent?: DryvValidator | null
   private _index?: number
 
   get index(): number | undefined {
@@ -77,19 +90,19 @@ export abstract class DryvValidator<
   }
 
   private _rootModel: any
-  private _rootValidator: DryvValidator<TModel, any>
-  private _reactive: any
+  private _rootValidator: DryvValidator<TModel>
+  private _reactive: DryvReactiveState
 
   protected constructor(
     public model: TModel,
     protected session: DryvValidationSession<TModel>,
-    parent: TParent | undefined,
+    parent: DryvValidator | undefined,
     protected options: DryvOptions,
     public readonly field: keyof TModel | undefined = undefined
   ) {
     this._rootModel = model
     this._rootValidator = this
-    this._reactive = options.reactiveWrapper({
+    this._reactive = options.reactiveWrapper<DryvReactiveState>({
       path: null,
       uniquePath: null,
       text: null,
@@ -102,34 +115,63 @@ export abstract class DryvValidator<
     this.parent = parent
   }
 
+  private _isReverting = false
+  private _facadeProxy?: any
+
   abstract get value(): TValue
   abstract set value(value: TValue)
 
   abstract validate(): Promise<DryvValidationResult>
 
-  abstract refreshDirty(): void
+  refreshDirty() {
+    const wasDirty = this.isDirty
+    this.isDirty = this.childValidators().some((f) => f?.isDirty)
+
+    if (this.isDirty !== wasDirty) {
+      this.parent?.refreshDirty()
+    }
+  }
+
+  get facadeProxy(): any {
+    return this._facadeProxy
+  }
+
+  protected set facadeProxy(value: any) {
+    this._facadeProxy = value
+  }
+
+  protected get isReverting() {
+    return this._isReverting
+  }
 
   revert() {
-    this.type = null
-    this.text = null
-    this.group = null
-    this.groupShown = false
-    this.isDirty = false
+    try {
+      this._isReverting = true
+      this.resetState(true)
 
-    for (const validator of this.childValidators()) {
-      validator?.revert()
+      for (const validator of this.childValidators()) {
+        validator?.revert()
+      }
+    } finally {
+      this._isReverting = false
     }
   }
 
   commit() {
+    this.resetState(true)
+
+    for (const validator of this.childValidators()) {
+      validator?.commit()
+    }
+  }
+
+  private resetState(includeDirty: boolean) {
     this.type = null
     this.text = null
     this.group = null
     this.groupShown = false
-    this.isDirty = false
-
-    for (const validator of this.childValidators()) {
-      validator?.commit()
+    if (includeDirty) {
+      this.isDirty = false
     }
   }
 
@@ -175,11 +217,11 @@ export abstract class DryvValidator<
     return this._rootValidator
   }
 
-  get parent(): TParent | undefined | null {
+  get parent(): DryvValidator | undefined | null {
     return this._parent
   }
 
-  set parent(parent: TParent | undefined | null) {
+  set parent(parent: DryvValidator | undefined | null) {
     this._parent = parent
     this.updateHierarchy()
 
@@ -201,10 +243,9 @@ export abstract class DryvValidator<
       this._rootValidator = this
     }
 
-    this.path = [parent?.path, this.field].filter((x) => !!x).join('.')
-    this.uniquePath = [parent?.uniquePath, this.index, this.field]
-      .filter((x) => typeof x === 'number' || !!x)
-      .join('.')
+    const paths = computeValidatorPaths(parent?.path, parent?.uniquePath, this.field, this.index)
+    this.path = paths.path
+    this.uniquePath = paths.uniquePath
 
     if (cascade) {
       this.childValidators().forEach((v) => v.updateHierarchy(true))
@@ -212,15 +253,13 @@ export abstract class DryvValidator<
   }
 
   clear(): void {
-    this.type = null
-    this.text = null
-    this.group = null
+    this.resetState(false)
 
     this.childValidators().forEach((v) => v.clear())
   }
 
   setValidationResult(response: DryvServerValidationResponse | DryvServerErrors): boolean {
-    const messages: DryvServerErrors =
+    const messages =
       typeof response?.success === 'boolean' ? response.messages : response
 
     const message = messages?.[this.path!]
@@ -251,37 +290,6 @@ export abstract class DryvValidator<
   }
 
   toJSON(): any {
-    return {
-      ...this,
-      value: this.value,
-      path: this.path,
-      text: this.text,
-      hasErrors: this.hasErrors,
-      hasWarnings: this.hasWarnings,
-      isSuccess: this.isSuccess,
-      uniquePath: this.uniquePath,
-      index: this._index,
-      field: !this.field ? undefined : this.field,
-      __dryvValidator: undefined,
-      _parent: undefined,
-      _path: undefined,
-      _rootModel: undefined,
-      _rootValidator: undefined,
-      _reactive: undefined,
-      _initialValue: undefined,
-      _ignoreChildChanges: undefined,
-      _isReverting: undefined,
-      _items: undefined,
-      _uniquePath: undefined,
-      _index: undefined,
-      rootValidator: undefined,
-      rootModel: undefined,
-      parent: undefined,
-      model: undefined,
-      proxy: undefined,
-      session: undefined,
-      options: undefined,
-      transparentProxy: undefined
-    }
+    return serializeValidator(this)
   }
 }
