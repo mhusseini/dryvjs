@@ -1,3 +1,4 @@
+export * from './ProxyEventEmitter'
 export * from './observableProxy'
 export * from './observableArrayProxy'
 export * from './getValidatorByPath'

@@ -39,14 +39,14 @@ export class DryvFieldValidator<TModel extends object> extends DryvValidator<
     }
   }
 
-  override revert() {
+  protected override performRevert() {
     this.value = this._initialValue
-    super.revert()
+    super.performRevert()
   }
 
-  override commit() {
+  protected override performCommit() {
     this._initialValue = this.value
-    super.commit()
+    super.performCommit()
   }
 
   override childValidators(): DryvValidator[] {

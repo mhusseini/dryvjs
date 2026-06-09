@@ -153,21 +153,14 @@ describe('createProxyLifecycle (6.4 extraction)', () => {
   })
 })
 
-describe('DryvValidationSession dryv backward compatibility (6.2)', () => {
-  it('session.dryv should return the session itself', () => {
-    const ruleSet = createRuleSet<SimpleModel>()
-    const { session } = createObjectValidator({ name: 'x', email: 'y', age: 1 }, ruleSet)
-
-    expect(session.dryv).toBe(session)
-  })
-
-  it('session.dryv.callServer should work via backward-compatible getter', async () => {
+describe('DryvValidationSession direct method access (6.2)', () => {
+  it('session.callServer should work directly', async () => {
     const ruleSet = createRuleSet<SimpleModel>({
       validators: {
         email: [{
           async: true,
           validate: async ($m: any, session: any) => {
-            const result = await session.dryv.callServer('/api/test', 'POST', { email: $m.email })
+            const result = await session.callServer('/api/test', 'POST', { email: $m.email })
             return result.valid ? null : 'Invalid'
           }
         }]

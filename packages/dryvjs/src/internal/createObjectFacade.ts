@@ -69,13 +69,13 @@ class DryvTransparentProxyHandler<TModel extends object> {
   getOwnPropertyDescriptor(target: DryvObjectValidator<TModel>, key: string | symbol) {
     if (!target.fields) return undefined
     const value = target.fields[key]
-    const decriptor = Reflect.getOwnPropertyDescriptor(target.fields, key)
+    const descriptor = Reflect.getOwnPropertyDescriptor(target.fields, key)
     return value
       ? {
           value: value instanceof DryvObjectValidator ? value.facadeProxy : value,
-          writable: value instanceof DryvObjectValidator ? false : decriptor?.writable,
-          enumerable: decriptor?.enumerable,
-          configurable: decriptor?.configurable
+          writable: value instanceof DryvObjectValidator ? false : descriptor?.writable,
+          enumerable: descriptor?.enumerable,
+          configurable: descriptor?.configurable
         }
       : undefined
   }

@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { createObjectValidator, createRuleSet, SimpleModel } from './helpers'
 
 describe('Server Validation', () => {
-  it('should call server via session.dryv.callServer in validation rules', async () => {
+  it('should call server via session.callServer in validation rules', async () => {
     const callServer = vi.fn().mockResolvedValue({ success: true })
 
     const ruleSet = createRuleSet<SimpleModel>({
@@ -10,7 +10,7 @@ describe('Server Validation', () => {
         email: [{
           async: true,
           validate: async ($m: any, session: any) => {
-            const result = await session.dryv.callServer('/api/validate-email', 'POST', { email: $m.email })
+            const result = await session.callServer('/api/validate-email', 'POST', { email: $m.email })
             return result.success ? null : 'Email already exists'
           }
         }]
@@ -35,7 +35,7 @@ describe('Server Validation', () => {
         email: [{
           async: true,
           validate: async ($m: any, session: any) => {
-            const result = await session.dryv.callServer('/api/validate-email', 'POST', { email: $m.email })
+            const result = await session.callServer('/api/validate-email', 'POST', { email: $m.email })
             return result.success ? null : 'Email already exists'
           }
         }]

@@ -21,13 +21,6 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
     groups: Record<string, DryvFieldValidationResult | undefined>
   }
 
-  /**
-   * @deprecated Access callServer, handleResult, parseDate, format directly on the session.
-   */
-  get dryv(): this {
-    return this
-  }
-
   constructor(
     private options: DryvOptions,
     public ruleSet: DryvValidationRuleSet<TModel, TParameters>
@@ -39,7 +32,10 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
   }
 
   callServer(url: string, method: string, data: any): Promise<any> {
-    return this.options.callServer!(url, method, data)
+    if (!this.options.callServer) {
+      throw new Error('DryvValidationSession: callServer option is not configured.')
+    }
+    return this.options.callServer(url, method, data)
   }
 
   handleResult(
@@ -136,21 +132,16 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
 
   private canValidateFields(): boolean {
     switch (this.options.validationTrigger) {
+      case 'immediate':
       case 'auto':
-        break
+        return true
       case 'manual':
-        if (!this.isValidating) {
-          return false
-        }
-        break
+        return this.isValidating
       case 'autoAfterManual':
-        if (!this._isTriggered && !this.isValidating) {
-          return false
-        }
-        break
+        return this._isTriggered || this.isValidating
+      default:
+        return true
     }
-
-    return true
   }
 
   private startValidationChain(): boolean {

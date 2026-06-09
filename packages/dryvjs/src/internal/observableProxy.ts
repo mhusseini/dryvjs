@@ -1,4 +1,5 @@
 import type { FieldEvent } from '@/types'
+import { ProxyEventEmitter } from './ProxyEventEmitter'
 
 export interface FieldEventHandler<TModel extends object> {
   (event: FieldEvent<TModel>): void
@@ -30,10 +31,7 @@ export function createObservableProxy<TModel extends object>(model: TModel) {
   }
 }
 
-class ObservableProxyHandler<TModel extends object> {
-  private readonly _eventHandlers = new Map<number, (event: FieldEvent<TModel>) => void>()
-  private _nextId = 0
-
+class ObservableProxyHandler<TModel extends object> extends ProxyEventEmitter<FieldEvent<TModel>> {
   set(target: TModel, prop: string | symbol, value: any, receiver: any) {
     const propName = prop.toString()
     if(propName.startsWith('_') || propName.startsWith('$')) {
@@ -48,20 +46,5 @@ class ObservableProxyHandler<TModel extends object> {
     }
 
     return result
-  }
-
-  register(eventHandler: FieldEventHandler<TModel>): number {
-    this._eventHandlers.set(++this._nextId, eventHandler)
-    return this._nextId
-  }
-
-  unregister(id: number) {
-    this._eventHandlers.delete(id)
-  }
-
-  private fire(event: FieldEvent<TModel>) {
-    for (const eventHandler of this._eventHandlers.values()) {
-      eventHandler(event)
-    }
   }
 }

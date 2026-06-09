@@ -1,7 +1,7 @@
 import type { DryvOptions, DryvValidatableObject, DryvValidationResult, FieldEvent } from '@/types'
 import { DryvValidator } from './DryvValidator'
 import { DryvValidationSession } from '@/session/DryvValidationSession'
-import { createValidator } from './createValidator'
+import { manageChildValidators } from './childValidatorManager'
 import { createObjectFacade, createObservableProxy, createProxyLifecycle, type ProxyLifecycle } from '@/internal'
 
 export class DryvObjectValidator<TModel extends object = any> extends DryvValidator<TModel, TModel> {
@@ -30,45 +30,7 @@ export class DryvObjectValidator<TModel extends object = any> extends DryvValida
     this.proxy = lifecycle.proxy
     this.model = model
 
-    Object.values(this.fields).forEach((field) => field?.destroy())
-
-    for (const field in model) {
-      this.fields[field] = createValidator(
-        this,
-        lifecycle.proxy[field],
-        lifecycle.proxy,
-        field,
-        this.session,
-        this.options
-      )
-    }
-
-    lifecycle.register((event: FieldEvent<TModel>) => {
-      let validator = this.fields[event.field]
-
-      if (
-        validator === undefined ||
-        (validator instanceof DryvObjectValidator && validator.value !== event.newValue)
-      ) {
-        validator?.destroy()
-        validator = createValidator(
-          this,
-          event.newValue,
-          lifecycle.proxy,
-          event.field,
-          this.session,
-          this.options
-        )
-        this.fields[event.field] = validator
-      }
-
-      if (this.isReverting || validator === null) {
-        return
-      }
-
-      validator?.refreshDirty()
-      validator?.validate()
-    })
+    manageChildValidators(this, lifecycle, this.session, this.options, this.fields)
 
     return this.proxy
   }

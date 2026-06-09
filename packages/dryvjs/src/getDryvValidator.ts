@@ -1,7 +1,11 @@
 import { DryvValidator } from '@/validators/DryvValidator'
 
 export function getDryvValidator<TModel extends object>(
-  obj: any
+  obj: unknown
 ): DryvValidator<TModel> | undefined {
-  return (obj as any)?.__dryvValidator ? (obj as DryvValidator<TModel>) : (obj as any)?.$validator
+  const candidate = obj as Record<string, unknown> | null | undefined
+  if (candidate?.__dryvValidator) {
+    return candidate as unknown as DryvValidator<TModel>
+  }
+  return candidate?.$validator as DryvValidator<TModel> | undefined
 }

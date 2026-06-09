@@ -19,11 +19,8 @@ export interface DryvGroupValidationResult {
 }
 
 export type DryvServerValidationResponse =
-    | any
-    | {
-    success: boolean
-    messages: DryvServerErrors
-}
+    | { success: boolean; messages: DryvServerErrors }
+    | Record<string, DryvFieldValidationResult>
 
 export interface DryvServerErrors {
     [field: string]: DryvFieldValidationResult

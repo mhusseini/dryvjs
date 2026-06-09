@@ -1,4 +1,5 @@
 import type { ArrayEvent } from '@/types'
+import { ProxyEventEmitter } from './ProxyEventEmitter'
 
 export interface ArrayEventHandler<TModel> {
   (event: ArrayEvent<TModel>): void
@@ -28,11 +29,10 @@ export function observableArrayProxy<TModel>(model: TModel[]) {
   }
 }
 
-class ObservableArrayProxyHandler<TModel> {
-  private readonly _eventHandlers = new Map<number, (event: ArrayEvent<TModel>) => void>()
-  private _nextId = 0
-
-  constructor(private array: TModel[]) {}
+class ObservableArrayProxyHandler<TModel> extends ProxyEventEmitter<ArrayEvent<TModel>> {
+  constructor(private array: TModel[]) {
+    super()
+  }
 
   set(target: TModel[], prop: string | symbol, value: any, receiver: any) {
     const result = Reflect.set(target, prop, value, receiver)
@@ -52,15 +52,6 @@ class ObservableArrayProxyHandler<TModel> {
       prop === 'splice'
       ? this[prop]?.bind(this) ?? Reflect.get(target, prop, receiver)
       : Reflect.get(target, prop, receiver)
-  }
-
-  register(eventHandler: ArrayEventHandler<TModel>): number {
-    this._eventHandlers.set(++this._nextId, eventHandler)
-    return this._nextId
-  }
-
-  unregister(id: number) {
-    this._eventHandlers.delete(id)
   }
 
   private clear() {
@@ -100,11 +91,5 @@ class ObservableArrayProxyHandler<TModel> {
     const deletedItems = this.array.splice(start, deleteCount, ...items)
     this.fire({ action: 'replace', oldValue: deletedItems, newValue: items })
     return deletedItems
-  }
-
-  private fire(event: ArrayEvent<TModel>) {
-    for (const eventHandler of this._eventHandlers.values()) {
-      eventHandler(event)
-    }
   }
 }

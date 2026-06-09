@@ -1,7 +1,7 @@
 import type { ArrayEvent, DryvValidatableArray, DryvValidationResult, DryvOptions } from '@/types'
 import { DryvValidator } from './DryvValidator'
 import { DryvValidationSession } from '@/session/DryvValidationSession'
-import { createValidator } from './createValidator'
+import { createChildValidator } from './createValidator'
 import { createArrayFacade, observableArrayProxy, SpecialTypeWrapper, createProxyLifecycle, type ProxyLifecycle } from '@/internal'
 
 export class DryvArrayValidator<TModel = any> extends DryvValidator<any, TModel[]> {
@@ -133,7 +133,7 @@ export class DryvArrayValidator<TModel = any> extends DryvValidator<any, TModel[
   }
 
   private createValidator(item: TModel) {
-    return createValidator<TModel>(this, item, undefined, undefined, this.session, this.options)
+    return createChildValidator<TModel>(this, item, undefined, undefined, this.session, this.options)
   }
 
   private updateItemIndexes() {
