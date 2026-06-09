@@ -5,7 +5,15 @@ import { manageChildValidators } from './childValidatorManager'
 import { createObjectFacade, createObservableProxy, createProxyLifecycle } from '@/internal'
 import { DryvCompositeValidator } from './DryvCompositeValidator'
 
+/**
+ * Composite validator for nested objects.
+ * Creates Layer 1 and Layer 2 proxies, maintains a field map of child validators,
+ * and delegates child lifecycle management to `manageChildValidators()`.
+ *
+ * @typeParam TModel - The model type.
+ */
 export class DryvObjectValidator<TModel extends object = any> extends DryvCompositeValidator<TModel, TModel, FieldEvent<TModel>> {
+  /** Map of field names to their child validators (or `null` for skipped fields). */
   readonly fields: { [field: string | symbol | number]: DryvValidator | null }
 
   constructor(
@@ -17,15 +25,23 @@ export class DryvObjectValidator<TModel extends object = any> extends DryvCompos
   ) {
     super(model, session, parent, options, field)
     this.fields = {}
-    this.facadeProxy = createObjectFacade(this) as DryvValidatableObject<TModel>
+    this.facadeProxy = this.createFacade()
     this.proxy = this.updateModel(this.model)
+  }
+
+  protected override createFacade(): DryvValidatableObject<TModel> {
+    return createObjectFacade(this) as DryvValidatableObject<TModel>
+  }
+
+  protected override initChildValidators(): void {
+    manageChildValidators(this, this.lifecycle!, this.session, this.options)
   }
 
   private updateModel(model: TModel): TModel {
     this.replaceProxy(() => createProxyLifecycle<TModel, FieldEvent<TModel>>(createObservableProxy(model)))
     this.model = model
 
-    manageChildValidators(this, this.lifecycle!, this.session, this.options, this.fields)
+    this.initChildValidators()
 
     return this.proxy
   }

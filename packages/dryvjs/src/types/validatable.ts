@@ -3,20 +3,42 @@ import type { DryvObjectValidator } from '@/validators/DryvObjectValidator'
 import type { DryvValidationResult } from './results'
 import type { DryvValidationResultType } from './rules'
 
+/**
+ * Read-only view of a scalar field validator's state, exposed through the facade proxy.
+ *
+ * @typeParam TValue - The type of the field's value.
+ */
 export type DryvFieldView<TValue = object> = {
+    /** Dot-notation path of this field. */
     path: string
+    /** Current validation result type, or `null`. */
     type: DryvValidationResultType | null
+    /** Current validation message text, or `null`. */
     text: string | null
+    /** Validation group this field belongs to, or `null`. */
     group: string | null
+    /** Whether the validation group UI is currently shown. */
     groupShown: boolean
+    /** `true` if the field has no errors or warnings. */
     success: boolean
+    /** `true` if the field has an error. */
     hasErrors: boolean
+    /** `true` if the field has a warning. */
     hasWarnings: boolean
+    /** Hash of warning texts for deduplication. */
     warningHash: string | undefined | null
+    /** The current value of the field. */
     value: TValue
+    /** Triggers validation for this field and returns the result. */
     validate(): Promise<DryvValidationResult>
 }
 
+/**
+ * Recursive mapped type that resolves a model property type to its
+ * corresponding validatable facade type (field view, object, or array).
+ *
+ * @typeParam TModel - The model property type to resolve.
+ */
 export type DryvValidatable<TModel> =
     NonNullable<TModel> extends Array<infer TItem>
         ? DryvValidatableArray<TItem>
@@ -28,10 +50,24 @@ export type DryvValidatable<TModel> =
                     ? DryvValidatableObject<NonNullable<TModel>>
                     : DryvFieldView<TModel>
 
+/**
+ * Developer-facing facade type for validated arrays.
+ * Index access returns the element's validatable facade; array methods
+ * are forwarded to the underlying observable array proxy.
+ *
+ * @typeParam TModel - The element type of the array.
+ */
 export interface DryvValidatableArray<TModel = any> extends Array<DryvValidatable<TModel>> {
+    /** Escape-hatch access to the underlying `DryvArrayValidator`. */
     $validator: DryvArrayValidator<TModel>
 }
 
+/**
+ * Developer-facing facade type for validated objects.
+ * Property access returns the field's validatable facade (field view, nested object, or array).
+ *
+ * @typeParam TModel - The model type.
+ */
 export type DryvValidatableObject<TModel extends object> = {
     [Property in keyof TModel]: NonNullable<TModel[Property]> extends Array<infer TItem>
         ? DryvValidatableArray<TItem>
@@ -50,11 +86,10 @@ export type DryvValidatableObject<TModel extends object> = {
  * Compile-time union of types whose instances should be treated as opaque
  * values (not recursively proxied).
  *
- * IMPORTANT: Keep in sync with the runtime `specialTypes` array in
- * `src/internal/SpecialTypeWrapper.ts`. When adding entries here, also add
- * the corresponding constructor to that array.
+ * Sync with the runtime `specialTypes` array is enforced by the
+ * compile-time assertion in `__tests__/special-type-sync.test.ts`.
  */
-type SpecialType =
+export type SpecialType =
 // File and Blob
     | File
     | FileList

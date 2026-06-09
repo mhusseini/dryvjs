@@ -16,20 +16,45 @@
 export class SpecialTypeWrapper {
   private constructor(private readonly item: any) {}
 
+  /**
+   * Sets a property on the wrapped object.
+   * @param key - The property key.
+   * @param value - The value to assign.
+   */
   setValue(key: string | symbol, value: unknown) {
     this.item[key] = value
   }
 
+  /**
+   * Gets a property from the wrapped object.
+   * @param key - The property key.
+   * @returns The property value.
+   */
   getValue(key: string | symbol): unknown {
     return this.item[key]
   }
 
+  /**
+   * Checks whether a value is an instance of a known special type
+   * that would break under proxy traps.
+   * @param value - The value to test.
+   * @returns `true` if the value should be wrapped.
+   */
   static isSpecialType(value: unknown) {
     return value === null || value === undefined
       ? false
       : specialTypes.some((type) => value instanceof type)
   }
 
+  /**
+   * Wraps a value in a proxy that delegates property access explicitly,
+   * preventing Layer 1 observable proxy interference. Returns the value
+   * unchanged if it is not a special type.
+   *
+   * @typeParam T - The value type.
+   * @param value - The value to potentially wrap.
+   * @returns The original value or a safe wrapper proxy.
+   */
   static wrap<T extends object>(value: T): T {
     if (!SpecialTypeWrapper.isSpecialType(value)) {
       return value
@@ -55,11 +80,10 @@ export class SpecialTypeWrapper {
  * Runtime list of constructors considered "special types" — values of these
  * types are wrapped to prevent proxy interference with their internals.
  *
- * IMPORTANT: Keep in sync with the compile-time `SpecialType` union in
- * `src/types/validatable.ts`. When adding entries here, also add the
- * corresponding type to that union.
+ * Sync with the compile-time `SpecialType` union is enforced by the
+ * compile-time assertion in `__tests__/special-type-sync.test.ts`.
  */
-const specialTypes: Function[] = [
+export const specialTypes: Function[] = [
   // File and Blob
   ...(typeof File !== 'undefined' ? [File] : []),
   ...(typeof FileList !== 'undefined' ? [FileList] : []),

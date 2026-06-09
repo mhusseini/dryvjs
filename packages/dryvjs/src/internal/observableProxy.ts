@@ -1,6 +1,11 @@
 import type { FieldEvent } from '@/types'
 import { ProxyEventEmitter } from './ProxyEventEmitter'
 
+/**
+ * Callback signature for handlers that receive field mutation events.
+ *
+ * @typeParam TModel - The model type whose field was mutated.
+ */
 export interface FieldEventHandler<TModel extends object> {
   (event: FieldEvent<TModel>): void
 }
@@ -31,6 +36,11 @@ export function createObservableProxy<TModel extends object>(model: TModel) {
   }
 }
 
+/**
+ * Proxy handler that intercepts property assignments on a model object
+ * and fires {@link FieldEvent}s when values change.
+ * Properties prefixed with `_` or `$` are passed through without events.
+ */
 class ObservableProxyHandler<TModel extends object> extends ProxyEventEmitter<FieldEvent<TModel>> {
   set(target: TModel, prop: string | symbol, value: any, receiver: any) {
     const propName = prop.toString()

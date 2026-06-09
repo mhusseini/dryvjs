@@ -35,8 +35,11 @@ DryvJS can be used **standalone** using rule sets defined directly in TypeScript
   - [Dirty Tracking](#dirty-tracking)
   - [Validation Triggers](#validation-triggers)
   - [Customizing Options](#customizing-options)
-- [Validator Hierarchy](#validator-hierarchy)
+- [Usage Examples](#usage-examples)
 - [API Reference](#api-reference)
+  - [Types](#types)
+  - [Classes](#classes)
+  - [Functions](#functions)
 - [Using with Dryv (C#/.NET)](#using-with-dryv-cnet)
 - [License](#license)
 
@@ -246,40 +249,368 @@ const options: DryvOptions = {
 }
 ```
 
-## Validator Hierarchy
+## Usage Examples
 
-```
-DryvValidator (abstract base)
-├── DryvFieldValidator       — Leaf validator for scalar fields
-└── DryvCompositeValidator   — Base for composite validators
-    ├── DryvObjectValidator  — Validates objects with named fields
-    └── DryvArrayValidator   — Validates arrays of items
+### Deeply Nested Object Validation
+
+Validators mirror the model structure. Navigate the tree through `fields`:
+
+```typescript
+interface Deep {
+  level1: {
+    level2: {
+      value: string
+    }
+  }
+}
+
+const ruleSet: DryvValidationRuleSet<Deep> = {
+  name: 'Deep',
+  validators: {
+    'level1.level2.value': [{
+      validate: ($m) => !$m.value ? 'Deep value required' : null
+    }]
+  }
+}
+
+const session = new DryvValidationSession(options, ruleSet)
+const validator = new DryvObjectValidator(model, session, undefined, options)
+const result = await validator.validate()
+
+// Navigate the validator tree
+const l1 = validator.fields.level1 as DryvObjectValidator
+const l2 = l1.fields.level2 as DryvObjectValidator
+console.log(l2.fields.value!.path) // 'level1.level2.value'
+console.log(l2.fields.value!.text) // 'Deep value required'
 ```
 
-- **`DryvFieldValidator`**: Wraps a single scalar value.
-- **`DryvObjectValidator`**: Wraps an object. Implements a `Proxy` to intercept mutations and trigger reactivity.
-- **`DryvArrayValidator`**: Wraps an array. Intercepts array mutations (`push`, `splice`, etc.) to organically keep the validation tree in sync.
+### Reactive Proxy Changes
+
+With `auto` trigger, mutating the model through the proxy automatically triggers validation:
+
+```typescript
+const options = dryvOptions({ validationTrigger: 'auto' })
+const session = new DryvValidationSession(options, ruleSet)
+const validator = new DryvObjectValidator(model, session, undefined, options)
+
+validator.proxy.name = 'Jane' // validation fires automatically
+```
+
+With `autoAfterManual` (the default), field changes are ignored until the first explicit `validate()`:
+
+```typescript
+validator.proxy.name = 'Jane'  // no validation yet
+await validator.validate()     // first explicit validation
+validator.proxy.name = 'Bob'   // now changes trigger validation automatically
+```
+
+### Commit and Revert
+
+Use `commit()` to snapshot a new baseline and `revert()` to restore values:
+
+```typescript
+validator.proxy.name = 'Jane'
+validator.proxy.email = 'jane@example.com'
+validator.commit()
+
+validator.proxy.name = 'Bob'
+validator.revert()
+
+validator.fields.name!.value  // 'Jane' (reverted to committed value)
+validator.fields.email!.value // 'jane@example.com'
+validator.isDirty             // false
+```
+
+### Applying Server Validation Results
+
+Map a server response onto the validator tree with `setValidationResult()`:
+
+```typescript
+const serverResponse = {
+  success: false,
+  messages: {
+    name:  { type: 'error',   text: 'Name required',    group: null },
+    email: { type: 'warning', text: 'Email suspicious', group: null }
+  }
+}
+
+const isSuccess = validator.setValidationResult(serverResponse)
+// isSuccess === false
+// validator.fields.name!.text  === 'Name required'
+// validator.fields.name!.type  === 'error'
+// validator.fields.email!.type === 'warning'
+```
+
+### Using Parameters in Rules
+
+Inject dynamic parameters and access them through `context.parameter()`:
+
+```typescript
+const ruleSet: DryvValidationRuleSet<MyForm, { minNameLength: number }> = {
+  name: 'MyForm',
+  validators: {
+    name: [{
+      validate: ($m, context) => {
+        const min = context.parameter<number>('minNameLength')
+        return $m.name.length < min ? `Min ${min} chars` : null
+      }
+    }]
+  },
+  parameters: { minNameLength: 3 }
+}
+```
+
+### Session Result Tracking
+
+After validation, per-field and per-group results are available on the session:
+
+```typescript
+await validator.validate()
+
+session.results.fields['name']       // { type: 'error', text: 'Required', ... }
+session.results.fields['email']      // undefined (field passed)
+session.results.groups['personal']   // { type: 'error', text: 'Required', ... }
+```
+
+### Exception Handling
+
+Control how rule exceptions are handled:
+
+```typescript
+// Fail validation when a rule throws
+dryvOptions({ exceptionHandling: 'failValidation' })
+
+// Silently succeed (the default)
+dryvOptions({ exceptionHandling: 'succeedValidation' })
+```
+
+### Extracting Validators and Models
+
+Use `getDryvValidator()` and `getDryvModel()` to extract the underlying validator or raw model from a facade proxy:
+
+```typescript
+import { getDryvValidator, getDryvModel } from 'dryvjs'
+
+const validator = getDryvValidator(facadeProxy) // DryvValidator | undefined
+const model = getDryvModel(facadeProxy)         // raw model | undefined
+```
+
+### JSON Serialization
+
+Validators serialize cleanly to JSON without circular references:
+
+```typescript
+const json = JSON.stringify(validator.fields.name!)
+const parsed = JSON.parse(json)
+// { value: 'John', path: 'name', hasErrors: false, isSuccess: true, ... }
+```
+
+---
 
 ## API Reference
 
-### `DryvRuleContext`
+### Types
 
-The context object passed to rule `validate` functions. Provides only the utilities rules need:
-- `callServer(url, method, data)`: Perform a server validation request.
-- `parseDate(date, locale, format)`: Parse a date string.
-- `format(data, type, pattern?)`: Format a value.
-- `parameter(key)`: Retrieve an injected parameter.
+#### `DryvValidationRuleSet<TModel, TParameters>`
 
-### `DryvValidationSession`
-- `validateObject(validator)`: Validates the full object tree.
-- `validateField(field, model?)`: Validates a specific field.
-- `ruleContext`: The `DryvRuleContext` instance used by rules.
-- `reset()`: Clears validation triggered states.
-- `results.fields` & `results.groups`: Dictionaries holding validation results.
+A named collection of validation rules, disabler rules, and parameters.
 
-### `DryvValidator`
-- Properties: `value`, `path`, `text`, `type`, `group`, `required`, `hasErrors`, `isSuccess`, `isDirty`.
-- Methods: `validate()`, `clear()`, `commit()`, `revert()`, `setValidationResult(response)`.
+| Property | Type | Description |
+|----------|------|-------------|
+| `name` | `string` | Unique name identifying this rule set. |
+| `validators` | `DryvRuleInvocations<TModel>` | Validation rules keyed by field path. |
+| `disablers` | `DryvRuleInvocations<TModel>` | Disabler rules keyed by field path. When a disabler fires, validation is skipped. |
+| `parameters` | `TParameters` | Parameters accessible to rules via `context.parameter()`. |
+
+#### `DryvValidationRule<TModel>`
+
+A single validation or disabler rule.
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `validate` | `($m, context) => DryvValidateFunctionResult` | The validation function. Receives the model and a `DryvRuleContext`. |
+| `async` | `boolean` | Whether this rule performs asynchronous validation. |
+| `related` | `string[]` | Paths of related fields to re-validate when this rule runs. |
+| `group` | `string` | Validation group this rule belongs to. |
+| `annotations` | `{ required?: boolean; ... }` | Static metadata (e.g. `required` marker). |
+
+#### `DryvFieldValidationResult`
+
+Result for a single field.
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `path` | `string \| null` | Dot-notation path of the validated field. |
+| `type` | `DryvValidationResultType` | Severity: `'error'`, `'warning'`, or `'success'`. |
+| `text` | `string \| null` | Human-readable validation message. |
+| `group` | `string \| null` | Validation group this result belongs to. |
+
+#### `DryvValidationResult`
+
+Aggregated result for a validator node and its descendants.
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `results` | `DryvFieldValidationResult[]` | Individual field-level results. |
+| `success` | `boolean` | `true` if no errors or warnings. |
+| `hasErrors` | `boolean` | `true` if at least one error. |
+| `hasWarnings` | `boolean` | `true` if at least one warning. |
+| `hasNewWarnings` | `boolean` | `true` if warnings changed since the previous pass. |
+| `warningHash` | `string \| null` | Hash for warning deduplication. |
+
+#### `DryvOptions`
+
+Configuration object for the validation engine.
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `reactiveWrapper` | `<T>(obj: T) => T` | **Required.** Wraps objects with framework-specific reactivity (e.g. Vue `reactive()`). |
+| `validationTrigger` | `ValidationTriggerName` | Controls when field validation triggers. Default: `'autoAfterManual'`. |
+| `exceptionHandling` | `'failValidation' \| 'succeedValidation'` | How to handle rule exceptions. Default: silently succeed. |
+| `excludedFields` | `RegExp[]` | Field name patterns excluded from proxy observation. |
+| `baseUrl` | `string` | Base URL for server validation endpoints. |
+| `callServer` | `(url, method, data) => Promise` | Sends validation requests to the server. Default: uses `fetch`. |
+| `handleResult` | `(session, model, field, rule, result) => Promise` | Post-processes a rule's result. |
+| `parseDate` | `(date, locale, format) => number` | Parses date strings to timestamps. |
+| `format` | `(data, type, pattern?) => string` | Formats values for display in messages. |
+| `ruleSetResolvers` | `DryvValidationRuleSetResolver[]` | Registered resolvers for `dryvRuleSet()`. |
+| `setup` | `() => Partial<DryvOptions>` | Provides additional overrides during initialization. |
+
+#### `ValidationTriggerName`
+
+```typescript
+type ValidationTriggerName = 'immediate' | 'auto' | 'manual' | 'autoAfterManual'
+```
+
+| Value | Behavior |
+|-------|----------|
+| `'immediate'` | Validates immediately, including before any user changes. |
+| `'auto'` | Validates automatically on field changes. |
+| `'manual'` | Only validates on explicit `validate()` calls. |
+| `'autoAfterManual'` | Manual first; auto on changes after the first `validate()`. **Default.** |
+
+---
+
+### Classes
+
+#### `DryvValidator<TModel, TValue>` — Abstract Base
+
+Base class for all validator nodes.
+
+**Properties:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `value` | `TValue` | The current value (abstract — subclass-specific). |
+| `path` | `string` | Dot-notation path for rule lookup. |
+| `uniquePath` | `string` | Unique path including array indices. |
+| `field` | `keyof TModel \| undefined` | The model property key, or `undefined` for the root. |
+| `model` | `TModel` | The model this validator is bound to. |
+| `parent` | `DryvValidator \| null` | Parent validator in the tree. |
+| `rootModel` | `TModel` | Top-level model at the tree root. |
+| `rootValidator` | `DryvValidator` | Root validator node. |
+| `text` | `string \| null` | Current validation message. |
+| `type` | `DryvValidationResultType \| null` | Current result type. |
+| `group` | `string \| null` | Current validation group. |
+| `required` | `boolean \| null` | Whether the field is required. |
+| `groupShown` | `boolean` | Whether the group UI is shown. |
+| `isDirty` | `boolean` | Whether the value changed from its initial value. |
+| `hasErrors` | `boolean` | `true` if type is `'error'`. |
+| `hasWarnings` | `boolean` | `true` if type is `'warning'`. |
+| `isSuccess` | `boolean` | `true` if no errors or warnings. |
+| `index` | `number \| undefined` | Array index (for array element validators). |
+| `facadeProxy` | `unknown` | The Layer 2 facade proxy. |
+| `isReverting` | `boolean` | `true` during a revert operation. |
+
+**Methods:**
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `validate()` | `Promise<DryvValidationResult>` | Runs validation and returns the result. |
+| `childValidators()` | `DryvValidator[]` | Returns direct child validators. |
+| `clear()` | `void` | Resets validation state for this node and all descendants. |
+| `revert()` | `void` | Reverts values and validation state to the last commit. |
+| `commit()` | `void` | Establishes current values as the new baseline. |
+| `refreshDirty()` | `void` | Recalculates the dirty flag and propagates up the tree. |
+| `attachToTree(parent?)` | `void` | Attaches to a parent, recomputing hierarchy paths. |
+| `setValidationResult(response)` | `boolean` | Maps a server response onto this tree. Returns `true` if successful. |
+| `destroy()` | `void` | Releases all resources. |
+| `dispose()` | `void` | Releases all resources (supports `Symbol.dispose`). |
+| `toJSON()` | `object` | Serializes public state to a plain JSON-safe object. |
+
+#### `DryvObjectValidator<TModel>`
+
+Composite validator for nested objects. Extends `DryvValidator`.
+
+| Member | Type | Description |
+|--------|------|-------------|
+| `fields` | `Record<string, DryvValidator \| null>` | Map of field names to child validators. |
+| `value` | `TModel` | Get/set the entire model (setter replaces and rebuilds children). |
+| `proxy` | `TModel` | The Layer 1 observable proxy. |
+
+#### `DryvFieldValidator<TModel>`
+
+Leaf validator for scalar fields. Extends `DryvValidator`.
+
+| Member | Type | Description |
+|--------|------|-------------|
+| `value` | `TModel[keyof TModel]` | The current field value (read/write through the proxy). |
+
+#### `DryvArrayValidator<TModel>`
+
+Composite validator for arrays. Extends `DryvValidator`.
+
+| Member | Type | Description |
+|--------|------|-------------|
+| `value` | `TModel[]` | Get/set the entire array (setter replaces and rebuilds children). |
+| `proxy` | `TModel[]` | The Layer 1 observable array proxy. |
+
+#### `DryvValidationSession<TModel, TParameters>`
+
+Orchestrates validation across a validator tree.
+
+| Member | Type | Description |
+|--------|------|-------------|
+| `ruleSet` | `DryvValidationRuleSet` | The rule set this session operates on. |
+| `ruleContext` | `DryvRuleContext` | The context object passed to rules. |
+| `results.fields` | `Record<string, DryvFieldValidationResult \| undefined>` | Per-field results. |
+| `results.groups` | `Record<string, DryvFieldValidationResult \| undefined>` | Per-group results. |
+| `isValidating` | `boolean` | `true` while a validation pass is in progress. |
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `validateObject(validator)` | `Promise<DryvValidationResult>` | Validates a full object tree in parallel. |
+| `validateField(field, model?)` | `Promise<DryvValidationResult>` | Validates a single field. |
+| `reset()` | `void` | Resets triggered state and warning hash. |
+
+#### `DryvRuleContext<TModel, TParameters>`
+
+Context object passed to rule `validate` functions.
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `callServer(url, method, data)` | `Promise<any>` | Sends a server validation request. |
+| `parseDate(date, locale, format)` | `number` | Parses a date string to a timestamp. |
+| `format(data, type, pattern?)` | `string` | Formats a value for display. |
+| `parameter<T>(key)` | `T` | Retrieves a parameter from the rule set. |
+
+---
+
+### Functions
+
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `dryvOptions(...options)` | `ResolvedDryvOptions` | Merges option objects with defaults. |
+| `dryvRuleSet(name, resolvers?)` | `DryvValidationRuleSet \| undefined` | Resolves a named rule set from registered resolvers. |
+| `getDryvValidator(obj)` | `DryvValidator \| undefined` | Extracts a validator from a facade proxy or validator-like object. |
+| `getDryvModel(obj)` | `TModel \| undefined` | Extracts the raw model from a facade proxy or validator-like object. |
+
+### Constants
+
+| Constant | Description |
+|----------|-------------|
+| `defaultDryvOptions` | Default options applied when no user overrides are provided. |
+| `defaultDryvRuleSetResolvers` | Default (empty) list of rule set resolvers. |
 
 ## Using with Dryv (C#/.NET)
 

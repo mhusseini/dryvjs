@@ -2,13 +2,17 @@ import type { DryvValidationSession } from './DryvValidationSession'
 import type { DryvValidationRule } from '@/types'
 
 /**
- * Runs disabler rules for a given field. Returns `true` if any disabler fires
- * (meaning validation should be skipped for this field).
+ * Runs disabler rules for a given field.
+ *
+ * @typeParam TModel - The root model type.
+ * @param disablers - The disabler rules to evaluate (may be `undefined`).
+ * @param model - The model instance to pass to each rule.
+ * @param session - The current validation session.
+ * @returns `true` if any disabler fires (meaning validation should be skipped).
  */
-
 export async function runDisablerRules<TModel extends object>(
     disablers: DryvValidationRule<TModel>[] | undefined,
-    model: any,
+    model: TModel,
     session: DryvValidationSession<TModel>
 ): Promise<boolean> {
     if (disablers && disablers.length > 0) {

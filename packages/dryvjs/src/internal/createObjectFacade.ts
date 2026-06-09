@@ -30,6 +30,11 @@ export function createObjectFacade<TModel extends object>(
   ) as unknown as DryvValidatableObject<TModel>
 }
 
+/**
+ * Proxy handler implementing the object facade.
+ * Routes property access to child validator facades and delegates
+ * assignments through the validator's `value` setter.
+ */
 class DryvTransparentProxyHandler<TModel extends object> {
   ownKeys(target: DryvObjectValidator<TModel>) {
     return target.proxy ? Reflect.ownKeys(target.proxy) : []

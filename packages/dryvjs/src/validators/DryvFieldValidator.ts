@@ -2,6 +2,13 @@ import type { DryvOptions, DryvValidationResult } from '@/types'
 import type { DryvValidationSession } from '@/session/DryvValidationSession'
 import { DryvValidator } from './DryvValidator'
 
+/**
+ * Leaf validator representing a single scalar field on the model.
+ * Reads/writes directly to `model[field]` through the Layer 1 observable proxy.
+ * Tracks an initial value for dirty detection and revert.
+ *
+ * @typeParam TModel - The model type.
+ */
 export class DryvFieldValidator<TModel extends object> extends DryvValidator<
   TModel,
   TModel[keyof TModel]
@@ -32,7 +39,7 @@ export class DryvFieldValidator<TModel extends object> extends DryvValidator<
     const v = this.value
     const iv = this._initialValue
 
-    this.isDirty = !!v !== !!iv || v !== iv
+    this.markDirty(!!v !== !!iv || v !== iv)
 
     if (this.isDirty !== wasDirty) {
       this.parent?.refreshDirty()

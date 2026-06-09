@@ -13,6 +13,15 @@ import { getValidatorByPath } from '@/internal'
  * failing result, or null if all rules pass.
  *
  * This is a pure function (no hidden state) — all dependencies are explicit parameters.
+ *
+ * @typeParam TModel - The root model type.
+ * @param rules - The ordered list of validation rules to execute.
+ * @param model - The model instance to validate against.
+ * @param validatable - The field validator being validated.
+ * @param session - The current validation session.
+ * @param options - Options controlling exception handling behavior.
+ * @param validateRelatedField - Callback to trigger validation of related fields.
+ * @returns The first failing result, or `null` if all rules pass.
  */
 export async function runValidationRules<TModel extends object>(
     rules: DryvValidationRule<TModel>[],

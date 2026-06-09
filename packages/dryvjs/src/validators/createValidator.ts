@@ -11,6 +11,15 @@ import {SpecialTypeWrapper} from '@/internal'
  * Note: For arrays, this returns a `DryvFieldValidator`. Actual array tracking
  * is handled by `DryvArrayValidator`, which is constructed separately inside
  * `DryvObjectValidator.updateModel` when a field value is an array.
+ *
+ * @typeParam TModel - The model type.
+ * @param parent - The parent validator that owns the field.
+ * @param value - The current value of the field.
+ * @param model - The model object containing the field.
+ * @param field - The property key of the field.
+ * @param session - The current validation session.
+ * @param options - Resolved options.
+ * @returns A new validator for the field, or `null` if the value is a function.
  */
 export function createChildValidator<TModel>(
     parent: DryvValidator,

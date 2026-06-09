@@ -10,14 +10,25 @@ import { runValidationRules } from './runValidationRules'
 import { runDisablerRules } from './runDisablerRules'
 import { successResult, aggregateFieldResults, buildFieldResult } from './validationResults'
 import { DryvRuleContext } from './DryvRuleContext'
+import { getValidationTriggerPolicy, type ValidationTriggerPolicy } from './validationTriggerPolicy'
 
+/**
+ * Orchestrates validation across a validator tree.
+ * Holds the rule set, manages validation chains, tracks per-field/per-group
+ * results, and enforces the configured validation trigger policy.
+ *
+ * @typeParam TModel - The root model type.
+ * @typeParam TParameters - The type of externally-loaded parameters.
+ */
 export class DryvValidationSession<TModel extends object = any, TParameters = any> {
   private _depth = 0
   private _isTriggered = false
   private _processedFields: { [field: string | symbol]: boolean } | undefined = undefined
   private previousWarningHash: string | null | undefined
+  private readonly triggerPolicy: ValidationTriggerPolicy
   readonly ruleContext: DryvRuleContext<TModel, TParameters>
 
+  /** Reactive per-field and per-group validation results, updated after each validation pass. */
   readonly results: {
     fields: Record<string, DryvFieldValidationResult | undefined>
     groups: Record<string, DryvFieldValidationResult | undefined>
@@ -32,12 +43,12 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
       groups: {}
     })
     this.ruleContext = new DryvRuleContext(options, ruleSet)
+    this.triggerPolicy = getValidationTriggerPolicy(options.validationTrigger)
   }
 
-  callServer(url: string, method: string, data: any): Promise<any> {
-    return this.ruleContext.callServer(url, method, data)
-  }
-
+  /**
+   * Post-processes a rule's result via the configured `handleResult` option.
+   */
   handleResult(
     session: DryvValidationSession<TModel>,
     $m: TModel,
@@ -48,27 +59,22 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
     return this.options.handleResult!(session, $m, field as keyof TModel, rule!, result)
   }
 
-  parseDate(date: string, locale: string, format: string): number {
-    return this.ruleContext.parseDate(date, locale, format)
-  }
-
-  format(data: any, type: string, pattern?: string): string {
-    return this.ruleContext.format(data, type, pattern)
-  }
-
+  /** `true` while a validation pass is in progress. */
   get isValidating() {
     return this._depth > 0
   }
 
-  parameter(key: string): any {
-    return this.ruleContext.parameter(key)
-  }
-
+  /** Resets the triggered state and warning hash for a fresh validation cycle. */
   reset() {
     this._isTriggered = false
     this.previousWarningHash = undefined
   }
 
+  /**
+   * Validates the given object validator and all its children in parallel.
+   * @param objectValidator - The object validator to validate.
+   * @returns The aggregated validation result.
+   */
   async validateObject(objectValidator: IValidator<TModel>): Promise<DryvValidationResult> {
     if (await this.runDisablers(objectValidator.rootModel, objectValidator.field ?? ('' as any))) {
       objectValidator.clear()
@@ -105,6 +111,13 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
     }
   }
 
+  /**
+   * Validates a single field, running disablers first then validators.
+   * Updates the field's reactive state and records the result.
+   * @param field - The field validator to validate.
+   * @param model - The model instance (resolved from the tree root if omitted).
+   * @returns The field-level validation result.
+   */
   async validateField(field: IValidator<TModel>, model?: TModel): Promise<DryvValidationResult> {
     if (!this.canValidateFields() || this._processedFields?.[field.uniquePath!]) {
       return successResult(field.path!)
@@ -136,17 +149,7 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
   }
 
   private canValidateFields(): boolean {
-    switch (this.options.validationTrigger) {
-      case 'immediate':
-      case 'auto':
-        return true
-      case 'manual':
-        return this.isValidating
-      case 'autoAfterManual':
-        return this._isTriggered || this.isValidating
-      default:
-        return true
-    }
+    return this.triggerPolicy.canValidate(this.isValidating, this._isTriggered)
   }
 
   private startValidationChain(): boolean {
@@ -189,7 +192,7 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
     return await this.runValidators(rules, model, validatable)
   }
 
-  private runDisablers(model: any, field: keyof TModel | string): Promise<boolean> {
+  private runDisablers(model: TModel, field: keyof TModel | string): Promise<boolean> {
     const disablers = this.ruleSet?.disablers?.[field]
     return runDisablerRules(disablers, model, this)
   }

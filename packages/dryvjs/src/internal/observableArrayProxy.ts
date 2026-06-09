@@ -1,6 +1,11 @@
 import type { ArrayEvent } from '@/types'
 import { ProxyEventEmitter } from './ProxyEventEmitter'
 
+/**
+ * Callback signature for handlers that receive array mutation events.
+ *
+ * @typeParam TModel - The element type of the array.
+ */
 export interface ArrayEventHandler<TModel> {
   (event: ArrayEvent<TModel>): void
 }
@@ -29,6 +34,11 @@ export function createObservableArrayProxy<TModel>(model: TModel[]) {
   }
 }
 
+/**
+ * Proxy handler that intercepts mutating operations on an array
+ * (`push`, `pop`, `shift`, `unshift`, `splice`, index/length assignment)
+ * and fires {@link ArrayEvent}s.
+ */
 class ObservableArrayProxyHandler<TModel> extends ProxyEventEmitter<ArrayEvent<TModel>> {
   constructor(private array: TModel[]) {
     super()

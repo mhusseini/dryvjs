@@ -5,6 +5,7 @@ import type {
 } from '@/types'
 import type { DryvValidationSession } from '@/session/DryvValidationSession'
 
+/** Default options applied when no user overrides are provided. */
 export const defaultDryvOptions: DryvOptions = {
     reactiveWrapper: <TObject>(o: TObject) => o,
     validationTrigger: 'autoAfterManual',
@@ -38,4 +39,5 @@ export const defaultDryvOptions: DryvOptions = {
     }
 }
 
+/** Default (empty) list of rule set resolvers. */
 export const defaultDryvRuleSetResolvers: DryvValidationRuleSetResolver[] = []

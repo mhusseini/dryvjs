@@ -24,6 +24,11 @@ export function createArrayFacade<TModel>(
   ) as any as DryvValidatableArray<TModel>
 }
 
+/**
+ * Proxy handler implementing the array facade.
+ * Numeric index access returns the child validator's facade;
+ * non-numeric property access (e.g. `push`) is forwarded to the observable array proxy.
+ */
 class DryvTransparentArrayProxyHandler<TModel = any> {
   constructor(private validator: DryvArrayValidator<TModel>) {}
 

@@ -6,20 +6,36 @@ import { DryvObjectValidator } from './DryvObjectValidator'
 import { createChildValidator } from './createValidator'
 
 /**
+ * Minimal interface for the host validator that owns child validators.
+ * Decouples childValidatorManager from the concrete DryvObjectValidator class.
+ */
+export interface ChildValidatorHost {
+  /** `true` while a revert operation is in progress (suppresses re-validation). */
+  readonly isReverting: boolean
+  /** Map of field names to their child validators. */
+  fields: { [field: string | symbol | number]: DryvValidator | null }
+}
+
+/**
  * Manages creation, destruction, and event-driven re-creation of child validators
  * for a given object validator and its proxy lifecycle.
+ *
+ * @typeParam TModel - The model type.
+ * @param parent - The host validator that owns the child validators.
+ * @param lifecycle - The proxy lifecycle providing the observable proxy and event registration.
+ * @param session - The current validation session.
+ * @param options - Resolved options.
  */
 export function manageChildValidators<TModel extends object>(
-  parent: DryvObjectValidator<TModel>,
+  parent: DryvValidator & ChildValidatorHost,
   lifecycle: ProxyLifecycle<TModel, FieldEvent<TModel>>,
   session: DryvValidationSession,
-  options: DryvOptions,
-  fields: { [field: string | symbol | number]: DryvValidator | null }
+  options: DryvOptions
 ): void {
-  Object.values(fields).forEach((field) => field?.destroy())
+  Object.values(parent.fields).forEach((field) => field?.destroy())
 
   for (const field in lifecycle.proxy) {
-    fields[field] = createChildValidator(
+    parent.fields[field] = createChildValidator(
       parent,
       lifecycle.proxy[field],
       lifecycle.proxy,
@@ -30,7 +46,7 @@ export function manageChildValidators<TModel extends object>(
   }
 
   lifecycle.register((event: FieldEvent<TModel>) => {
-    let validator = fields[event.field]
+    let validator = parent.fields[event.field]
 
     if (
       validator === undefined ||
@@ -45,7 +61,7 @@ export function manageChildValidators<TModel extends object>(
         session,
         options
       )
-      fields[event.field] = validator
+      parent.fields[event.field] = validator
     }
 
     if (parent.isReverting || validator === null) {
