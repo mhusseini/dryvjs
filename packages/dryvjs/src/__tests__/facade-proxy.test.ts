@@ -153,4 +153,31 @@ describe('Array Facade Proxy (Layer 2)', () => {
       expect(arrValidator.childValidators().length).toBe(3)
     })
   })
+
+  describe('value assignment through facade', () => {
+    it('should replace the array contents when setting .value', () => {
+      const { validator, arrValidator } = createArraySetup()
+
+      const facade = arrValidator.facadeProxy as any
+      facade.value = [{ value: 'x' }, { value: 'y' }, { value: 'z' }]
+
+      expect(arrValidator.value).toHaveLength(3)
+      expect(arrValidator.childValidators()).toHaveLength(3)
+      expect(arrValidator.value[0]).toEqual({ value: 'x' })
+      expect(arrValidator.value[1]).toEqual({ value: 'y' })
+      expect(arrValidator.value[2]).toEqual({ value: 'z' })
+    })
+
+    it('should update the parent model when setting .value', () => {
+      const { validator, arrValidator } = createArraySetup()
+
+      const facade = arrValidator.facadeProxy as any
+      facade.value = [{ value: 'replaced' }]
+
+      // The parent model's items array should reflect the change
+      const parentModel = validator.value as ParentModel
+      expect(parentModel.items).toHaveLength(1)
+      expect(parentModel.items[0]).toEqual({ value: 'replaced' })
+    })
+  })
 })

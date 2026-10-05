@@ -90,7 +90,7 @@ export class DryvArrayValidator<TModel = any> extends DryvCompositeValidator<any
     insert: (e) => this.addItems(e.newValue, 'unshift'),
     append: (e) => this.addItems(e.newValue, 'push'),
     remove: (e) => this.removeItems(e.oldValue),
-    replace: (e) => this.replaceItems(e.newValue)
+    replace: (e) => this.spliceItems(e.oldValue, e.newValue)
   }
 
   private addItems(items: TModel[] | undefined, method: 'push' | 'unshift') {
@@ -111,18 +111,21 @@ export class DryvArrayValidator<TModel = any> extends DryvCompositeValidator<any
     }
   }
 
-  private replaceItems(items: TModel[] | undefined) {
-    for (const item of items ?? []) {
-      const index = this._items.findIndex((i) => i.model === item)
-      if (index >= 0) {
-        const validator = this.createValidator(item)
-        if (!validator) {
-          throw new Error('Could not create a validator to replace the item in the array.')
-        }
+  private spliceItems(oldItems: TModel[] | undefined, newItems: TModel[] | undefined) {
+    const startIdx = oldItems?.length
+      ? this._items.findIndex((i) => i.model === oldItems[0])
+      : this._items.length
 
-        this._items[index]?.destroy()
-        this._items[index] = validator
-      }
+    if (oldItems?.length && startIdx >= 0) {
+      const removed = this._items.splice(startIdx, oldItems.length)
+      removed.forEach((v) => v.destroy())
+    }
+
+    if (newItems?.length) {
+      const newValidators = newItems
+        .map((item) => this.createValidator(item))
+        .filter((v): v is DryvValidator => !!v)
+      this._items.splice(startIdx >= 0 ? startIdx : this._items.length, 0, ...newValidators)
     }
   }
 

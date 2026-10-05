@@ -46,6 +46,14 @@ class DryvTransparentArrayProxyHandler<TModel = any> {
     return resolveFacade(value)
   }
 
+  set(_target: DryvValidator[], prop: string | symbol, value: any) {
+    if (prop === 'value') {
+      this.validator.value = value
+      return true
+    }
+    return Reflect.set(_target, prop, value)
+  }
+
   apply(target: DryvValidator[], thisArg: any, argArray: any) {
     return (target as any)[thisArg].apply(target, argArray)
   }

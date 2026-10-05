@@ -62,6 +62,6 @@ export class DryvFieldValidator<TModel extends object> extends DryvValidator<
   }
 
   override async validate(): Promise<DryvValidationResult> {
-    return this.session.validateField(this, this.rootModel)
+    return this.session.validateField(this, this.model)
   }
 }

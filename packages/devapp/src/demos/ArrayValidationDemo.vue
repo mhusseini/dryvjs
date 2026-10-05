@@ -39,7 +39,7 @@
             </template>
           </Card>
 
-          <Message v-if="data.attendees.length === 0" severity="info" :closable="false">
+          <Message v-if="validatable.attendees.length === 0" severity="info" :closable="false">
             No attendees added yet. Click "Add Attendee" to begin.
           </Message>
         </div>
@@ -82,11 +82,11 @@ const { validatable, validate } = useDryv(data, eventBookingRules)
 const lastResult = ref<DryvValidationResult | null>(null)
 
 function addAttendee() {
-  data.attendees.push({ name: '', email: '' })
+  validatable.attendees.push({ name: '', email: '' })
 }
 
 function removeAttendee(index: number) {
-  data.attendees.splice(index, 1)
+  validatable.attendees.splice(index, 1)
 }
 
 async function onValidate() {

@@ -105,6 +105,29 @@ describe('Array Validation — Extended', () => {
       expect(children.length).toBe(2)
     })
 
+    it('should remove a child validator when splicing without replacement', () => {
+      const { validator } = createSetup()
+      const arrValidator = validator.fields.items as unknown as DryvArrayValidator<ItemModel>
+
+      expect(arrValidator.childValidators().length).toBe(2)
+
+      arrValidator.proxy.splice(0, 1)
+
+      const children = arrValidator.childValidators()
+      expect(children.length).toBe(1)
+    })
+
+    it('should update indices after splice removal', () => {
+      const { validator } = createSetup()
+      const arrValidator = validator.fields.items as unknown as DryvArrayValidator<ItemModel>
+
+      arrValidator.proxy.splice(0, 1)
+
+      const children = arrValidator.childValidators()
+      expect(children.length).toBe(1)
+      expect(children[0].index).toBe(0)
+    })
+
     it('should update indices after push', () => {
       const { validator } = createSetup()
       const arrValidator = validator.fields.items as unknown as DryvArrayValidator<ItemModel>
@@ -179,9 +202,32 @@ describe('Array Validation — Extended', () => {
       const model: ParentModel = { items: [{ value: '' }, { value: 'ok' }], name: 'test' }
       const validator = new DryvObjectValidator<ParentModel>(model, session, undefined, options)
 
-      const result = await validator.validate()
+      await validator.validate()
 
       expect(rule).toHaveBeenCalled()
+    })
+
+    it('should pass element model (not root model) to array item validators', async () => {
+      const rule = vi.fn().mockReturnValue(null)
+
+      const options = dryvOptions({ validationTrigger: 'manual' } as any)
+      const ruleSet: DryvValidationRuleSet<ParentModel> = {
+        name: 'test',
+        validators: {
+          'items.value': [{ validate: rule }]
+        } as any
+      }
+      const session = new DryvValidationSession<ParentModel>(options, ruleSet)
+      const model: ParentModel = { items: [{ value: 'hello' }], name: 'test' }
+      const validator = new DryvObjectValidator<ParentModel>(model, session, undefined, options)
+
+      await validator.validate()
+
+      expect(rule).toHaveBeenCalled()
+      const calledModel = rule.mock.calls[0][0]
+      expect(calledModel).toHaveProperty('value', 'hello')
+      expect(calledModel).not.toHaveProperty('name')
+      expect(calledModel).not.toHaveProperty('items')
     })
   })
 
