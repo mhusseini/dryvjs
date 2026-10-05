@@ -24,11 +24,15 @@ jobs:
           node-version: 22
           registry-url: https://registry.npmjs.org
 
-      - name: Install & build dryvjs
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Build dryvjs
         working-directory: packages/dryvjs
-        run: |
-          npm install
-          npm run build
+        run: yarn build
 
       - name: Publish dryvjs
         working-directory: packages/dryvjs
@@ -42,11 +46,9 @@ jobs:
             npm publish --access public
           fi
 
-      - name: Install & build dryvue
+      - name: Build dryvue
         working-directory: packages/dryvue
-        run: |
-          npm install --install-links ../dryvjs
-          npm run build
+        run: yarn build
 
       - name: Publish dryvue
         working-directory: packages/dryvue
@@ -60,13 +62,12 @@ jobs:
             npm publish --access public
           fi
 
-      - name: Install & build nuxt-dryv
+      - name: Build nuxt-dryv
         working-directory: packages/nuxt-dryv
         run: |
-          npm install --install-links ../dryvue ../dryvjs
           mkdir -p .nuxt
           echo '{"compilerOptions":{"module":"ESNext","moduleResolution":"Bundler","target":"ESNext","lib":["ESNext"],"strict":true,"esModuleInterop":true,"skipLibCheck":true}}' > .nuxt/tsconfig.json
-          npm run build
+          yarn build
 
       - name: Publish nuxt-dryv
         working-directory: packages/nuxt-dryv
