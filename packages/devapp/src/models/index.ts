@@ -32,3 +32,8 @@ export interface ProfileForm {
   birthDate: string
   country: string
 }
+
+export interface FileUploadForm {
+  title: string
+  files: File[]
+}

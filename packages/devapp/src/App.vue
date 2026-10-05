@@ -24,6 +24,9 @@
         <TabPanel header="Array Validation">
           <ArrayValidationDemo />
         </TabPanel>
+        <TabPanel header="File Upload">
+          <FileUploadDemo />
+        </TabPanel>
       </TabView>
     </main>
 
@@ -42,6 +45,7 @@ import RegistrationDemo from '@/demos/RegistrationDemo.vue'
 import GroupedValidationDemo from '@/demos/GroupedValidationDemo.vue'
 import DirtyTrackingDemo from '@/demos/DirtyTrackingDemo.vue'
 import ArrayValidationDemo from '@/demos/ArrayValidationDemo.vue'
+import FileUploadDemo from '@/demos/FileUploadDemo.vue'
 </script>
 
 <style>
