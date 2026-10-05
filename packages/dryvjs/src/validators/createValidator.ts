@@ -3,14 +3,14 @@ import type {DryvOptions} from '@/types'
 import {DryvValidator} from './DryvValidator'
 import {DryvFieldValidator} from './DryvFieldValidator'
 import {DryvObjectValidator} from './DryvObjectValidator'
+import {DryvArrayValidator} from './DryvArrayValidator'
 import {SpecialTypeWrapper} from '@/internal'
 
 /**
  * Creates a child validator for a given field value.
  *
- * Note: For arrays, this returns a `DryvFieldValidator`. Actual array tracking
- * is handled by `DryvArrayValidator`, which is constructed separately inside
- * `DryvObjectValidator.updateModel` when a field value is an array.
+ * For arrays, creates a `DryvArrayValidator` that tracks per-element validators,
+ * enabling dot-notation paths like `items.name` to reach element-level rules.
  *
  * @typeParam TModel - The model type.
  * @param parent - The parent validator that owns the field.
@@ -38,7 +38,15 @@ export function createChildValidator<TModel>(
 
     let validator: DryvValidator
 
-    if (Array.isArray(value) || SpecialTypeWrapper.isSpecialType(value)) {
+    if (Array.isArray(value)) {
+        validator = new DryvArrayValidator(
+            value,
+            session,
+            parent,
+            options,
+            field
+        )
+    } else if (SpecialTypeWrapper.isSpecialType(value)) {
         validator = new DryvFieldValidator<object>(
             model as object,
             session,

@@ -29,8 +29,8 @@ export function useMappedField<TModel extends object, TTo>(
     get parent(): DryvValidator | null | undefined {
       return validatable.parent
     },
-    set parent(value: DryvValidator | undefined) {
-      validatable.parent = value
+    set parent(_: DryvValidator | undefined) {
+      throw new Error('The method must not be called on this instance.')
     },
     get hasErrors(): boolean {
       return validatable.hasErrors
