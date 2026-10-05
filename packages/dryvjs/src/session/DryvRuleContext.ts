@@ -58,8 +58,14 @@ export interface DryvRuleContextDryv {
 /**
  * Plain context object passed to rule `validate` functions.
  * Utility functions are exposed on the `dryv` property.
+ *
+ * @typeParam TModel - The root model type.
+ * @typeParam TParameters - The type of externally-loaded parameters.
  */
-export interface DryvRuleContext {
+export interface DryvRuleContext<TModel extends object = any, TParameters = any> {
+  /** The validation rule set associated with this context. */
+  ruleSet: DryvValidationRuleSet<TModel, TParameters>
+
   /** Dryv utility functions available to validation rules. */
   dryv: DryvRuleContextDryv
 
@@ -84,8 +90,9 @@ export interface DryvRuleContext {
 export function createRuleContext<TModel extends object = any, TParameters = any>(
   options: DryvOptions,
   ruleSet: DryvValidationRuleSet<TModel, TParameters>
-): DryvRuleContext {
+): DryvRuleContext<TModel, TParameters> {
   return {
+    ruleSet,
     dryv: {
       callServer(url: string, method: string, data: any): Promise<any> {
         if (!options.callServer) {

@@ -26,7 +26,7 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
   private _processedFields: { [field: string | symbol]: boolean } | undefined = undefined
   private previousWarningHash: string | null | undefined
   private readonly triggerPolicy: ValidationTriggerPolicy
-  readonly ruleContext: DryvRuleContext
+  readonly ruleContext: DryvRuleContext<TModel, TParameters>
 
   /** Reactive per-field and per-group validation results, updated after each validation pass. */
   readonly results: {
