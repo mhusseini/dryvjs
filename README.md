@@ -6,6 +6,7 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/@softwareproduction/dryvjs"><img src="https://img.shields.io/npm/v/@softwareproduction/dryvjs.svg" alt="npm dryvjs"></a>
   <a href="https://www.npmjs.com/package/@softwareproduction/dryvue"><img src="https://img.shields.io/npm/v/@softwareproduction/dryvue.svg?label=@softwareproduction/dryvue" alt="npm dryvue"></a>
+  <a href="https://www.npmjs.com/package/@softwareproduction/nuxt-dryv"><img src="https://img.shields.io/npm/v/@softwareproduction/nuxt-dryv.svg?label=@softwareproduction/nuxt-dryv" alt="npm nuxt-dryv"></a>
   <a href="https://github.com/mhusseini/dryvjs/blob/develop/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
 </p>
 
@@ -44,6 +45,9 @@ The DryvJS ecosystem is split into targeted packages:
 |---------|-------------|---------|
 | [`@softwareproduction/dryvjs`](./packages/dryvjs) | Core validation engine — framework-agnostic | `1.0.1-pre.0` |
 | [`@softwareproduction/dryvue`](./packages/dryvue) | Vue 3 integration for DryvJS | `2.0.1-pre.0` |
+| [`@softwareproduction/nuxt-dryv`](./packages/nuxt-dryv) | Nuxt 3 module for DryvJS | [![npm](https://img.shields.io/npm/v/@softwareproduction/nuxt-dryv.svg)](https://www.npmjs.com/package/@softwareproduction/nuxt-dryv) |
+
+> **Detailed docs live in each package.** This README gives a high-level overview. For the full API reference, advanced usage, and configuration options, see the dedicated README linked in the table above.
 
 ## Project Structure
 
@@ -52,6 +56,7 @@ dryvjs/
 ├── packages/
 │   ├── dryvjs/      # Core validation engine
 │   ├── dryvue/      # Vue 3 bindings
+│   ├── nuxt-dryv/   # Nuxt 3 module
 │   └── devapp/      # Development/demo application
 ```
 
@@ -65,6 +70,9 @@ npm install @softwareproduction/dryvjs
 
 # Vue 3 integration
 npm install @softwareproduction/dryvue
+
+# Nuxt 3 module
+npm install @softwareproduction/nuxt-dryv @softwareproduction/dryvue
 ```
 
 ### Basic Example (Vue 3)
@@ -123,7 +131,10 @@ const { validatable, validate, valid, dirty } = useDryv(data, ruleSet)
 </script>
 ```
 
-For a Vanilla JS/TS example, see the [`dryvjs` package documentation](./packages/dryvjs/README.md).
+> **Want to go deeper?**
+> - **Vanilla JS/TS** — The [`dryvjs` README](./packages/dryvjs/README.md) covers the core API, nested/array validation, dirty tracking, async rules, and more.
+> - **Vue 3** — The [`dryvue` README](./packages/dryvue/README.md) documents all composables (`useDryv`, `useDryvValueProp`, `useDryvGroupSlot`), the Options API mixin, and complete form examples.
+> - **Nuxt 3** — The [`nuxt-dryv` README](./packages/nuxt-dryv/README.md) covers module configuration, the `#dryv` import alias, SSR support, custom result handlers, and warning deduplication.
 
 ## Full-Stack Validation with Dryv (C#/.NET)
 
