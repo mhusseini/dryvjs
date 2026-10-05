@@ -1,13 +1,20 @@
-import './assets/main.css'
-
 import { createApp } from 'vue'
+import PrimeVue from 'primevue/config'
+import Aura from '@primevue/themes/aura'
+import 'primeicons/primeicons.css'
 import App from './App.vue'
-import { Dryv, DryvStaticRuleSets } from '@softwareproduction/dryvue'
-import { personalDataValidationRules } from '@/PersonalDataValidationRules'
+import { Dryv } from '@softwareproduction/dryvue'
 
-createApp(App)
-  .use(Dryv)
-  .use(DryvStaticRuleSets, {
-    PersonalData: personalDataValidationRules
-  })
-  .mount('#app')
+const app = createApp(App)
+
+app.use(PrimeVue, {
+  theme: {
+    preset: Aura,
+    options: {
+      darkModeSelector: '.app-dark'
+    }
+  }
+})
+
+app.use(Dryv)
+app.mount('#app')

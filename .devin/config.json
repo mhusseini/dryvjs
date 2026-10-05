@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Write(src/**)",
+      "Write(tests/**)"
+    ],
+    "deny": [
+      "Write(.env*)"
+    ]
+  }
+}

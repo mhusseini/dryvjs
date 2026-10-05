@@ -2,7 +2,7 @@ import type { App } from 'vue'
 import type { Plugin } from '@vue/runtime-core'
 import { reactive } from 'vue'
 import type { DryvOptions, DryvValidationRuleSet } from '@softwareproduction/dryvjs'
-import { defaultDryvOptions, defaultDryvRuleSetResolvers } from '@softwareproduction/dryvjs'
+import { defaultDryvOptions } from '@softwareproduction/dryvjs'
 
 export { DryvOptions, DryvValidationRuleSet }
 export const Dryv: Plugin<[]> = {
@@ -22,7 +22,7 @@ export interface DryvStaticRuleSetsOptions {
 }
 
 export const DryvStaticRuleSets: Plugin<DryvStaticRuleSetsOptions> = {
-  install(app: App, options?: DryvStaticRuleSetsOptions) {
+  install(_app: App, options?: DryvStaticRuleSetsOptions) {
     const ruleSets: DryvStaticRuleSetsOptions = options
       ? Object.entries(options).reduce((acc, [key, value]) => {
           acc[key.toLowerCase()] = value
@@ -30,7 +30,11 @@ export const DryvStaticRuleSets: Plugin<DryvStaticRuleSetsOptions> = {
         }, {} as DryvStaticRuleSetsOptions)
       : {}
 
-    defaultDryvRuleSetResolvers.push({
+    if (!defaultDryvOptions.ruleSetResolvers) {
+      defaultDryvOptions.ruleSetResolvers = []
+    }
+
+    defaultDryvOptions.ruleSetResolvers.push({
       name: 'Static rule set resolver',
       resolve<TModel extends object, TParameters = object>(
         ruleSetName: string

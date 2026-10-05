@@ -60,7 +60,7 @@ describe('getDryvModel', () => {
 
 describe('dryvRuleSet', () => {
   it('should return undefined when no resolvers are registered', async () => {
-    const { dryvRuleSet } = await import('@/dryvRuleSet')
+    const { dryvRuleSet } = await import('@/config/dryvRuleSet')
     const result = dryvRuleSet('nonexistent')
     expect(result).toBeUndefined()
   })

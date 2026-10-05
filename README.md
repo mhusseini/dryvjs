@@ -163,14 +163,14 @@ Dryv translates these rules to a valid JavaScript object that DryvJS can process
   name: "Address",
   validators: {
     city: [{
-      validate: function ($m, $ctx) {
+      validate: function ($m, context) {
         return !/\S/.test($m.city || "")
           ? { type: "error", text: "Please enter a city." }
           : null;
       }
     }],
     zipCode: [{
-      validate: function ($m, $ctx) {
+      validate: function ($m, context) {
         return ($m.zipCode || "").trim().length < 5
           ? { type: "error", text: "ZIP code must have at least 5 characters." }
           : null;
@@ -263,7 +263,7 @@ export async function loadValidationRules<T>(modelName: string): Promise<DryvVal
 
 When Dryv encounters rules that require backend execution (e.g., checking database availability via injected services), it automatically routes them through dynamically generated server endpoints.
 
-The generated JavaScript will utilize `$ctx.dryv.callServer()`. DryvJS intercepts this and handles the asynchronous request transparently:
+The generated JavaScript will utilize `context.callServer()`. DryvJS intercepts this and handles the asynchronous request transparently:
 
 ```csharp
 // C# — async rule calling a service
@@ -300,8 +300,8 @@ const { validatable, parameters } = useDryv(data, ruleSet, {
 | `DryvValidationResult.Error(text)` | `{ type: 'error', text }` |
 | `DryvValidationResult.Warning(text)` | `{ type: 'warning', text }` |
 | `DryvValidationResult.Success` / `null` | `null` (validation passes) |
-| `DryvParameters` / `.Parameter(...)` | `parameters` object + `session.parameter(key)` |
-| `async` rules via dynamic controllers | `session.dryv.callServer()` |
+| `DryvParameters` / `.Parameter(...)` | `parameters` object + `context.parameter(key)` |
+| `async` rules via dynamic controllers | `context.callServer()` |
 | Nested model rules | Dot-notation paths (e.g. `address.city`) |
 | Collection element rules | Array item rules (e.g. `people.attendees.name`) |
 | `[DryvSet("name")]` | Rule set `name` property |

@@ -12,7 +12,10 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
-    "@softwareproduction/dryvue": "workspace:^2.0.1",
+    "@primevue/themes": "^4.3.3",
+    "@softwareproduction/dryvue": "workspace:*",
+    "primeicons": "^7.0.0",
+    "primevue": "^4.3.3",
     "vue": "^3.3.4"
   },
   "devDependencies": {

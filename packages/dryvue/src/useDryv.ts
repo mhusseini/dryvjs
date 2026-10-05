@@ -86,7 +86,7 @@ export function useDryv<TModel extends object, TParameters = object>(
         options,
         model: validator.proxy,
         parameters,
-        validatable: validator.transparentProxy!,
+        validatable: validator.facadeProxy as DryvValidatableObject<TModel>,
         validate: async () => await validator.validate(),
         valid: computed(() => validator.isSuccess),
         dirty: computed(() => validator.isDirty),

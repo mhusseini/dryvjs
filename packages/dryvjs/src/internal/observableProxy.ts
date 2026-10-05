@@ -1,10 +1,31 @@
-import { FieldEvent } from '@/.'
+import type { FieldEvent } from '@/types'
+import { ProxyEventEmitter } from './ProxyEventEmitter'
 
+/**
+ * Callback signature for handlers that receive field mutation events.
+ *
+ * @typeParam TModel - The model type whose field was mutated.
+ */
 export interface FieldEventHandler<TModel extends object> {
   (event: FieldEvent<TModel>): void
 }
 
-export function observableProxy<TModel extends object>(model: TModel) {
+/**
+ * **Proxy Layer 1 — Change Detection (Observable Proxy)**
+ *
+ * Wraps a plain model object in a Proxy that intercepts property assignments
+ * (`set` trap) and emits `FieldEvent`s to registered handlers.
+ *
+ * This layer is consumed exclusively by `DryvObjectValidator` to detect when
+ * the user mutates a model field, triggering dirty-tracking and re-validation.
+ *
+ * Consumers never see this proxy directly — it is an internal implementation
+ * detail hidden behind the validator's `proxy` property.
+ *
+ * @see observableArrayProxy — analogous layer for array mutations
+ * @see createObjectFacade   — Layer 2 (developer-facing facade)
+ */
+export function createObservableProxy<TModel extends object>(model: TModel) {
   const proxyHandler = new ObservableProxyHandler<TModel>()
   const proxy = new Proxy(model, proxyHandler)
 
@@ -15,10 +36,12 @@ export function observableProxy<TModel extends object>(model: TModel) {
   }
 }
 
-class ObservableProxyHandler<TModel extends object> {
-  private readonly _eventHandlers = new Map<number, (event: FieldEvent<TModel>) => void>()
-  private _nextId = 0
-
+/**
+ * Proxy handler that intercepts property assignments on a model object
+ * and fires {@link FieldEvent}s when values change.
+ * Properties prefixed with `_` or `$` are passed through without events.
+ */
+class ObservableProxyHandler<TModel extends object> extends ProxyEventEmitter<FieldEvent<TModel>> {
   set(target: TModel, prop: string | symbol, value: any, receiver: any) {
     const propName = prop.toString()
     if(propName.startsWith('_') || propName.startsWith('$')) {
@@ -33,20 +56,5 @@ class ObservableProxyHandler<TModel extends object> {
     }
 
     return result
-  }
-
-  register(eventHandler: FieldEventHandler<TModel>): number {
-    this._eventHandlers.set(++this._nextId, eventHandler)
-    return this._nextId
-  }
-
-  unregister(id: number) {
-    this._eventHandlers.delete(id)
-  }
-
-  private fire(event: FieldEvent<TModel>) {
-    for (const eventHandler of this._eventHandlers.values()) {
-      eventHandler(event)
-    }
   }
 }
