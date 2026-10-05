@@ -9,8 +9,8 @@ describe('Server Validation', () => {
       validators: {
         email: [{
           async: true,
-          validate: async ($m: any, session: any) => {
-            const result = await session.callServer('/api/validate-email', 'POST', { email: $m.email })
+          validate: async ($m: any, context: any) => {
+            const result = await context.dryv.callServer('/api/validate-email', 'POST', { email: $m.email })
             return result.success ? null : 'Email already exists'
           }
         }]
@@ -34,8 +34,8 @@ describe('Server Validation', () => {
       validators: {
         email: [{
           async: true,
-          validate: async ($m: any, session: any) => {
-            const result = await session.callServer('/api/validate-email', 'POST', { email: $m.email })
+          validate: async ($m: any, context: any) => {
+            const result = await context.dryv.callServer('/api/validate-email', 'POST', { email: $m.email })
             return result.success ? null : 'Email already exists'
           }
         }]
@@ -103,8 +103,8 @@ describe('Server Validation', () => {
     const ruleSet = createRuleSet<SimpleModel>({
       validators: {
         name: [{
-          validate: ($m: any, session: any) => {
-            const minLength = session.parameter('minNameLength')
+          validate: ($m: any, context: any) => {
+            const minLength = context.parameter('minNameLength')
             return $m.name.length < minLength ? `Min ${minLength} chars` : null
           }
         }]

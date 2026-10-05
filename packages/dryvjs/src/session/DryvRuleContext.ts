@@ -1,14 +1,14 @@
-import type { DryvOptions, DryvValidationRuleSet } from '@/types'
+import type { DryvOptions, DryvValidationRule, DryvValidationRuleSet } from '@/types'
+import type { DryvValidationSession } from './DryvValidationSession'
 
 /**
- * Plain context object passed to rule `validate` functions.
- * Exposes only the operations a rule needs: `parseDate`, `format`,
- * `callServer`, and `parameter`.
+ * Utility functions available to rule `validate` functions via the
+ * `dryv` property of the context object.
  *
  * @typeParam TModel - The root model type.
  * @typeParam TParameters - The type of externally-loaded parameters.
  */
-export interface DryvRuleContext<TModel extends object = any, TParameters = any> {
+export interface DryvRuleContextDryv {
   /**
    * Sends a validation request to the server.
    * @param url - The endpoint URL.
@@ -38,6 +38,32 @@ export interface DryvRuleContext<TModel extends object = any, TParameters = any>
   format(data: any, type: string, pattern?: string): string
 
   /**
+   * Post-processes a rule's result before it is applied to the validator.
+   * @param session - The current validation session.
+   * @param $m - The model instance.
+   * @param field - The field being validated.
+   * @param rule - The rule that produced the result.
+   * @param result - The raw validation result.
+   * @returns The (possibly transformed) result.
+   */
+  handleResult<TModel extends object>(
+    session: DryvValidationSession<TModel>,
+    $m: TModel,
+    field: keyof TModel,
+    rule: DryvValidationRule<TModel>,
+    result: any
+  ): Promise<any>
+}
+
+/**
+ * Plain context object passed to rule `validate` functions.
+ * Utility functions are exposed on the `dryv` property.
+ */
+export interface DryvRuleContext {
+  /** Dryv utility functions available to validation rules. */
+  dryv: DryvRuleContextDryv
+
+  /**
    * Retrieves an externally-loaded parameter by key.
    * @typeParam T - The expected parameter value type.
    * @param key - The parameter key.
@@ -58,19 +84,30 @@ export interface DryvRuleContext<TModel extends object = any, TParameters = any>
 export function createRuleContext<TModel extends object = any, TParameters = any>(
   options: DryvOptions,
   ruleSet: DryvValidationRuleSet<TModel, TParameters>
-): DryvRuleContext<TModel, TParameters> {
+): DryvRuleContext {
   return {
-    callServer(url: string, method: string, data: any): Promise<any> {
-      if (!options.callServer) {
-        throw new Error('callServer option is not configured.')
+    dryv: {
+      callServer(url: string, method: string, data: any): Promise<any> {
+        if (!options.callServer) {
+          throw new Error('callServer option is not configured.')
+        }
+        return options.callServer(url, method, data)
+      },
+      parseDate(date: string, locale: string, format: string): number {
+        return options.parseDate!(date, locale, format)
+      },
+      format(data: any, type: string, pattern?: string): string {
+        return options.format!(data, type, pattern)
+      },
+      handleResult<TModel extends object>(
+        session: DryvValidationSession<TModel>,
+        $m: TModel,
+        field: keyof TModel,
+        rule: DryvValidationRule<TModel>,
+        result: any
+      ): Promise<any> {
+        return options.handleResult!(session, $m, field, rule, result)
       }
-      return options.callServer(url, method, data)
-    },
-    parseDate(date: string, locale: string, format: string): number {
-      return options.parseDate!(date, locale, format)
-    },
-    format(data: any, type: string, pattern?: string): string {
-      return options.format!(data, type, pattern)
     },
     parameter<T = unknown>(key: string): T {
       return ruleSet.parameters?.[key as keyof TParameters] as T

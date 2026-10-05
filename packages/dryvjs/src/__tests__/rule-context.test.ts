@@ -32,7 +32,7 @@ describe('DryvRuleContext', () => {
       const callServer = vi.fn().mockResolvedValue({ ok: true })
       const { context } = createContext({ callServer })
 
-      await context.callServer('/api/test', 'POST', { name: 'test' })
+      await context.dryv.callServer('/api/test', 'POST', { name: 'test' })
 
       expect(callServer).toHaveBeenCalledWith('/api/test', 'POST', { name: 'test' })
     })
@@ -40,7 +40,7 @@ describe('DryvRuleContext', () => {
     it('should throw when callServer is not configured', () => {
       const { context } = createContext({ callServer: undefined })
 
-      expect(() => context.callServer('/api/test', 'POST', {}))
+      expect(() => context.dryv.callServer('/api/test', 'POST', {}))
         .toThrow('callServer option is not configured.')
     })
 
@@ -48,7 +48,7 @@ describe('DryvRuleContext', () => {
       const callServer = vi.fn().mockResolvedValue({ success: true, data: 42 })
       const { context } = createContext({ callServer })
 
-      const result = await context.callServer('/api/test', 'GET', {})
+      const result = await context.dryv.callServer('/api/test', 'GET', {})
 
       expect(result).toEqual({ success: true, data: 42 })
     })
@@ -58,7 +58,7 @@ describe('DryvRuleContext', () => {
     it('should delegate to options.parseDate', () => {
       const { context, options } = createContext()
 
-      context.parseDate('2023-01-15', 'en-US', 'yyyy-MM-dd')
+      context.dryv.parseDate('2023-01-15', 'en-US', 'yyyy-MM-dd')
 
       expect(options.parseDate).toHaveBeenCalledWith('2023-01-15', 'en-US', 'yyyy-MM-dd')
     })
@@ -66,7 +66,7 @@ describe('DryvRuleContext', () => {
     it('should return the parsed timestamp', () => {
       const { context } = createContext()
 
-      const result = context.parseDate('2023-01-15', '', '')
+      const result = context.dryv.parseDate('2023-01-15', '', '')
       expect(typeof result).toBe('number')
     })
   })
@@ -75,7 +75,7 @@ describe('DryvRuleContext', () => {
     it('should delegate to options.format', () => {
       const { context, options } = createContext()
 
-      context.format(42, 'number')
+      context.dryv.format(42, 'number')
 
       expect(options.format).toHaveBeenCalledWith(42, 'number', undefined)
     })
@@ -83,7 +83,7 @@ describe('DryvRuleContext', () => {
     it('should pass optional pattern parameter', () => {
       const { context, options } = createContext()
 
-      context.format(3.14, 'number', '#.##')
+      context.dryv.format(3.14, 'number', '#.##')
 
       expect(options.format).toHaveBeenCalledWith(3.14, 'number', '#.##')
     })
@@ -91,7 +91,7 @@ describe('DryvRuleContext', () => {
     it('should return the formatted string', () => {
       const { context } = createContext()
 
-      const result = context.format(42, 'number')
+      const result = context.dryv.format(42, 'number')
       expect(result).toBe('42')
     })
   })

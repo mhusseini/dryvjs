@@ -34,7 +34,7 @@ export interface DryvValidationRule<TModel extends object> {
     /** The validation function invoked with the model and a rule context. */
     validate: <TInput = TModel>(
         $m: TInput,
-        context: DryvRuleContext<TModel>
+        context: DryvRuleContext
     ) => DryvValidateFunctionResult
 }
 

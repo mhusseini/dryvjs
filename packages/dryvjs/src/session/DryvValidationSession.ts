@@ -26,7 +26,7 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
   private _processedFields: { [field: string | symbol]: boolean } | undefined = undefined
   private previousWarningHash: string | null | undefined
   private readonly triggerPolicy: ValidationTriggerPolicy
-  readonly ruleContext: DryvRuleContext<TModel, TParameters>
+  readonly ruleContext: DryvRuleContext
 
   /** Reactive per-field and per-group validation results, updated after each validation pass. */
   readonly results: {
@@ -56,7 +56,7 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
     rule: DryvValidationRule<TModel> | undefined | null,
     result: any
   ): Promise<any> {
-    return this.options.handleResult!(session, $m, field as keyof TModel, rule!, result)
+    return this.ruleContext.dryv.handleResult(session, $m, field as keyof TModel, rule!, result)
   }
 
   /** `true` while a validation pass is in progress. */
