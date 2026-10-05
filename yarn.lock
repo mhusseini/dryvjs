@@ -3186,7 +3186,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@softwareproduction/dryvjs@npm:^1.0.1, @softwareproduction/dryvjs@workspace:packages/dryvjs":
+"@softwareproduction/dryvjs@npm:^1.1.0, @softwareproduction/dryvjs@workspace:packages/dryvjs":
   version: 0.0.0-use.local
   resolution: "@softwareproduction/dryvjs@workspace:packages/dryvjs"
   dependencies:
@@ -3201,12 +3201,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@softwareproduction/dryvue@npm:^2.0.1, @softwareproduction/dryvue@workspace:*, @softwareproduction/dryvue@workspace:packages/dryvue":
+"@softwareproduction/dryvue@npm:^2.1.0, @softwareproduction/dryvue@workspace:*, @softwareproduction/dryvue@workspace:packages/dryvue":
   version: 0.0.0-use.local
   resolution: "@softwareproduction/dryvue@workspace:packages/dryvue"
   dependencies:
     "@rushstack/eslint-patch": "npm:^1.3.3"
-    "@softwareproduction/dryvjs": "npm:^1.0.1"
+    "@softwareproduction/dryvjs": "npm:^1.1.0"
     "@tsconfig/node18": "npm:^18.2.2"
     "@types/node": "npm:^18.18.5"
     "@vue/test-utils": "npm:^2.4.6"
@@ -3230,7 +3230,7 @@ __metadata:
     "@nuxt/module-builder": "npm:^0.8.0"
     "@nuxt/schema": "npm:^3.16.0"
     "@nuxt/test-utils": "npm:^3.17.2"
-    "@softwareproduction/dryvue": "npm:^2.0.1"
+    "@softwareproduction/dryvue": "npm:^2.1.0"
     "@vue/test-utils": "npm:^2.4.6"
     defu: "npm:^6.1.4"
     jsdom: "npm:^25.0.1"
