@@ -1,6 +1,7 @@
 import type { DryvOptions, DryvValidationResult } from '@/types'
 import type { DryvValidationSession } from '@/session/DryvValidationSession'
 import { DryvValidator } from './DryvValidator'
+import { SpecialTypeWrapper } from '@/internal'
 
 /**
  * Leaf validator representing a single scalar field on the model.
@@ -27,7 +28,7 @@ export class DryvFieldValidator<TModel extends object> extends DryvValidator<
   }
 
   override get value(): any {
-    return this.model[this.field!]
+    return SpecialTypeWrapper.unwrap(this.model[this.field!])
   }
 
   override set value(value: any) {

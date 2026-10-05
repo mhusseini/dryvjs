@@ -1,8 +1,8 @@
 import type { DryvOptions, DryvValidatableObject, DryvValidationResult, FieldEvent } from '@/types'
 import { DryvValidator } from './DryvValidator'
 import { DryvValidationSession } from '@/session/DryvValidationSession'
-import { manageChildValidators } from './childValidatorManager'
-import { createObjectFacade, createObservableProxy, createProxyLifecycle } from '@/internal'
+import { manageChildValidators } from './manageChildValidators'
+import { createObjectFacade, createObservableProxy, createProxyLifecycle, SpecialTypeWrapper } from '@/internal'
 import { DryvCompositeValidator } from './DryvCompositeValidator'
 
 /**
@@ -47,7 +47,7 @@ export class DryvObjectValidator<TModel extends object = any> extends DryvCompos
   }
 
   override get value(): TModel {
-    return this.proxy
+    return SpecialTypeWrapper.unwrap(this.proxy)
   }
 
   override set value(value: TModel) {

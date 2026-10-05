@@ -127,7 +127,7 @@ export class DryvArrayValidator<TModel = any> extends DryvCompositeValidator<any
   }
 
   override get value(): TModel[] {
-    return this.proxy
+    return SpecialTypeWrapper.unwrap(this.proxy)
   }
 
   override set value(value: TModel[]) {

@@ -1,4 +1,10 @@
 /**
+ * Private symbol used to recover the original object from a wrapped proxy.
+ * Not exported — only accessible through {@link SpecialTypeWrapper.unwrap}.
+ */
+const ORIGINAL = Symbol('dryvOriginal')
+
+/**
  * **Proxy Layer 3 — Edge-Case Type Wrapping**
  *
  * Certain JavaScript built-in types (File, ArrayBuffer, Promise, DOM elements,
@@ -9,6 +15,10 @@
  *
  * This layer is transparent to the rest of the system — it only activates when
  * a value of a "special" type is encountered during array proxy creation.
+ *
+ * The wrapped proxy carries the original object via a private Symbol so that
+ * {@link unwrap} can recover it at user-facing boundaries. A `getPrototypeOf`
+ * trap ensures `instanceof` checks work correctly even on wrapped values.
  *
  * @see createObservableProxy       — Layer 1 (change detection)
  * @see createObjectFacade    — Layer 2 (developer-facing facade)
@@ -51,6 +61,10 @@ export class SpecialTypeWrapper {
    * preventing Layer 1 observable proxy interference. Returns the value
    * unchanged if it is not a special type.
    *
+   * The proxy carries the original object via a private Symbol (recoverable
+   * through {@link unwrap}) and exposes the original's prototype chain so
+   * that `instanceof` checks work correctly on the wrapped value.
+   *
    * @typeParam T - The value type.
    * @param value - The value to potentially wrap.
    * @returns The original value or a safe wrapper proxy.
@@ -63,16 +77,43 @@ export class SpecialTypeWrapper {
     const wrapper = new SpecialTypeWrapper(value)
     return new Proxy<T>(wrapper as T, {
       get(_, prop) {
+        if (prop === ORIGINAL) return value
         return wrapper.getValue(prop)
       },
       set(_, prop, value) {
         wrapper.setValue(prop, value)
         return true
       },
+      has(_, prop) {
+        if (prop === ORIGINAL) return true
+        return prop in value
+      },
+      getPrototypeOf() {
+        return Object.getPrototypeOf(value)
+      },
       ownKeys(_: T): ArrayLike<string | symbol> {
         return []
       }
     })
+  }
+
+  /**
+   * Recovers the original object from a wrapped proxy, or returns the
+   * value unchanged if it was never wrapped.
+   *
+   * Call this at every user-facing value boundary (validator `value`
+   * getters) so callers always receive the genuine object and
+   * `instanceof` / strict-equality checks behave as expected.
+   *
+   * @typeParam T - The value type.
+   * @param value - The value to potentially unwrap.
+   * @returns The original unwrapped object, or the value as-is.
+   */
+  static unwrap<T>(value: T): T {
+    if (value && typeof value === 'object' && ORIGINAL in (value as object)) {
+      return (value as any)[ORIGINAL] as T
+    }
+    return value
   }
 }
 
