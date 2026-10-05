@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { DryvRuleContext } from '@/session/DryvRuleContext'
+import { createRuleContext } from '@/session/DryvRuleContext'
 import type { DryvOptions, DryvValidationRuleSet } from '@/.'
 
 describe('DryvRuleContext', () => {
@@ -24,7 +24,7 @@ describe('DryvRuleContext', () => {
       ...ruleSetOverrides
     } as any
 
-    return { context: new DryvRuleContext(options, ruleSet), options }
+    return { context: createRuleContext(options, ruleSet), options }
   }
 
   describe('callServer', () => {
@@ -41,7 +41,7 @@ describe('DryvRuleContext', () => {
       const { context } = createContext({ callServer: undefined })
 
       expect(() => context.callServer('/api/test', 'POST', {}))
-        .toThrow('DryvRuleContext: callServer option is not configured.')
+        .toThrow('callServer option is not configured.')
     })
 
     it('should return the server response', async () => {

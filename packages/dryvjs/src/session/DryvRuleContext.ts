@@ -1,19 +1,14 @@
 import type { DryvOptions, DryvValidationRuleSet } from '@/types'
 
 /**
- * Minimal context object passed to rule `validate` functions.
- * Decouples rules from the session and options by exposing only
- * the operations a rule needs.
+ * Plain context object passed to rule `validate` functions.
+ * Exposes only the operations a rule needs: `parseDate`, `format`,
+ * `callServer`, and `parameter`.
  *
  * @typeParam TModel - The root model type.
  * @typeParam TParameters - The type of externally-loaded parameters.
  */
-export class DryvRuleContext<TModel extends object = any, TParameters = any> {
-  constructor(
-    private options: DryvOptions,
-    private ruleSet: DryvValidationRuleSet<TModel, TParameters>
-  ) {}
-
+export interface DryvRuleContext<TModel extends object = any, TParameters = any> {
   /**
    * Sends a validation request to the server.
    * @param url - The endpoint URL.
@@ -22,12 +17,7 @@ export class DryvRuleContext<TModel extends object = any, TParameters = any> {
    * @returns The server response.
    * @throws If `callServer` is not configured in options.
    */
-  callServer(url: string, method: string, data: any): Promise<any> {
-    if (!this.options.callServer) {
-      throw new Error('DryvRuleContext: callServer option is not configured.')
-    }
-    return this.options.callServer(url, method, data)
-  }
+  callServer(url: string, method: string, data: any): Promise<any>
 
   /**
    * Parses a date string into a numeric timestamp.
@@ -36,9 +26,7 @@ export class DryvRuleContext<TModel extends object = any, TParameters = any> {
    * @param format - The expected date format.
    * @returns The parsed timestamp.
    */
-  parseDate(date: string, locale: string, format: string): number {
-    return this.options.parseDate!(date, locale, format)
-  }
+  parseDate(date: string, locale: string, format: string): number
 
   /**
    * Formats a value for display in validation messages.
@@ -47,9 +35,7 @@ export class DryvRuleContext<TModel extends object = any, TParameters = any> {
    * @param pattern - An optional format pattern.
    * @returns The formatted string.
    */
-  format(data: any, type: string, pattern?: string): string {
-    return this.options.format!(data, type, pattern)
-  }
+  format(data: any, type: string, pattern?: string): string
 
   /**
    * Retrieves an externally-loaded parameter by key.
@@ -57,7 +43,37 @@ export class DryvRuleContext<TModel extends object = any, TParameters = any> {
    * @param key - The parameter key.
    * @returns The parameter value.
    */
-  parameter<T = unknown>(key: string): T {
-    return this.ruleSet.parameters?.[key as keyof TParameters] as T
+  parameter<T = unknown>(key: string): T
+}
+
+/**
+ * Creates a plain context object for rule `validate` functions.
+ *
+ * @typeParam TModel - The root model type.
+ * @typeParam TParameters - The type of externally-loaded parameters.
+ * @param options - The resolved Dryv options.
+ * @param ruleSet - The validation rule set (provides parameters).
+ * @returns A plain object implementing {@link DryvRuleContext}.
+ */
+export function createRuleContext<TModel extends object = any, TParameters = any>(
+  options: DryvOptions,
+  ruleSet: DryvValidationRuleSet<TModel, TParameters>
+): DryvRuleContext<TModel, TParameters> {
+  return {
+    callServer(url: string, method: string, data: any): Promise<any> {
+      if (!options.callServer) {
+        throw new Error('callServer option is not configured.')
+      }
+      return options.callServer(url, method, data)
+    },
+    parseDate(date: string, locale: string, format: string): number {
+      return options.parseDate!(date, locale, format)
+    },
+    format(data: any, type: string, pattern?: string): string {
+      return options.format!(data, type, pattern)
+    },
+    parameter<T = unknown>(key: string): T {
+      return ruleSet.parameters?.[key as keyof TParameters] as T
+    }
   }
 }

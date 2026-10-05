@@ -9,7 +9,7 @@ import type {
 import { runValidationRules } from './runValidationRules'
 import { runDisablerRules } from './runDisablerRules'
 import { successResult, aggregateFieldResults, buildFieldResult } from './validationResults'
-import { DryvRuleContext } from './DryvRuleContext'
+import { createRuleContext, type DryvRuleContext } from './DryvRuleContext'
 import { getValidationTriggerPolicy, type ValidationTriggerPolicy } from './validationTriggerPolicy'
 
 /**
@@ -42,7 +42,7 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
       fields: {},
       groups: {}
     })
-    this.ruleContext = new DryvRuleContext(options, ruleSet)
+    this.ruleContext = createRuleContext(options, ruleSet)
     this.triggerPolicy = getValidationTriggerPolicy(options.validationTrigger)
   }
 
