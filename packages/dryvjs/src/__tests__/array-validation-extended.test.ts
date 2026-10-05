@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { DryvObjectValidator, DryvArrayValidator, DryvValidationSession, dryvOptions, DryvValidationRuleSet, DryvOptions } from '@/.'
+import { DryvObjectValidator, DryvArrayValidator, DryvFieldValidator, DryvValidationSession, dryvOptions, DryvValidationRuleSet, DryvOptions } from '@/.'
 
 describe('Array Validation — Extended', () => {
   interface ItemModel {
@@ -184,6 +184,38 @@ describe('Array Validation — Extended', () => {
       arrValidator.value = [{ value: 'x' }]
 
       expect(arrValidator.childValidators().length).toBe(1)
+    })
+  })
+
+  describe('array replacement via parent proxy', () => {
+    it('should rebind the array validator to the new array', () => {
+      const { validator } = createSetup()
+      const replacement = [{ value: 'x' }]
+
+      validator.proxy.items = replacement
+
+      const arrValidator = validator.fields.items as unknown as DryvArrayValidator<ItemModel>
+      expect(arrValidator).toBeInstanceOf(DryvArrayValidator)
+      expect(arrValidator.model).toBe(replacement)
+      expect(arrValidator.childValidators().length).toBe(1)
+    })
+
+    it('should write facade assignments into the array held by the model', () => {
+      const { validator, model } = createSetup()
+
+      validator.proxy.items = []
+      ;(validator.facadeProxy as any).items.value = [{ value: 'new' }]
+
+      expect(model.items).toEqual([{ value: 'new' }])
+    })
+
+    it('should replace the array validator with a field validator when the array is set to null', () => {
+      const { validator } = createSetup()
+
+      ;(validator.proxy as any).items = null
+
+      expect(validator.fields.items).toBeInstanceOf(DryvFieldValidator)
+      expect(validator.fields.items!.value).toBeNull()
     })
   })
 

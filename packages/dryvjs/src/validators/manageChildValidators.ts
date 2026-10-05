@@ -2,6 +2,7 @@ import type { ProxyLifecycle } from '@/internal';
 import type { DryvValidationSession } from '@/session';
 import type { FieldEvent, DryvOptions } from '@/types';
 import { createChildValidator } from './createValidator';
+import { DryvArrayValidator } from './DryvArrayValidator';
 import { DryvObjectValidator } from './DryvObjectValidator';
 import { DryvValidator } from './DryvValidator';
 
@@ -37,13 +38,15 @@ export function manageChildValidators<TModel extends object>(
 
   lifecycle.register((event: FieldEvent<TModel>) => {
     let validator = parent.fields[event.field];
+    const value = lifecycle.proxy[event.field];
 
     if (validator === undefined ||
-      (validator instanceof DryvObjectValidator && validator.value !== event.newValue)) {
+      (validator instanceof DryvObjectValidator && validator.value !== event.newValue) ||
+      (validator instanceof DryvArrayValidator && validator.model !== value)) {
       validator?.destroy();
       validator = createChildValidator(
         parent,
-        event.newValue,
+        value,
         lifecycle.proxy,
         event.field,
         session,

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { reactive, ref, nextTick } from 'vue'
+import { reactive, ref, nextTick, computed } from 'vue'
 import { useDryv } from '../useDryv'
 import { Dryv } from '../plugin'
 import { createApp } from 'vue'
@@ -184,6 +184,20 @@ describe('useDryv', () => {
     const result = await useDryv(model, ruleSet)
     expect(result.model).toBeDefined()
     expect(result.session).toBeDefined()
+  })
+
+  it('should keep an array field bound and reactive when the array is replaced through the model', () => {
+    const model = reactive<{ items: { value: string }[] }>({ items: [] })
+    const { model: dryvModel, validatable } = useDryv(model, createRuleSet({ validators: {} as any }))
+    const count = computed(() => model.items.length)
+
+    dryvModel.items = []
+    expect(count.value).toBe(0)
+
+    ;(validatable as any).items.value = [{ value: 'new' }]
+
+    expect(count.value).toBe(1)
+    expect(model.items).toEqual([{ value: 'new' }])
   })
 
   it('should handle warning-type validation results', async () => {
