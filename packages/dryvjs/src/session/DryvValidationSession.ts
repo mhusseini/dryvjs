@@ -83,9 +83,10 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
 
     this._depth++
     this._isTriggered = true
+    let newValidationChain = false
 
     try {
-      const newValidationChain = this.startValidationChain()
+      newValidationChain = this.startValidationChain()
       const fieldResults: DryvValidationResult[] = await Promise.all([
         this.validateField(objectValidator, objectValidator.rootModel),
         ...objectValidator.childValidators().map(async (v: IValidator) => {
@@ -101,12 +102,12 @@ export class DryvValidationSession<TModel extends object = any, TParameters = an
 
       objectValidator.type = result.hasErrors ? 'error' : result.hasWarnings ? 'warning' : 'success'
 
+      return result
+    } finally {
       if (newValidationChain) {
         this.endValidationChain()
       }
 
-      return result
-    } finally {
       this._depth--
     }
   }
